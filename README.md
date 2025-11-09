@@ -1,2 +1,2 @@
 # sealer
-nomsams.github.io/sealer
+https://nomsams.github.io/sealer
