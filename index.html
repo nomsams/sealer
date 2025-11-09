@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concrete Surface Cost Estimator</title>
+  <style>
+    /* ===== Base Styling ===== */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      color: #212121;
+      margin: 0;
+      padding: 0;
+      line-height: 1.4;
+    }
+    .toolbar {
+      background: #e0e0e0;
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .toolbar label {
+      margin-right: 5px;
+      font-weight: bold;
+    }
+    .toolbar input[type="number"] {
+      width: 60px;
+    }
+    .toolbar button, .toolbar input[type="checkbox"], .toolbar select {
+      margin-right: 15px;
+    }
+    /* Area container styling */
+    .area {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px;
+      background: #fff;
+    }
+    .area-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .area-header input[type="text"] {
+      font-weight: bold;
+      width: 120px;
+    }
+    .area-header select, .area-header input[type="number"] {
+      width: auto;
+    }
+    .area-header .remove-area {
+      margin-left: auto;  /* push remove button to right end */
+      background: #ff5555;
+      color: #fff;
+      border: none;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .area-header .remove-area:hover {
+      opacity: 0.8;
+    }
+    /* Layers table styling */
+    table.area-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 5px;
+    }
+    table.area-table th, table.area-table td {
+      border: 1px solid #ddd;
+      padding: 4px 6px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    table.area-table th {
+      background: #f0f0f0;
+    }
+    table.area-table td input, table.area-table td select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 2px;
+      margin: 0;
+      border: 1px solid #ccc;
+      border-radius: 2px;
+      font: inherit;
+    }
+    table.area-table td input::-webkit-outer-spin-button,
+    table.area-table td input::-webkit-inner-spin-button {
+      /* Hide spin buttons for number inputs */
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    table.area-table td input[type=number] {
+      -moz-appearance: textfield;
+    }
+    table.area-table .remove-product {
+      background: #ff7777;
+      color: #fff;
+      border: none;
+      padding: 2px 6px;
+      cursor: pointer;
+    }
+    table.area-table .remove-product:hover {
+      opacity: 0.8;
+    }
+    /* Area total row styling */
+    .area-total-row td {
+      font-weight: bold;
+      background: #f7f7f7;
+    }
+    .area-total-label {
+      text-align: right;
+    }
+    /* Project summary styling */
+    #projectSummary {
+      margin: 20px;
+      font-size: 1.1em;
+      font-weight: bold;
+    }
+    /* ===== Logs Panel Styling ===== */
+    #logPanel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #333;
+      color: #eee;
+      font-family: monospace;
+      font-size: 0.9em;
+      /* default height when expanded */
+      max-height: 200px;
+      display: flex;
+      flex-direction: column;
+      border-top: 2px solid #555;
+    }
+    #logHeader {
+      background: #444;
+      padding: 4px;
+      font-weight: bold;
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #logHeader button {
+      background: #555;
+      color: #fff;
+      border: none;
+      padding: 2px 6px;
+      margin-left: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #logHeader button:hover {
+      background: #666;
+    }
+    #logContent {
+      overflow-y: auto;
+      padding: 4px;
+    }
+    #logContent p {
+      margin: 2px 0;
+    }
+    /* Minimized state: hide content, show only header */
+    #logPanel.minimized {
+      max-height: none;
+      height: auto;
+    }
+    #logPanel.minimized #logContent {
+      display: none;
+    }
+    /* Maximized state: taller panel (e.g. 60% of viewport height) */
+    #logPanel.maximized {
+      max-height: 60vh;
+    }
+    /* ===== Dark Mode Styling ===== */
+    body.dark-mode {
+      background: #212121;
+      color: #e0e0e0;
+    }
+    body.dark-mode .toolbar {
+      background: #424242;
+      color: #e0e0e0;
+    }
+    body.dark-mode .toolbar button, 
+    body.dark-mode .toolbar input[type="checkbox"], 
+    body.dark-mode .toolbar select, 
+    body.dark-mode .toolbar input[type="number"] {
+      background: #616161;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    body.dark-mode .toolbar label {
+      color: #fff;
+    }
+    body.dark-mode .area {
+      background: #2f2f2f;
+      border: 1px solid #555;
+      color: #e0e0e0;
+    }
+    body.dark-mode table.area-table th {
+      background: #555;
+      color: #eee;
+    }
+    body.dark-mode table.area-table td {
+      border-color: #555;
+    }
+    body.dark-mode table.area-table td input, 
+    body.dark-mode table.area-table td select {
+      background: #424242;
+      color: #f0f0f0;
+      border: 1px solid #666;
+    }
+    body.dark-mode .area-header .remove-area {
+      background: #c62828;
+    }
+    body.dark-mode table.area-table .remove-product {
+      background: #e53935;
+    }
+    body.dark-mode #projectSummary {
+      color: #fff;
+    }
+    /* Dark mode logs panel adjustments */
+    body.dark-mode #logPanel {
+      background: #212121;
+      color: #ddd;
+      border-top-color: #555;
+    }
+    body.dark-mode #logHeader {
+      background: #333;
+      color: #ccc;
+    }
+    body.dark-mode #logHeader button {
+      background: #555;
+    }
+    body.dark-mode #logHeader button:hover {
+      background: #666;
+    }
+    body.dark-mode #logContent {
+      background: #212121;
+    }
+    /* ===== Print Styles ===== */
+    @media print {
+      body.dark-mode {
+        /* Force light mode for printing (white background, black text) */
+        background: #fff;
+        color: #000;
+      }
+      .toolbar, #logPanel {
+        display: none !important; /* hide controls and logs panel when printing */
+      }
+      .area, #projectSummary {
+        border: none;
+        margin: 0;
+        page-break-inside: avoid;
+      }
+      .area-header .remove-area {
+        display: none;
+      }
+      table.area-table {
+        width: 100%;
+        border: 1px solid #000;
+      }
+      table.area-table th, table.area-table td {
+        border: 1px solid #000;
+      }
+      table.area-table td input, table.area-table td select {
+        /* Remove input styling, show as plain text */
+        border: none;
+        background: transparent;
+        pointer-events: none;
+      }
+      table.area-table td input::-ms-expand {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Toolbar with global controls -->
+  <div class="toolbar">
+    <button id="addArea">Add Area</button>
+    <button id="undo" disabled>Undo</button>
+    <button id="redo" disabled>Redo</button>
+    <!-- VAT toggle and percent -->
+    <label for="vatToggle">Include VAT:</label>
+    <input type="checkbox" id="vatToggle" />
+    <input type="number" id="vatPercent" value="25" step="1" />%
+    <!-- Overage toggle and percent -->
+    <label for="overageToggle">Include Overage:</label>
+    <input type="checkbox" id="overageToggle" />
+    <input type="number" id="overagePercent" value="10" step="1" />%
+    <!-- Dark mode toggle -->
+    <label for="darkModeToggle">Dark Mode:</label>
+    <input type="checkbox" id="darkModeToggle" />
+    <!-- Import/Export buttons -->
+    <button id="importData">Import</button>
+    <input type="file" id="fileInput" accept=".json,.csv,.xls,.xlsx" style="display:none;" />
+    <button id="exportJSON">Export JSON</button>
+    <button id="exportCSV">Export CSV</button>
+    <button id="exportExcel">Export Excel</button>
+    <!-- Print button -->
+    <button id="printBtn">Print/PDF</button>
+  </div>
+
+  <!-- Container for areas -->
+  <div id="areasContainer"></div>
+
+  <!-- Project summary -->
+  <div id="projectSummary">Project Total (excl. VAT): 0</div>
+
+  <!-- Logs panel -->
+  <div id="logPanel" class="minimized">
+    <div id="logHeader">
+      Logs
+      <span style="flex:1 1 auto;"></span>
+      <button id="minimizeLog">_</button>
+      <button id="maximizeLog">&#9723;</button>
+    </div>
+    <div id="logContent"></div>
+  </div>
+
+  <script>
+    /* ===== JavaScript Application Logic ===== */
+    (() => {
+      "use strict";
+
+      // State data structure
+      const state = {
+        project: {
+          areas: [],       // list of area objects
+          settings: {
+            vatIncluded: false,
+            vatRate: 25,
+            overageIncluded: false,
+            overagePercent: 10,
+            surfaceTypes: { // predefined surface types with usage modifiers
+              "Smooth": 1.0,
+              "Rough": 1.1,
+              "Porous": 1.2
+            }
+          }
+        },
+        // Undo/redo history stacks
+        undoStack: [],
+        redoStack: [],
+        // Unique ID generators for areas and products
+        nextAreaId: 1,
+        nextProductId: 1
+      };
+
+      // DOM element references
+      const areasContainer = document.getElementById('areasContainer');
+      const projectSummaryEl = document.getElementById('projectSummary');
+      const addAreaBtn = document.getElementById('addArea');
+      const undoBtn = document.getElementById('undo');
+      const redoBtn = document.getElementById('redo');
+      const vatToggle = document.getElementById('vatToggle');
+      const vatPercentInput = document.getElementById('vatPercent');
+      const overageToggle = document.getElementById('overageToggle');
+      const overagePercentInput = document.getElementById('overagePercent');
+      const darkModeToggle = document.getElementById('darkModeToggle');
+      const importBtn = document.getElementById('importData');
+      const fileInput = document.getElementById('fileInput');
+      const exportJSONBtn = document.getElementById('exportJSON');
+      const exportCSVBtn = document.getElementById('exportCSV');
+      const exportExcelBtn = document.getElementById('exportExcel');
+      const printBtn = document.getElementById('printBtn');
+      const logPanel = document.getElementById('logPanel');
+      const logContent = document.getElementById('logContent');
+      const minimizeLogBtn = document.getElementById('minimizeLog');
+      const maximizeLogBtn = document.getElementById('maximizeLog');
+
+      // Logging utility: adds a message to the log panel
+      function log(message) {
+        const time = new Date();
+        const timestamp = time.toLocaleTimeString();
+        const entry = document.createElement('p');
+        entry.textContent = `[${timestamp}] ${message}`;
+        logContent.appendChild(entry);
+        // Auto-scroll to bottom if not scrolled up by user
+        if (logContent.scrollHeight - logContent.clientHeight - logContent.scrollTop < 5) {
+          logContent.scrollTop = logContent.scrollHeight;
+        }
+      }
+
+      // Save current state for undo (push a deep copy of project to undo stack)
+      function pushStateForUndo(actionDescription) {
+        // Clone project data (areas and settings) for history
+        const stateClone = JSON.parse(JSON.stringify(state.project));
+        state.undoStack.push({ data: stateClone, desc: actionDescription });
+        // Clear redo stack because new action invalidates redo history
+        state.redoStack.length = 0;
+        // Enable undo button
+        undoBtn.disabled = state.undoStack.length === 0;
+        redoBtn.disabled = true;
+      }
+
+      // Undo last action
+      function undo() {
+        if (state.undoStack.length === 0) return;
+        // Get last saved state and description
+        const last = state.undoStack.pop();
+        const prevProjectState = last.data;
+        const actionDesc = last.desc;
+        // Push current state to redo stack for potential redo
+        const currentStateClone = JSON.parse(JSON.stringify(state.project));
+        state.redoStack.push({ data: currentStateClone, desc: actionDesc });
+        // Restore project state to the previous snapshot
+        state.project = prevProjectState;
+        // Rebuild the UI to reflect this state
+        renderAll();
+        log(`Undo: ${actionDesc}`);
+        // Update undo/redo buttons
+        undoBtn.disabled = state.undoStack.length === 0;
+        redoBtn.disabled = state.redoStack.length === 0;
+      }
+
+      // Redo last undone action
+      function redo() {
+        if (state.redoStack.length === 0) return;
+        const last = state.redoStack.pop();
+        const nextProjectState = last.data;
+        const actionDesc = last.desc;
+        // Push current state to undo stack
+        const currentStateClone = JSON.parse(JSON.stringify(state.project));
+        state.undoStack.push({ data: currentStateClone, desc: actionDesc });
+        // Apply the redone state
+        state.project = nextProjectState;
+        renderAll();
+        log(`Redo: ${actionDesc}`);
+        undoBtn.disabled = state.undoStack.length === 0;
+        redoBtn.disabled = state.redoStack.length === 0;
+      }
+
+      // Create and append a new area DOM element and state object
+      function addArea() {
+        const areaId = state.nextAreaId++;
+        // Determine default area name (Area 1, Area 2, etc.)
+        const defaultName = "Area " + areaId;
+        const newArea = {
+          id: areaId,
+          name: defaultName,
+          surfaceType: "Smooth", // default type
+          modifier: state.project.settings.surfaceTypes["Smooth"],
+          size: 0,
+          products: []
+        };
+        // Update state
+        state.project.areas.push(newArea);
+        // Create UI elements for the new area
+        const areaElem = createAreaElement(newArea);
+        areasContainer.appendChild(areaElem);
+        log(`Added area "${defaultName}"`);
+        // Push state for undo
+        pushStateForUndo(`Added area ${defaultName}`);
+        // Recalculate everything (though new area has no products, cost remains same)
+        updateCalculations();
+      }
+
+      // Remove an area by its DOM element (and state)
+      function removeArea(areaElem) {
+        const areaId = parseInt(areaElem.getAttribute('data-area-id'));
+        const areaIndex = state.project.areas.findIndex(a => a.id === areaId);
+        if (areaIndex === -1) return;
+        const area = state.project.areas[areaIndex];
+        // Save area name for logging
+        const name = area.name || ("Area " + areaId);
+        // Push current state for undo
+        pushStateForUndo(`Removed area ${name}`);
+        // Remove from state
+        state.project.areas.splice(areaIndex, 1);
+        // Remove area element from DOM
+        areaElem.remove();
+        log(`Removed area "${name}"`);
+        // Recalculate project totals
+        updateCalculations();
+      }
+
+      // Create a DOM element for a product layer row in a given area
+      function createProductRowElement(area, product) {
+        const areaId = area.id;
+        const productId = product.id;
+        // Create table row
+        const tr = document.createElement('tr');
+        tr.className = 'product-row';
+        tr.setAttribute('data-product-id', productId);
+        // Helper to create cell with an input or select
+        function createCell(contentElem) {
+          const td = document.createElement('td');
+          td.appendChild(contentElem);
+          return td;
+        }
+        // Product name (text input)
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = product.name;
+        nameInput.placeholder = "Product name";
+        // on change, update state
+        nameInput.addEventListener('change', () => {
+          product.name = nameInput.value;
+          log(`Renamed product ${productId} in area "${area.name}" to "${product.name}"`);
+        });
+        tr.appendChild(createCell(nameInput));
+        // Number of layers (number input)
+        const layersInput = document.createElement('input');
+        layersInput.type = 'number';
+        layersInput.min = "1";
+        layersInput.value = product.layers;
+        layersInput.addEventListener('change', () => {
+          let val = parseInt(layersInput.value);
+          if (isNaN(val) || val < 1) {
+            val = 1;
+            layersInput.value = val;
+          }
+          product.layers = val;
+          log(`Updated layers for product "${product.name}" in "${area.name}" to ${val}`);
+          updateCalculations();
+        });
+        tr.appendChild(createCell(layersInput));
+        // Thickness (mm) (number input)
+        const thickInput = document.createElement('input');
+        thickInput.type = 'number';
+        thickInput.min = "0";
+        thickInput.step = "0.1";
+        thickInput.value = product.thickness;
+        thickInput.addEventListener('change', () => {
+          let val = parseFloat(thickInput.value);
+          if (isNaN(val) || val < 0) {
+            val = 0;
+            thickInput.value = val;
+          }
+          product.thickness = val;
+          log(`Updated thickness for product "${product.name}" in "${area.name}" to ${val} mm`);
+          updateCalculations();
+        });
+        tr.appendChild(createCell(thickInput));
+        // Density (kg/L) (number input)
+        const densityInput = document.createElement('input');
+        densityInput.type = 'number';
+        densityInput.min = "0";
+        densityInput.step = "0.1";
+        densityInput.value = (product.density !== null && product.density !== undefined) ? product.density : '';
+        densityInput.placeholder = "density";
+        // Only needed if unit is kg; we will enable/disable based on unit select
+        densityInput.disabled = (product.packUnit === 'L');
+        densityInput.addEventListener('change', () => {
+          let val = parseFloat(densityInput.value);
+          if (isNaN(val) || val < 0) {
+            val = 0;
+            densityInput.value = val;
+          }
+          product.density = val;
+          log(`Updated density for product "${product.name}" in "${area.name}" to ${val} kg/L`);
+          updateCalculations();
+        });
+        tr.appendChild(createCell(densityInput));
+        // Package size (number input)
+        const packSizeInput = document.createElement('input');
+        packSizeInput.type = 'number';
+        packSizeInput.min = "0.0001";
+        packSizeInput.step = "0.1";
+        packSizeInput.value = product.packSize;
+        packSizeInput.addEventListener('change', () => {
+          let val = parseFloat(packSizeInput.value);
+          if (isNaN(val) || val <= 0) {
+            val = 1;
+            packSizeInput.value = val;
+          }
+          product.packSize = val;
+          log(`Updated package size for product "${product.name}" in "${area.name}" to ${val} ${product.packUnit}`);
+          updateCalculations();
+        });
+        tr.appendChild(createCell(packSizeInput));
+        // Unit (select kg/L)
+        const unitSelect = document.createElement('select');
+        const optionKg = document.createElement('option');
+        optionKg.value = 'kg';
+        optionKg.textContent = 'kg';
+        const optionL = document.createElement('option');
+        optionL.value = 'L';
+        optionL.textContent = 'L';
+        unitSelect.appendChild(optionKg);
+        unitSelect.appendChild(optionL);
+        unitSelect.value = product.packUnit;
+        unitSelect.addEventListener('change', () => {
+          const newUnit = unitSelect.value;
+          product.packUnit = newUnit;
+          // Enable/disable density field depending on new unit
+          if (newUnit === 'kg') {
+            densityInput.disabled = false;
+            // If density was 0 or null, require user to fill it for accurate calc
+          } else { // 'L'
+            densityInput.disabled = true;
+            // We keep density value but it's not used in calc for volume-based
+          }
+          log(`Changed unit for product "${product.name}" in "${area.name}" to ${newUnit}`);
+          updateCalculations();
+        });
+        tr.appendChild(createCell(unitSelect));
+        // Price per package (number input)
+        const priceInput = document.createElement('input');
+        priceInput.type = 'number';
+        priceInput.min = "0";
+        priceInput.step = "0.01";
+        priceInput.value = product.price;
+        priceInput.placeholder = "price";
+        priceInput.addEventListener('change', () => {
+          let val = parseFloat(priceInput.value);
+          if (isNaN(val) || val < 0) {
+            val = 0;
+            priceInput.value = val.toFixed(2);
+          }
+          product.price = val;
+          log(`Updated price for product "${product.name}" in "${area.name}" to ${val}`);
+          updateCalculations();
+        });
+        tr.appendChild(createCell(priceInput));
+        // Needed quantity (output span, not editable)
+        const neededSpan = document.createElement('span');
+        neededSpan.className = 'neededQty';
+        neededSpan.textContent = '0';  // will be updated in calc
+        tr.appendChild(createCell(neededSpan));
+        // Packages needed (output span, not editable)
+        const packagesSpan = document.createElement('span');
+        packagesSpan.className = 'packageCount';
+        packagesSpan.textContent = '0';
+        tr.appendChild(createCell(packagesSpan));
+        // Cost (output span, not editable)
+        const costSpan = document.createElement('span');
+        costSpan.className = 'cost';
+        costSpan.textContent = '0';
+        tr.appendChild(createCell(costSpan));
+        // Remove product button
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'X';
+        removeBtn.className = 'remove-product';
+        removeBtn.addEventListener('click', () => {
+          removeProduct(area, product.id);
+        });
+        tr.appendChild(createCell(removeBtn));
+        return tr;
+      }
+
+      // Create the entire DOM structure for an area (header + table)
+      function createAreaElement(area) {
+        const areaDiv = document.createElement('div');
+        areaDiv.className = 'area';
+        areaDiv.setAttribute('data-area-id', area.id);
+        // Area header with name, surface type + mod, size, and remove button
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'area-header';
+        // Area name input
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'area-name';
+        nameInput.value = area.name;
+        nameInput.placeholder = "Area name";
+        nameInput.addEventListener('change', () => {
+          const oldName = area.name;
+          area.name = nameInput.value;
+          log(`Renamed area "${oldName}" to "${area.name}"`);
+        });
+        headerDiv.appendChild(nameInput);
+        // Surface type select
+        const surfaceSelect = document.createElement('select');
+        surfaceSelect.className = 'surface-type';
+        // Populate with known types + a "Custom" option
+        for (let typeName in state.project.settings.surfaceTypes) {
+          const opt = document.createElement('option');
+          opt.value = typeName;
+          opt.textContent = typeName;
+          surfaceSelect.appendChild(opt);
+        }
+        const customOpt = document.createElement('option');
+        customOpt.value = 'Custom';
+        customOpt.textContent = 'Custom';
+        surfaceSelect.appendChild(customOpt);
+        // Determine which option to select based on current modifier
+        // If current mod matches a preset exactly, select that, else select Custom
+        let matchedType = Object.keys(state.project.settings.surfaceTypes)
+                              .find(t => state.project.settings.surfaceTypes[t] === area.modifier);
+        if (!matchedType) matchedType = 'Custom';
+        surfaceSelect.value = matchedType;
+        headerDiv.appendChild(surfaceSelect);
+        // Surface modifier input (number)
+        const modInput = document.createElement('input');
+        modInput.type = 'number';
+        modInput.step = "0.01";
+        modInput.className = 'surface-mod';
+        modInput.value = area.modifier;
+        // Enable editing only if Custom type
+        modInput.disabled = (matchedType !== 'Custom');
+        headerDiv.appendChild(modInput);
+        // Event: changing surface type select
+        surfaceSelect.addEventListener('change', () => {
+          const type = surfaceSelect.value;
+          if (type === 'Custom') {
+            // Enable custom modifier editing
+            modInput.disabled = false;
+            // Keep current modifier value (user can adjust)
+          } else {
+            // Set modifier to preset value and disable direct editing
+            area.modifier = state.project.settings.surfaceTypes[type];
+            modInput.value = area.modifier;
+            modInput.disabled = true;
+            log(`Set surface type of "${area.name}" to ${type} (modifier x${area.modifier})`);
+            updateCalculations();
+          }
+        });
+        // Event: changing the surface modifier input (for custom)
+        modInput.addEventListener('change', () => {
+          let val = parseFloat(modInput.value);
+          if (isNaN(val) || val < 0) {
+            val = 1.0;
+            modInput.value = val;
+          }
+          area.modifier = val;
+          // If user manually adjusted to a value that matches a known preset, we could auto-select that type
+          const presetType = Object.keys(state.project.settings.surfaceTypes)
+                              .find(t => Math.abs(state.project.settings.surfaceTypes[t] - val) < 1e-6);
+          if (presetType) {
+            surfaceSelect.value = presetType;
+            modInput.disabled = true;
+          } else {
+            surfaceSelect.value = 'Custom';
+          }
+          log(`Updated surface modifier for "${area.name}" to ${area.modifier}`);
+          updateCalculations();
+        });
+        // Area size (m²) input
+        const sizeInput = document.createElement('input');
+        sizeInput.type = 'number';
+        sizeInput.className = 'area-size';
+        sizeInput.placeholder = "Size (m²)";
+        sizeInput.min = "0";
+        sizeInput.step = "0.1";
+        sizeInput.value = area.size;
+        sizeInput.addEventListener('change', () => {
+          let val = parseFloat(sizeInput.value);
+          if (isNaN(val) || val < 0) {
+            val = 0;
+            sizeInput.value = val;
+          }
+          area.size = val;
+          log(`Updated area size for "${area.name}" to ${val} m²`);
+          updateCalculations();
+        });
+        headerDiv.appendChild(sizeInput);
+        // Remove area button
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-area';
+        removeBtn.textContent = 'Delete Area';
+        removeBtn.addEventListener('click', () => {
+          removeArea(areaDiv);
+        });
+        headerDiv.appendChild(removeBtn);
+        areaDiv.appendChild(headerDiv);
+        // Product layers table
+        const table = document.createElement('table');
+        table.className = 'area-table';
+        // Table header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const headers = ["Product", "Layers", "Thickness (mm)", "Density (kg/L)", "Pack size", "Unit", "Price/Pack", "Needed", "Packages", "Cost", ""];
+        headers.forEach(text => {
+          const th = document.createElement('th');
+          th.textContent = text;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        // Table body
+        const tbody = document.createElement('tbody');
+        // Add existing products (if any)
+        area.products.forEach(prod => {
+          const rowElem = createProductRowElement(area, prod);
+          tbody.appendChild(rowElem);
+        });
+        table.appendChild(tbody);
+        areaDiv.appendChild(table);
+        // "Add product" button below table
+        const addProductBtn = document.createElement('button');
+        addProductBtn.textContent = "Add Product Layer";
+        addProductBtn.addEventListener('click', () => {
+          addProduct(area, tbody);
+        });
+        areaDiv.appendChild(addProductBtn);
+        return areaDiv;
+      }
+
+      // Add a new product layer to a given area
+      function addProduct(area, tbodyElem) {
+        const productId = state.nextProductId++;
+        const newProduct = {
+          id: productId,
+          name: "",        // default empty name
+          layers: 1,
+          thickness: 0,
+          density: null,   // unknown until provided if needed
+          packSize: 1,
+          packUnit: "kg",
+          price: 0
+        };
+        area.products.push(newProduct);
+        // Create a new row in the table for this product
+        const newRow = createProductRowElement(area, newProduct);
+        tbodyElem.appendChild(newRow);
+        log(`Added new product layer in "${area.name}" (Product ID ${productId})`);
+        pushStateForUndo(`Added product in area ${area.name}`);
+        updateCalculations();
+      }
+
+      // Remove a product by productId from an area
+      function removeProduct(area, productId) {
+        const index = area.products.findIndex(p => p.id === productId);
+        if (index === -1) return;
+        const prod = area.products[index];
+        area.products.splice(index, 1);
+        // Remove from DOM: find the row in the area table
+        const areaElem = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+        if (areaElem) {
+          const row = areaElem.querySelector(`tr.product-row[data-product-id="${productId}"]`);
+          if (row) {
+            row.remove();
+          }
+        }
+        log(`Removed product "${prod.name || '(unnamed)'}" from "${area.name}"`);
+        pushStateForUndo(`Removed product from area ${area.name}`);
+        updateCalculations();
+      }
+
+      // Recalculate all usage and cost values, update UI accordingly
+      function updateCalculations() {
+        const settings = state.project.settings;
+        let totalCostExVAT = 0;
+        // Loop through each area and calculate its total
+        state.project.areas.forEach(area => {
+          let areaCost = 0;
+          // For each product in area, compute needed quantity, packages, cost
+          area.products.forEach(product => {
+            const areaSize = area.size;
+            const layers = product.layers;
+            const thickness_mm = product.thickness;
+            const density = (product.density !== null) ? product.density : 0;
+            const packSize = product.packSize;
+            const unit = product.packUnit;
+            const price = product.price;
+            // Base calculations
+            let neededQuantity = 0; // in same unit as packaging (kg or L)
+            if (areaSize > 0 && layers > 0) {
+              if (unit === 'kg') {
+                // need density to compute weight from volume
+                if (density > 0) {
+                  // volume in liters = area(m2) * thickness(mm)
+                  let volumeLiters = areaSize * thickness_mm * layers;
+                  // apply surface modifier
+                  volumeLiters *= area.modifier;
+                  // apply overage
+                  if (settings.overageIncluded) {
+                    volumeLiters *= (1 + settings.overagePercent/100);
+                  }
+                  // weight needed (kg) = volume (L) * density (kg/L)
+                  neededQuantity = volumeLiters * density;
+                } else {
+                  neededQuantity = 0;
+                }
+              } else if (unit === 'L') {
+                // volume needed in liters = area * thickness(mm) * layers
+                let volumeLiters = areaSize * thickness_mm * layers;
+                volumeLiters *= area.modifier;
+                if (settings.overageIncluded) {
+                  volumeLiters *= (1 + settings.overagePercent/100);
+                }
+                neededQuantity = volumeLiters;
+              }
+            }
+            // Determine number of packages (ceiling)
+            let packagesNeeded = 0;
+            if (packSize > 0 && neededQuantity > 0) {
+              packagesNeeded = Math.ceil(neededQuantity / packSize);
+            }
+            // Cost for this product
+            const cost = packagesNeeded * price;
+            areaCost += cost;
+            // Update the UI for this product
+            const areaElem = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+            if (areaElem) {
+              const prodRow = areaElem.querySelector(`tr.product-row[data-product-id="${product.id}"]`);
+              if (prodRow) {
+                // Fill needed quantity (with unit)
+                const neededCell = prodRow.querySelector('.neededQty');
+                const packagesCell = prodRow.querySelector('.packageCount');
+                const costCell = prodRow.querySelector('.cost');
+                if (neededCell) {
+                  // Show needed quantity with one decimal (or none if very large)
+                  neededCell.textContent = neededQuantity ? neededQuantity.toFixed(1) + " " + unit : "0";
+                }
+                if (packagesCell) {
+                  packagesCell.textContent = packagesNeeded.toString();
+                }
+                if (costCell) {
+                  // Show cost with two decimals
+                  costCell.textContent = cost.toFixed(2);
+                }
+              }
+            }
+          });
+          // Display area total in UI (if we had an area total element)
+          // We didn't implement a separate area total output field in HTML for each area.
+          // Instead, area total can be inferred by summing product costs visually.
+          // If desired, could add a line "Area Total: X" in UI here.
+          totalCostExVAT += areaCost;
+        });
+        // Update project total in UI
+        const vatIncluded = settings.vatIncluded;
+        const vatRate = settings.vatRate;
+        let displayCost;
+        if (vatIncluded) {
+          const totalWithVAT = totalCostExVAT * (1 + vatRate/100);
+          displayCost = totalWithVAT.toFixed(2);
+          projectSummaryEl.textContent = `Project Total (incl. VAT): ${displayCost}`;
+        } else {
+          displayCost = totalCostExVAT.toFixed(2);
+          projectSummaryEl.textContent = `Project Total (excl. VAT): ${displayCost}`;
+        }
+      }
+
+      // Rebuild entire UI from state (used on undo/redo or import)
+      function renderAll() {
+        // Clear areas container
+        areasContainer.innerHTML = "";
+        // Recreate all area elements
+        state.project.areas.forEach(area => {
+          const areaElem = createAreaElement(area);
+          areasContainer.appendChild(areaElem);
+        });
+        // Update global controls (VAT, overage toggles and values, dark mode)
+        vatToggle.checked = state.project.settings.vatIncluded;
+        vatPercentInput.value = state.project.settings.vatRate;
+        overageToggle.checked = state.project.settings.overageIncluded;
+        overagePercentInput.value = state.project.settings.overagePercent;
+        // Reapply dark mode class if needed
+        document.body.classList.toggle('dark-mode', state.project.settings.darkMode);
+        darkModeToggle.checked = state.project.settings.darkMode || false;
+        // Recalculate everything to update outputs
+        updateCalculations();
+      }
+
+      // Import project data from JSON/CSV
+      function importData(file, content) {
+        const fileName = file.name;
+        if (fileName.endsWith(".json")) {
+          try {
+            const imported = JSON.parse(content);
+            // Basic validation: must have areas and settings
+            if (!imported.areas || !imported.settings) {
+              throw new Error("Invalid JSON format");
+            }
+            // Push current state for undo
+            pushStateForUndo(`Imported JSON (${fileName})`);
+            // Apply imported data to state
+            state.project.areas = imported.areas;
+            state.project.settings = imported.settings;
+            // Reset ID counters (we can recompute highest id to continue unique id assignment)
+            state.nextAreaId = 1;
+            state.nextProductId = 1;
+            state.project.areas.forEach(area => {
+              if (area.id >= state.nextAreaId) state.nextAreaId = area.id + 1;
+              area.products.forEach(prod => {
+                if (prod.id >= state.nextProductId) state.nextProductId = prod.id + 1;
+              });
+            });
+            renderAll();
+            log(`Imported project from JSON file "${fileName}"`);
+          } catch (err) {
+            alert("Failed to import JSON: " + err.message);
+            log(`Error importing JSON: ${err.message}`);
+          }
+        } else if (fileName.endsWith(".csv")) {
+          try {
+            // Parse CSV content
+            const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
+            if (lines.length === 0) throw new Error("Empty CSV file");
+            // First line could be header
+            let startIndex = 0;
+            let headers = [];
+            if (lines[0].toLowerCase().includes("areaname") || lines[0].toLowerCase().includes("area name")) {
+              // Assume first line is header
+              headers = parseCSVLine(lines[0]);
+              startIndex = 1;
+            } else {
+              // Define expected columns if no header provided
+              headers = ["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
+            }
+            // Map header names to indices for flexibility
+            const colIndex = {};
+            headers.forEach((col, idx) => { colIndex[col] = idx; });
+            // Prepare new state objects
+            const importedAreas = [];
+            const areaMap = {}; // map area name to area object (for grouping products)
+            let importedSettings = { vatIncluded: false, vatRate: 0, overageIncluded: false, overagePercent: 0, surfaceTypes: {} };
+            for (let i = startIndex; i < lines.length; i++) {
+              const line = lines[i];
+              const values = parseCSVLine(line);
+              if (values.length === 0) continue;
+              // Read fields (use header indices if available)
+              const areaName = values[colIndex["AreaName"] || colIndex["areaName"] || 0] || "";
+              if (!areaName) continue; // skip if no area name
+              const surfaceType = values[colIndex["SurfaceType"]] || "Custom";
+              const surfaceModStr = values[colIndex["SurfaceMod"]];
+              const areaSizeStr = values[colIndex["AreaSize"]];
+              const productName = values[colIndex["ProductName"]] || "";
+              const layersStr = values[colIndex["Layers"]];
+              const thicknessStr = values[colIndex["Thickness"]];
+              const densityStr = values[colIndex["Density"]];
+              const packSizeStr = values[colIndex["PackSize"]];
+              const packUnit = values[colIndex["PackUnit"]] || "kg";
+              const priceStr = values[colIndex["Price"]];
+              // Global settings (should be same for all lines, take from first data line)
+              if (i === startIndex) {
+                const vatInclStr = values[colIndex["VATIncluded"]];
+                const vatRateStr = values[colIndex["VATRate"]];
+                const overInclStr = values[colIndex["OverageIncluded"]];
+                const overPercentStr = values[colIndex["OveragePercent"]];
+                importedSettings.vatIncluded = (vatInclStr || "").toLowerCase() === "true" || vatInclStr === "1";
+                importedSettings.vatRate = parseFloat(vatRateStr) || importedSettings.vatRate;
+                importedSettings.overageIncluded = (overInclStr || "").toLowerCase() === "true" || overInclStr === "1";
+                importedSettings.overagePercent = parseFloat(overPercentStr) || importedSettings.overagePercent;
+                // Keep existing surfaceTypes definitions or initialize if none
+                importedSettings.surfaceTypes = state.project.settings.surfaceTypes;
+              }
+              // Convert numeric fields
+              const surfaceMod = parseFloat(surfaceModStr) || 1.0;
+              const areaSize = parseFloat(areaSizeStr) || 0;
+              const layers = parseInt(layersStr) || 1;
+              const thickness = parseFloat(thicknessStr) || 0;
+              const density = (densityStr !== undefined && densityStr !== "") ? parseFloat(densityStr) : null;
+              const packSize = parseFloat(packSizeStr) || 1;
+              const price = parseFloat(priceStr) || 0;
+              // Find or create area
+              let area;
+              if (areaMap[areaName]) {
+                area = areaMap[areaName];
+                // If area already exists but data is different, log a warning
+                if (Math.abs(area.modifier - surfaceMod) > 1e-6 || Math.abs(area.size - areaSize) > 1e-6) {
+                  log(`Warning: Inconsistent data for area "${areaName}" in CSV.`);
+                }
+              } else {
+                area = {
+                  id: state.nextAreaId++,  // assign new IDs
+                  name: areaName,
+                  surfaceType: surfaceType,
+                  modifier: surfaceMod,
+                  size: areaSize,
+                  products: []
+                };
+                areaMap[areaName] = area;
+                importedAreas.push(area);
+              }
+              // Create product object
+              const product = {
+                id: state.nextProductId++,
+                name: productName,
+                layers: layers,
+                thickness: thickness,
+                density: density,
+                packSize: packSize,
+                packUnit: packUnit,
+                price: price
+              };
+              // Only add product if there's meaningful data (we consider an entry with no product name as possibly indicating an area with no products)
+              if (productName || layers > 0 || thickness > 0 || price > 0) {
+                area.products.push(product);
+              }
+            }
+            // Push state for undo
+            pushStateForUndo(`Imported CSV (${fileName})`);
+            // Apply imported data to state
+            state.project.areas = importedAreas;
+            state.project.settings = { 
+              ...state.project.settings, // keep any existing fields (like darkMode, surfaceTypes)
+              vatIncluded: importedSettings.vatIncluded,
+              vatRate: importedSettings.vatRate,
+              overageIncluded: importedSettings.overageIncluded,
+              overagePercent: importedSettings.overagePercent
+            };
+            renderAll();
+            log(`Imported project from CSV file "${fileName}"`);
+          } catch (err) {
+            alert("Failed to import CSV: " + err.message);
+            log(`Error importing CSV: ${err.message}`);
+          }
+        } else {
+          alert("Unsupported file format for import.");
+          log("Import failed: unsupported file type.");
+        }
+      }
+
+      // Helper: parse a single CSV line into array of values (handles quotes and commas)
+      function parseCSVLine(line) {
+        const result = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (!inQuotes) {
+            if (char === ',') {
+              // field separator
+              result.push(current);
+              current = "";
+            } else if (char === '"') {
+              inQuotes = true;
+            } else {
+              current += char;
+            }
+          } else {
+            // inside quotes
+            if (char === '"') {
+              // peek next char
+              if (i + 1 < line.length && line[i+1] === '"') {
+                // double quote -> literal quote
+                current += '"';
+                i++; // skip the escaped quote
+              } else {
+                inQuotes = false;
+              }
+            } else {
+              current += char;
+            }
+          }
+        }
+        // push last field
+        result.push(current);
+        // Trim whitespace from each field
+        return result.map(val => val.trim());
+      }
+
+      // Export current project state to JSON, CSV, or Excel
+      function exportJSON() {
+        // Create an object without logs or history
+        const exportData = JSON.stringify(state.project, null, 2);
+        const blob = new Blob([exportData], { type: "application/json" });
+        downloadBlob(blob, "project_export.json");
+        log("Exported project to JSON file");
+      }
+      function exportCSV() {
+        // Compose CSV header and rows
+        const headers = ["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
+        const lines = [];
+        lines.push(headers.join(","));
+        const settings = state.project.settings;
+        state.project.areas.forEach(area => {
+          if (area.products.length === 0) {
+            // Area with no products: output one line with area info and empty product fields
+            const row = [
+              area.name,
+              area.surfaceType || "",
+              area.modifier,
+              area.size,
+              "", // no product name
+              "", // no layers
+              "", // no thickness
+              "", // no density
+              "", // no packSize
+              "", // no packUnit
+              "", // no price
+              settings.vatIncluded,
+              settings.vatRate,
+              settings.overageIncluded,
+              settings.overagePercent
+            ];
+            lines.push(row.map(val => formatCSVValue(val)).join(","));
+          } else {
+            area.products.forEach(product => {
+              const row = [
+                area.name,
+                area.surfaceType || "",
+                area.modifier,
+                area.size,
+                product.name || "",
+                product.layers,
+                product.thickness,
+                product.density !== null ? product.density : "",
+                product.packSize,
+                product.packUnit,
+                product.price,
+                settings.vatIncluded,
+                settings.vatRate,
+                settings.overageIncluded,
+                settings.overagePercent
+              ];
+              lines.push(row.map(val => formatCSVValue(val)).join(","));
+            });
+          }
+        });
+        const csvContent = lines.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        downloadBlob(blob, "project_export.csv");
+        log("Exported project to CSV file");
+      }
+      function exportExcel() {
+        // Generate Excel 2003 XML content with formulas
+        const xmlContent = generateExcelXML();
+        const blob = new Blob([xmlContent], { type: "application/vnd.ms-excel" });
+        downloadBlob(blob, "project_estimate.xls");
+        log("Exported project to Excel file");
+      }
+      // Helper: format a value for CSV (add quotes if needed)
+      function formatCSVValue(val) {
+        const str = String(val);
+        if (/[",\n]/.test(str)) {
+          // escape double quotes
+          const escaped = str.replace(/"/g, '""');
+          return `"${escaped}"`;
+        }
+        return str;
+      }
+      // Helper: trigger a download of a Blob as a file
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // Generate Excel XML (SpreadsheetML) for current project state
+      function generateExcelXML() {
+        const newline = "\r\n";
+        let xml = '<?xml version="1.0"?>' + newline;
+        xml += '<?mso-application progid="Excel.Sheet"?>' + newline;
+        xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ';
+        xml += 'xmlns:o="urn:schemas-microsoft-com:office:office" ';
+        xml += 'xmlns:x="urn:schemas-microsoft-com:office:excel" ';
+        xml += 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ';
+        xml += 'xmlns:html="http://www.w3.org/TR/REC-html40">' + newline;
+        // Define styles (bold, two decimals, bold+two decimals)
+        xml += '<Styles>' + newline;
+        xml += '<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>' + newline;
+        xml += '<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>' + newline;
+        xml += '<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>' + newline;
+        xml += '</Styles>' + newline;
+        xml += `<Worksheet ss:Name="Estimate">` + newline;
+        // We'll create one sheet with a header row and each product on separate row
+        const colCount = 13; // we will include: Area, SurfaceMod, AreaSize, Product, Layers, Thickness, Density, PackSize, Unit, Price, Needed, Packages, Cost
+        // Count total rows: 1 header + for each area: each product row + 1 area total row + 1 project total row
+        let totalRows = 1; // header
+        state.project.areas.forEach(area => {
+          totalRows += area.products.length;
+          totalRows += 1; // area total row
+        });
+        totalRows += 1; // project total row
+        xml += `<Table ss:ExpandedColumnCount="${colCount}" ss:ExpandedRowCount="${totalRows}">` + newline;
+        // Column definitions (optional widths)
+        for (let j = 0; j < colCount; j++) {
+          xml += '<Column ss:AutoFitWidth="1"/>' + newline;
+        }
+        // Header row
+        const headerTitles = ["Area", "Surface Mod", "Area Size (m²)", "Product", "Layers", "Thickness (mm)", "Density (kg/L)", "Pack size", "Unit", "Price/Pack", "Needed Qty", "Packages", "Cost"];
+        xml += '<Row ss:StyleID="Bold">' + newline;
+        headerTitles.forEach(title => {
+          xml += `<Cell><Data ss:Type="String">${title}</Data></Cell>` + newline;
+        });
+        xml += '</Row>' + newline;
+        // Keep track of Excel row index for formulas
+        let currentExcelRow = 1; // header was row 1
+        const areaTotalRows = []; // to store row indices of area total rows
+        // Data rows for each product and area total
+        state.project.areas.forEach(area => {
+          const areaNameEsc = escapeXML(area.name);
+          const mod = area.modifier;
+          const size = area.size;
+          // Product rows for this area
+          area.products.forEach(product => {
+            currentExcelRow++;
+            const prodNameEsc = escapeXML(product.name);
+            const layers = product.layers;
+            const thickness = product.thickness;
+            const density = (product.density !== null && product.density !== undefined) ? product.density : "";
+            const packSize = product.packSize;
+            const packUnit = product.packUnit;
+            const price = product.price;
+            // Recalculate needed, packages for export accuracy (should be up-to-date, but recalc to be safe)
+            let needed = 0;
+            if (packUnit === 'kg') {
+              if (density && density > 0) {
+                let volL = area.size * thickness * layers * area.modifier;
+                if (state.project.settings.overageIncluded) {
+                  volL *= (1 + state.project.settings.overagePercent/100);
+                }
+                needed = volL * density;
+              } else {
+                needed = 0;
+              }
+            } else {
+              let volL = area.size * thickness * layers * area.modifier;
+              if (state.project.settings.overageIncluded) {
+                volL *= (1 + state.project.settings.overagePercent/100);
+              }
+              needed = volL;
+            }
+            const packages = (packSize > 0) ? Math.ceil(needed / packSize) : 0;
+            const cost = packages * price;
+            // Build row cells
+            xml += '<Row>' + newline;
+            xml += `<Cell><Data ss:Type="String">${areaNameEsc}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="Number">${mod}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="Number">${size}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="String">${prodNameEsc}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="Number">${layers}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="Number">${thickness}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="Number">${density !== "" ? density : ""}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="Number">${packSize}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="String">${packUnit}</Data></Cell>` + newline;
+            xml += `<Cell><Data ss:Type="Number">${price}</Data></Cell>` + newline;
+            // Needed quantity (one decimal)
+            xml += `<Cell><Data ss:Type="Number">${needed.toFixed(1)}</Data></Cell>` + newline;
+            // Packages (integer)
+            xml += `<Cell><Data ss:Type="Number">${packages}</Data></Cell>` + newline;
+            // Cost (two decimals)
+            xml += `<Cell ss:StyleID="TwoDec"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>` + newline;
+            xml += '</Row>' + newline;
+          });
+          // Area total row
+          currentExcelRow++;
+          areaTotalRows.push(currentExcelRow);
+          // Calculate area total cost (sum of product costs we calculated above for this area)
+          let areaTotalCost = 0;
+          area.products.forEach(prod => {
+            const density = (prod.density !== null) ? prod.density : 0;
+            let needed = 0;
+            if (prod.packUnit === 'kg') {
+              if (density && density > 0) {
+                let volL = area.size * prod.thickness * prod.layers * area.modifier;
+                if (state.project.settings.overageIncluded) {
+                  volL *= (1 + state.project.settings.overagePercent/100);
+                }
+                needed = volL * density;
+              } else {
+                needed = 0;
+              }
+            } else {
+              let volL = area.size * prod.thickness * prod.layers * area.modifier;
+              if (state.project.settings.overageIncluded) {
+                volL *= (1 + state.project.settings.overagePercent/100);
+              }
+              needed = volL;
+            }
+            const packages = (prod.packSize > 0) ? Math.ceil(needed / prod.packSize) : 0;
+            const cost = packages * prod.price;
+            areaTotalCost += cost;
+          });
+          xml += '<Row ss:StyleID="Bold">' + newline;
+          // Merge first 12 cells for label, last cell for cost
+          xml += `<Cell ss:MergeAcross="11"><Data ss:Type="String">${areaNameEsc} Total</Data></Cell>` + newline;
+          xml += `<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotalCost.toFixed(2)}</Data></Cell>` + newline;
+          xml += '</Row>' + newline;
+        });
+        // Project total row (sum of area totals)
+        currentExcelRow++;
+        xml += '<Row ss:StyleID="Bold">' + newline;
+        xml += `<Cell ss:MergeAcross="11"><Data ss:Type="String">Project Total</Data></Cell>` + newline;
+        if (areaTotalRows.length > 0) {
+          // Build formula referencing each area total cost cell
+          const formulaParts = areaTotalRows.map(rowNum => `R${rowNum}C`);
+          // The project total formula sums those cells in current column
+          xml += `<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${formulaParts.join(",")})"><Data ss:Type="Number"></Data></Cell>` + newline;
+        } else {
+          xml += `<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>` + newline;
+        }
+        xml += '</Row>' + newline;
+        xml += '</Table>' + newline;
+        xml += '</Worksheet>' + newline;
+        xml += '</Workbook>';
+        return xml;
+      }
+      // Helper: escape XML special characters
+      function escapeXML(str) {
+        if (str === null || str === undefined) return "";
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+
+      // Event bindings for global toolbar controls
+      addAreaBtn.addEventListener('click', () => {
+        addArea();
+      });
+      undoBtn.addEventListener('click', () => {
+        undo();
+      });
+      redoBtn.addEventListener('click', () => {
+        redo();
+      });
+      vatToggle.addEventListener('change', () => {
+        state.project.settings.vatIncluded = vatToggle.checked;
+        log(`VAT ${vatToggle.checked ? "included" : "excluded"} in calculations`);
+        updateCalculations();
+      });
+      vatPercentInput.addEventListener('change', () => {
+        let val = parseFloat(vatPercentInput.value);
+        if (isNaN(val) || val < 0) {
+          val = 0;
+        }
+        state.project.settings.vatRate = val;
+        log(`Set VAT rate to ${val}%`);
+        updateCalculations();
+      });
+      overageToggle.addEventListener('change', () => {
+        state.project.settings.overageIncluded = overageToggle.checked;
+        log(`${overageToggle.checked ? "Applied" : "Removed"} overage in calculations`);
+        updateCalculations();
+      });
+      overagePercentInput.addEventListener('change', () => {
+        let val = parseFloat(overagePercentInput.value);
+        if (isNaN(val) || val < 0) {
+          val = 0;
+        }
+        state.project.settings.overagePercent = val;
+        log(`Set overage to ${val}%`);
+        if (state.project.settings.overageIncluded) {
+          updateCalculations();
+        }
+      });
+      darkModeToggle.addEventListener('change', () => {
+        const enabled = darkModeToggle.checked;
+        state.project.settings.darkMode = enabled;
+        document.body.classList.toggle('dark-mode', enabled);
+        log(`Switched to ${enabled ? "dark" : "light"} mode`);
+      });
+      importBtn.addEventListener('click', () => {
+        // Trigger file input dialog
+        fileInput.click();
+      });
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          importData(file, reader.result);
+        };
+        reader.onerror = () => {
+          alert("Failed to read file");
+          log("Error reading file for import");
+        };
+        reader.readAsText(file);
+        // reset file input value to allow re-selecting same file later if needed
+        fileInput.value = "";
+      });
+      exportJSONBtn.addEventListener('click', () => {
+        exportJSON();
+      });
+      exportCSVBtn.addEventListener('click', () => {
+        exportCSV();
+      });
+      exportExcelBtn.addEventListener('click', () => {
+        exportExcel();
+      });
+      printBtn.addEventListener('click', () => {
+        window.print();
+        log("Initiated print/PDF export");
+      });
+      // Log panel control buttons
+      minimizeLogBtn.addEventListener('click', () => {
+        if (!logPanel.classList.contains('minimized')) {
+          // Minimize panel
+          logPanel.classList.add('minimized');
+        } else {
+          // If already minimized, restore to normal (not maximized)
+          logPanel.classList.remove('minimized');
+          logPanel.classList.remove('maximized');
+        }
+      });
+      maximizeLogBtn.addEventListener('click', () => {
+        if (logPanel.classList.contains('maximized')) {
+          // If currently maximized, restore to normal size
+          logPanel.classList.remove('maximized');
+        } else {
+          // Ensure it's not minimized and then maximize
+          logPanel.classList.remove('minimized');
+          logPanel.classList.add('maximized');
+        }
+      });
+
+      // Initialize default content (no areas initially)
+      log("Application started");
+      // We start with an empty project (user can add areas manually)
+      // Alternatively, could add a default area for convenience:
+      // addArea();
+    })();
+  </script>
+</body>
+</html>
