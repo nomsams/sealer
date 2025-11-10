@@ -5,22 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Betongytor — Material- & Kostnadsestimator PRO</title>
   <style>
-    /* ================== THEME (brighter; improved dark; less gray) ================== */
+    /* ================== THEME ================== */
     :root{
       --bg:#f4f9ff;
       --fg:#0f172a;
       --muted:#475569;
       --panel:#ffffff;
       --line:#dbe5f0;
-      --accent:#2563eb;          /* blue */
-      --accent-2:#10b981;        /* green */
-      --amber:#f59e0b;           /* amber */
+      --accent:#2563eb;
+      --accent-2:#10b981;
       --danger:#ef4444;
       --shadow:0 10px 24px rgba(2,32,71,.08);
       --rowBg:#ffffff;
       --rowAlt:#f8fbff;
-      --rowProd:#f0fbf5;         /* product-info column shade */
-      --rowProj:#f4f8ff;         /* project-info column shade */
+      --rowProd:#f0fbf5;
+      --rowProj:#f4f8ff;
       --tooltipBg:#111827;
       --tooltipFg:#f9fafb;
       --grad:linear-gradient(180deg,#f8fbff 0%,#eef6ff 50%,#f7fffb 100%);
@@ -33,7 +32,6 @@
       --line:#213047;
       --accent:#60a5fa;
       --accent-2:#34d399;
-      --amber:#fbbf24;
       --danger:#f87171;
       --shadow:0 10px 24px rgba(0,0,0,.45);
       --rowBg:#0b1427;
@@ -42,16 +40,16 @@
       --rowProj:#0b1424;
       --tooltipBg:#0b1220;
       --tooltipFg:#e5efff;
-      --grad:linear-gradient(180deg,#0b0f1a 0%,#0b1220 100%);  /* dark, no light edges */
+      --grad:linear-gradient(180deg,#0b0f1a 0%,#0b1220 100%);
     }
     html,body{height:100%}
     body{
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
       background:var(--grad); color:var(--fg); margin:0;
-      padding-bottom:90px; /* space for sticky footer */
+      padding-bottom:90px;
     }
 
-    /* ================== TOP MENU ================== */
+    /* ================== TOP BARS ================== */
     .toolbar{
       position:sticky;top:0;z-index:30;
       background:linear-gradient(180deg,var(--panel) 0%,rgba(255,255,255,.65) 100%);
@@ -60,109 +58,107 @@
       border-bottom:1px solid var(--line); box-shadow:0 6px 14px rgba(15,23,42,.06);
     }
     body.dark-mode .toolbar{
-      background:linear-gradient(180deg,#0f172a 0%,#0b1220 100%); /* dark shades only */
+      background:linear-gradient(180deg,#0f172a 0%,#0b1220 100%);
       box-shadow:0 6px 14px rgba(0,0,0,.45);
     }
-    .toolbar .group{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:6px 8px;border-radius:12px}
-    .toolbar label{font-weight:600}
-    .toolbar input[type="number"]{width:74px}
-    .toolbar .grow{flex:1}
+    .subbar{
+      position:sticky;top:60px;z-index:29;
+      background:linear-gradient(180deg,var(--panel) 0%,rgba(255,255,255,.9) 100%);
+      padding:8px 12px; border-bottom:1px solid var(--line);
+      display:flex; align-items:center;
+    }
+    body.dark-mode .subbar{
+      background:linear-gradient(180deg,#0f172a 0%,#0b1220 100%);
+    }
+    .subbar .left{flex:1; display:flex; gap:8px; align-items:center}
+    .subbar .right{display:flex; gap:8px; align-items:center}
+
+    .group{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:6px 8px;border-radius:12px}
     .btn{
-      appearance:none;border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700;letter-spacing:.2px;
+      appearance:none;border:0;border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:700;letter-spacing:.2px;
       box-shadow:var(--shadow);transition:transform .04s ease,filter .14s ease, background .2s ease, color .2s ease;
+      background:var(--panel); color:var(--fg); border:1px solid var(--line);
     }
     .btn:active{transform:translateY(1px)}
-    .btn-primary{background:var(--accent-2);color:#00140c}
-    .btn-blue{background:var(--accent);color:#ecfeff}
-    .btn-ghost{background:var(--panel);color:var(--fg);border:1px solid var(--line);box-shadow:none}
+    .btn-primary{background:var(--accent-2);color:#00140c;border:1px solid transparent}
+    .btn-blue{background:var(--accent);color:#ecfeff;border:1px solid transparent}
+    .icon-btn{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
     .flag-btn{font-size:18px;line-height:1;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
     .flag-btn.active{outline:2px solid var(--accent);}
-    .icon-btn{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
-    .icon-btn[disabled]{opacity:.45;cursor:not-allowed}
 
-    /* Dedicated "Add Area" dock placed under the top menu */
-    #topAddDock{padding:12px; display:flex; justify-content:flex-start}
+    .grow{flex:1}
+    .toolbar label{font-weight:600}
+    .toolbar input[type="number"]{width:74px}
+
+    /* Top "Add area" dock */
+    #topAddDock{padding:10px 12px; display:flex; justify-content:flex-start}
     #btnAddAreaDock{min-width:220px}
 
     /* ================== LAYOUT ================== */
-    #areasContainer{padding:14px 12px 16px}
+    #areasContainer{padding:12px}
     .area{
       background:var(--panel);border:1px solid var(--line);border-radius:16px;margin:16px 6px;padding:12px 12px 10px;
       box-shadow:var(--shadow); position:relative;
     }
     .area-header{
       display:grid;
-      grid-template-columns: 230px 210px 130px 200px 1fr 180px auto;
-      gap:10px; align-items:center; margin-bottom:10px
+      grid-template-columns: 260px 180px 120px 200px 1fr 180px auto;
+      gap:10px; align-items:center; margin-bottom:6px
     }
-    .area-header .pill{background:#e8fff6;color:#065f46;border:1px solid #86efac55;border-radius:999px;padding:5px 10px;font-weight:700}
-    body.dark-mode .area-header .pill{background:#052216}
-    .del-area{background:var(--panel);color:#991b1b;border:1px solid #fecaca55;border-radius:10px;padding:8px 10px;cursor:pointer}
-    .del-area:hover{background:#ffeff157}
-    .add-area-below{
-      display:block; width:100%; margin:8px 0 0 0; background:var(--accent-2); color:#00140c; border:0; border-radius:10px; padding:10px 12px; font-weight:700; cursor:pointer
-    }
+    .mini-caption{grid-column:1/-1; font-size:.75em; color:var(--muted); margin-top:-2px;}
     .unit-wrap{display:flex;align-items:center;gap:6px}
     .unit-wrap input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg)}
     .unit-wrap .unit{font-weight:700;color:var(--muted)}
+    .del-area{background:var(--panel);color:#991b1b;border:1px solid #fecaca55;border-radius:10px;padding:8px 10px;cursor:pointer}
+    .del-area:hover{background:#ffeff157}
 
     /* Small illustration top-right (50% smaller) */
-    .mini-illustration{
-      border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:6px;width:170px;justify-self:end
-    }
+    .mini-illustration{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:6px;width:170px;justify-self:end}
     .mini-illustration canvas{width:100%;height:80px;border-radius:8px;background:var(--panel)}
 
     /* ================== TABLE ================== */
-    .area-grid{display:block}
     table.area-table{width:100%;border-collapse:separate;border-spacing:0 5px;margin-bottom:4px}
-    thead tr th{font-size:.76em;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:4px 6px}
-    table.area-table th,table.area-table td{padding:4px 6px;background:var(--rowBg);border:1px solid var(--line)}
+    thead tr th{font-size:.72em;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:3px 6px}
+    table.area-table th,table.area-table td{padding:3px 6px;background:var(--rowBg);border:1px solid var(--line)}
     table.area-table th:first-child,table.area-table td:first-child{border-top-left-radius:9px;border-bottom-left-radius:9px}
     table.area-table th:last-child,table.area-table td:last-child{border-top-right-radius:9px;border-bottom-right-radius:9px}
-
-    /* thinner inputs (no growth on hover) */
     table.area-table input,table.area-table select{
-      width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--panel);color:var(--fg);
-      height:28px; line-height:26px
+      width:100%;box-sizing:border-box;padding:3px 6px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--panel);color:var(--fg);
+      height:26px; line-height:24px
     }
-
-    /* header groups */
-    .th-group{background:var(--rowAlt);font-weight:800;text-align:center;border:1px solid var(--line);padding:4px 4px}
-
-    /* product vs project info shading for cells */
+    .th-group{background:var(--rowAlt);font-weight:800;text-align:center;border:1px solid var(--line);padding:3px 4px}
     .td-prod{background:var(--rowProd)}
     .td-proj{background:var(--rowProj)}
-
     .drag-handle{cursor:grab;font-size:16px;user-select:none}
     .product-row{position:relative;background:var(--rowBg)}
     .product-row.dragging{opacity:.6}
 
-    /* overlay actions shown ONLY on hover */
-    .row-actions-overlay{
-      position:absolute; top:-9px; right:6px; display:none; gap:6px; z-index:3
-    }
+    /* overlay actions ONLY on hover */
+    .row-actions-overlay{position:absolute; top:-9px; right:6px; display:none; gap:6px; z-index:3}
     .product-row:hover .row-actions-overlay{display:flex}
-
-    .mini{font-size:.76em;padding:3px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer; height:24px}
+    .mini{font-size:.76em;padding:3px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer; height:22px}
     .mini.ghost{border-color:var(--line);color:var(--muted)}
     .mini.warn{border-color:#fde68a55;background:#fde68a19;color:#92400e}
     .mini.danger{border-color:#fecaca55;background:#fecaca22;color:#9f1239}
 
-    /* small inline surface info under table (hidden until hover) */
-    .surface-inline{
-      display:none; margin:6px 2px 0; font-size:.92em; color:var(--muted)
-    }
+    /* Inline surface info under table - small text row */
+    .surface-inline{display:none; margin:6px 2px 0; font-size:.92em; color:var(--muted)}
     .surface-inline.show{display:block}
 
-    /* ================== SUMMARY BOX ================== */
+    /* Footer buttons in area (stacked, same vertical line & size; smaller buttons) */
+    .footer-buttons{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+    .btn-slim{padding:7px 10px; border-radius:10px; width:100%}
+
+    /* ================== SUMMARY & INFO ================== */
     #infoSummary{margin:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
     #infoSummary header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:10px 12px}
     #infoSummary .body{padding:10px 12px}
+    .info-card{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:var(--rowAlt)}
     .product-total{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:var(--rowAlt)}
     .product-total h5{margin:0 0 4px 0}
     .product-total .dim{color:var(--muted)}
 
-    /* Sticky Footer Total (pinned bottom) */
+    /* ================== STICKY FOOTER TOTAL ================== */
     #footerBar{
       position:fixed; left:0; right:0; bottom:0; z-index:40;
       background:linear-gradient(180deg,var(--panel) 0%, rgba(255,255,255,0.92) 100%);
@@ -177,7 +173,7 @@
     #footerBar .sp{flex:1}
     #footerBar .btn{padding:8px 12px;border-radius:10px}
 
-    /* ================== FLOAT INFO TOAST & HOVER TIP ================== */
+    /* ================== TOAST & HOVERTIP ================== */
     #infoToast{
       position:fixed;right:16px;bottom:86px;background:var(--tooltipBg);color:var(--tooltipFg);padding:10px 12px;border-radius:999px;
       cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:45
@@ -201,26 +197,21 @@
 
     /* ================== PRINT ================== */
     @media print{
-      .toolbar,#footerBar,#logPanel,#infoToast,#hoverTip,#topAddDock{display:none!important}
+      .toolbar,.subbar,#topAddDock,#footerBar,#logPanel,#infoToast,#hoverTip{display:none!important}
       .area{border:none;margin:0;page-break-inside:avoid}
       .del-area,.row-actions-overlay,.drag-handle{display:none!important}
     }
   </style>
 </head>
 <body>
-  <!-- ================== TOP MENU ================== -->
+  <!-- ================== MAIN TOOLBAR ================== -->
   <div class="toolbar" id="toolbar">
-    <!-- Hide the old add-area-in-toolbar button to follow user's new placement -->
-    <button id="btnAddAreaTop" class="btn btn-primary" style="display:none">+ Lägg till område</button>
-
-    <!-- Undo / Redo with arrow icons and dynamic titles -->
-    <button id="undo" class="btn btn-ghost icon-btn" disabled title="Ångra"><span aria-hidden="true">↶</span></button>
-    <button id="redo" class="btn btn-ghost icon-btn" disabled title="Gör om"><span aria-hidden="true">↷</span></button>
-
+    <!-- Undo/Redo then Dark/Step -->
+    <button id="undo" class="btn icon-btn" disabled title="Ångra"><span aria-hidden="true">↶</span></button>
+    <button id="redo" class="btn icon-btn" disabled title="Gör om"><span aria-hidden="true">↷</span></button>
     <div class="group">
-      <strong data-i18n="language">Språk</strong>
-      <button id="langSV" class="flag-btn active" title="Svenska">🇸🇪</button>
-      <button id="langEN" class="flag-btn" title="English">🇬🇧</button>
+      <label for="darkModeToggle" data-i18n="dark">Mörkt läge</label><input type="checkbox" id="darkModeToggle"/>
+      <label for="stepModeToggle" data-i18n="step">Steg-för-steg</label><input type="checkbox" id="stepModeToggle"/>
     </div>
 
     <div class="group">
@@ -228,33 +219,43 @@
       <label for="vatToggle" data-i18n="include">inkludera</label><input type="checkbox" id="vatToggle"/>
       <input type="number" id="vatPercent" value="25" step="1"/>%
     </div>
+
     <div class="group">
       <span data-i18n="overage">Spill</span>
       <label for="overageToggle" data-i18n="apply">använd</label><input type="checkbox" id="overageToggle"/>
       <input type="number" id="overagePercent" value="10" step="1"/>%
     </div>
+
     <div class="group">
       <label for="exactToggle" data-i18n="exact">Exakt beräkning (ingen avrundning)</label>
       <input type="checkbox" id="exactToggle"/>
     </div>
-    <div class="group">
-      <label for="darkModeToggle" data-i18n="dark">Mörkt läge</label><input type="checkbox" id="darkModeToggle"/>
-      <label for="stepModeToggle" data-i18n="step">Steg-för-steg</label><input type="checkbox" id="stepModeToggle"/>
-    </div>
 
     <div class="grow"></div>
 
+    <!-- Language FAR RIGHT -->
     <div class="group">
-      <button id="importData" class="btn btn-ghost" data-i18n="import">Importera</button>
-      <input type="file" id="fileInput" accept=".json,.csv,.xls,.xlsx" style="display:none"/>
-      <button id="exportJSON" class="btn btn-ghost" data-i18n="exportJSON">Export JSON</button>
-      <button id="exportCSV" class="btn btn-ghost" data-i18n="exportCSV">Export CSV</button>
-      <button id="exportExcel" class="btn btn-blue" data-i18n="exportExcel">Export Excel</button>
-      <button id="printBtn" class="btn btn-ghost" data-i18n="print">Skriv ut / PDF</button>
+      <strong data-i18n="language">Språk</strong>
+      <button id="langSV" class="flag-btn active" title="Svenska">🇸🇪</button>
+      <button id="langEN" class="flag-btn" title="English">🇬🇧</button>
     </div>
   </div>
 
-  <!-- New Add-Area dock directly under the menu -->
+  <!-- ================== SUBBAR (Import left, Export right) ================== -->
+  <div class="subbar" id="subbar">
+    <div class="left">
+      <button id="importData" class="btn" data-i18n="import">Importera</button>
+      <input type="file" id="fileInput" accept=".json,.csv,.xls,.xlsx" style="display:none"/>
+    </div>
+    <div class="right">
+      <button id="exportJSON" class="btn" data-i18n="exportJSON">Export JSON</button>
+      <button id="exportCSV" class="btn" data-i18n="exportCSV">Export CSV</button>
+      <button id="exportExcel" class="btn" data-i18n="exportExcel">Export Excel</button>
+      <button id="printBtn" class="btn" data-i18n="print">Skriv ut / PDF</button>
+    </div>
+  </div>
+
+  <!-- ================== ADD AREA DOCK (top; hidden after first area) ================== -->
   <div id="topAddDock">
     <button id="btnAddAreaDock" class="btn btn-primary" data-i18n="addArea">+ Lägg till område</button>
   </div>
@@ -268,7 +269,17 @@
       <strong data-i18n="infoTitle">Info & summeringar</strong>
       <small id="lastInfoTime" style="color:var(--muted)"></small>
     </header>
-    <div class="body" id="infoBody"><em data-i18n="infoEmpty">Ingen info ännu. Lägg till produkter och ytor.</em></div>
+    <div class="body" id="infoBody">
+      <div class="info-card" id="moistureCard">
+        <strong>Fukt & fuktighet</strong>
+        <p style="margin:.4em 0 .2em 0; color:var(--muted)">
+          Hög fukthalt i underlag/luft kan öka åtgången (absorptionsförluster) och förlänga torktider. Rekommendation:
+          torr och dammfri yta, RF ≤ 75–80% när datablad kräver det, provyta vid tveksamhet. 
+          <em>(Informativt — påverkar inte beräkning automatiskt.)</em>
+        </p>
+      </div>
+      <em data-i18n="infoEmpty">Ingen info ännu. Lägg till produkter och ytor.</em>
+    </div>
   </section>
 
   <!-- ================== GLOBAL TEMPLATES (bottom) ================== -->
@@ -277,7 +288,7 @@
       <strong data-i18n="templatesTitle">Globala Produktmallar</strong>
       <div class="template-actions" style="display:flex;gap:8px">
         <button id="addTemplate" class="btn btn-primary" data-i18n="addTemplate">+ Lägg till mall</button>
-        <button id="applyAllTemplates" class="btn btn-ghost" data-i18n="applyAllTemplates">Använd ALLA på ALLA områden</button>
+        <button id="applyAllTemplates" class="btn" data-i18n="applyAllTemplates">Använd ALLA på ALLA områden</button>
       </div>
     </header>
     <div class="body" id="templatesBody" style="padding:10px 12px"></div>
@@ -288,13 +299,11 @@
     <strong id="footerTotalLabel">Projektets totalsumma (exkl. moms):</strong>
     <strong id="footerTotalValue">0.00</strong>
     <span class="sp"></span>
-    <button class="btn btn-ghost" id="btnScrollSummary">Visa summering</button>
+    <button class="btn" id="btnScrollSummary">Visa summering</button>
   </div>
 
-  <!-- ================== FLOAT TOAST & HOVER TIP ================== -->
-  <div id="infoToast" title="Visa info">
-    <span class="dot"></span><span data-i18n="toast">Info uppdaterad — Visa</span>
-  </div>
+  <!-- ================== TOAST & HOVERTIP ================== -->
+  <div id="infoToast" title="Visa info"><span class="dot"></span><span data-i18n="toast">Info uppdaterad — Visa</span></div>
   <div id="hoverTip"></div>
 
   <!-- ================== LOGS ================== -->
@@ -310,8 +319,7 @@
 
     /* ================== I18N ================== */
     const i18n = {
-      sv:{
-        addArea:"+ Lägg till område", addAreaBelow:"+ Lägg till område under",
+      sv:{ addArea:"+ Lägg till område", addAreaBelow:"+ Lägg till område under",
         undoText:"Ångra", redoText:"Gör om",
         language:"Språk", vat:"Moms", include:"inkludera", overage:"Spill", apply:"använd",
         exact:"Exakt beräkning (ingen avrundning)", dark:"Mörkt läge", step:"Steg-för-steg",
@@ -319,9 +327,12 @@
         templatesTitle:"Globala Produktmallar", addTemplate:"+ Lägg till mall", applyAllTemplates:"Använd ALLA på ALLA områden",
         infoTitle:"Info & summeringar", infoEmpty:"Ingen info ännu. Lägg till produkter och ytor.", toast:"Info uppdaterad — Visa",
         areaName:"Områdesnamn", surface:"Yttyp", factor:"Faktor", size:"Storlek", sq:"m²",
-        areaIllustration:"Illustration", layersLegend:"Lager (färgkodade)",
-        product:"Produkt", calc:"Läge", usage:"Åtgång (per m²/lager)", layers:"Lager", thickness:"Tjocklek (mm)", density:"Densitet (kg/L)",
-        packSize:"Förp. storlek", unit:"Enhet", pricePack:"Pris/förp", needed:"Behov", packages:"Förp", cost:"Kostnad",
+        product:"Produkt", calc:"Läge", usage:"Åtgång (kg per m²)", usageHint:"Vanligen kg/m² per lager enligt datablad.",
+        layers:"Lager", thickness:"Tjocklek (mm)", density:"Densitet (kg/L)",
+        packSize:"Förp. storlek", unit:"Enhet",
+        priceMode:"Pris-läge", perPack:"Pris/förp", perKg:"Pris/kg",
+        pricePack:"Pris/förp", priceKg:"Pris/kg",
+        needed:"Behov", packages:"Förp", cost:"Kostnad",
         addProduct:"+ Lägg till produktlager",
         calcThickness:"Tjocklek", calcUsage:"Åtgång/m²", calcCoverage:"Täckning/förp",
         coverSqm:"Täckning (m²/förp)", coverLayers:"Lager per förp",
@@ -331,11 +342,9 @@
         hoverSurface:"Yta", hoverProduct:"Produkt",
         tmplAdded:"Mall tillagd", tmplApplyAll:"Mall applicerad på alla områden",
         errUnsupported:"Filformatet stöds inte.",
-        updated:"Uppdaterad ",
-        color:"Färg"
+        updated:"Uppdaterad ", color:"Färg"
       },
-      en:{
-        addArea:"+ Add Area", addAreaBelow:"+ Add Area Below",
+      en:{ addArea:"+ Add Area", addAreaBelow:"+ Add Area Below",
         undoText:"Undo", redoText:"Redo",
         language:"Language", vat:"VAT", include:"include", overage:"Overage", apply:"apply",
         exact:"Exact calc (no rounding)", dark:"Dark mode", step:"Step-by-step",
@@ -343,9 +352,12 @@
         templatesTitle:"Global Product Templates", addTemplate:"+ Add Template", applyAllTemplates:"Apply ALL to ALL Areas",
         infoTitle:"Info & summaries", infoEmpty:"No info yet. Add products and areas.", toast:"Info updated — View",
         areaName:"Area name", surface:"Surface", factor:"Factor", size:"Size", sq:"m²",
-        areaIllustration:"Illustration", layersLegend:"Layers (color-coded)",
-        product:"Product", calc:"Mode", usage:"Usage (per m²/layer)", layers:"Layers", thickness:"Thickness (mm)", density:"Density (kg/L)",
-        packSize:"Pack size", unit:"Unit", pricePack:"Price/Pack", needed:"Needed", packages:"Packages", cost:"Cost",
+        product:"Product", calc:"Mode", usage:"Usage (kg per m²)", usageHint:"Usually kg/m² per layer per data sheet.",
+        layers:"Layers", thickness:"Thickness (mm)", density:"Density (kg/L)",
+        packSize:"Pack size", unit:"Unit",
+        priceMode:"Price Mode", perPack:"Price/pack", perKg:"Price/kg",
+        pricePack:"Price/pack", priceKg:"Price/kg",
+        needed:"Needed", packages:"Packages", cost:"Cost",
         addProduct:"+ Add Product Layer",
         calcThickness:"Thickness", calcUsage:"Usage/m²", calcCoverage:"Coverage/pack",
         coverSqm:"Coverage (m²/pack)", coverLayers:"Layers per pack",
@@ -355,8 +367,7 @@
         hoverSurface:"Surface", hoverProduct:"Product",
         tmplAdded:"Template added", tmplApplyAll:"Template applied to all areas",
         errUnsupported:"Unsupported file format.",
-        updated:"Updated ",
-        color:"Color"
+        updated:"Updated ", color:"Color"
       }
     };
     let LANG="sv";
@@ -371,13 +382,7 @@
           vatIncluded:false, vatRate:25,
           overageIncluded:false, overagePercent:10,
           exactMode:false, stepMode:false, darkMode:false,
-          surfaceTypes:{
-            "Smooth":1.00,
-            "Light Grind":1.05,
-            "Medium Grind":1.10,
-            "Rough":1.15,
-            "Porous/Cracked":1.25
-          },
+          surfaceTypes:{"Smooth":1.00,"Light Grind":1.05,"Medium Grind":1.10,"Rough":1.15,"Porous/Cracked":1.25},
           surfaceInfo:{
             "Smooth":{title:"Smooth / polished",desc:"Closed pores; dense, burnished surface.",hint:"+0%", prep:"Light cleaning; dust-free", typical:"Troweled/Polished slab"},
             "Light Grind":{title:"Lightly ground",desc:"Micro texture opens; slightly higher uptake.",hint:"+5%", prep:"Degrease + light grind", typical:"Polished with light hone"},
@@ -393,12 +398,10 @@
       lastAddedProductTemplate:null
     };
 
-    /* ================== DOM ================== */
+    /* ================== DOM REFS ================== */
     const areasContainer=document.getElementById("areasContainer");
-    const infoBody=document.getElementById("infoBody");
     const footerTotalLabel=document.getElementById("footerTotalLabel");
     const footerTotalValue=document.getElementById("footerTotalValue");
-
     const btnAddAreaDock=document.getElementById("btnAddAreaDock");
     const undoBtn=document.getElementById("undo"), redoBtn=document.getElementById("redo");
     const vatToggle=document.getElementById("vatToggle"), vatPercentInput=document.getElementById("vatPercent");
@@ -409,14 +412,13 @@
     const importBtn=document.getElementById("importData"), fileInput=document.getElementById("fileInput");
     const exportJSONBtn=document.getElementById("exportJSON"), exportCSVBtn=document.getElementById("exportCSV"), exportExcelBtn=document.getElementById("exportExcel");
     const printBtn=document.getElementById("printBtn");
-    const addTemplateBtn=document.getElementById("addTemplate"), applyAllTemplatesBtn=document.getElementById("applyAllTemplates"), templatesBody=document.getElementById("templatesBody");
-    const infoToast=document.getElementById("infoToast");
-    const lastInfoTime=document.getElementById("lastInfoTime");
-    const hoverTip=document.getElementById("hoverTip");
+    const infoBody=document.getElementById("infoBody"), infoToast=document.getElementById("infoToast");
+    const lastInfoTime=document.getElementById("lastInfoTime"), hoverTip=document.getElementById("hoverTip");
     const btnScrollSummary=document.getElementById("btnScrollSummary");
     const logPanel=document.getElementById("logPanel"), logContent=document.getElementById("logContent");
     const minimizeLogBtn=document.getElementById("minimizeLog"), maximizeLogBtn=document.getElementById("maximizeLog");
     const langSV=document.getElementById("langSV"), langEN=document.getElementById("langEN");
+    const topAddDock=document.getElementById("topAddDock");
 
     /* ================== UTIL & LOG ================== */
     function log(msg){
@@ -465,40 +467,65 @@
       return {type:k,title:meta.title,desc:meta.desc,hint:meta.hint,prep:meta.prep,typical:meta.typical,factor:area.modifier.toFixed(2)};
     }
 
+    /* ================== SEEDED RNG FOR ILLUSTRATION (stable on hover) ================== */
+    function PRNG(seed){
+      let t = seed>>>0 || 88675123;
+      return function(){
+        t += 0x6D2B79F5;
+        let r = t ^ (t>>>15); r = Math.imul(r, 1 | r);
+        r ^= r + Math.imul(r ^ (r>>>7), 61 | r);
+        return ((r ^ (r>>>14))>>>0) / 4294967296;
+      };
+    }
+
     /* ================== CANVAS ILLUSTRATION ================== */
-    function drawCracks(ctx, rect, density=6, color="rgba(0,0,0,.25)"){
+    function drawCracks(ctx, rect, prng, density=6, color="rgba(0,0,0,.25)"){
       ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=1;
       for(let i=0;i<density;i++){
-        let x = rect.x + Math.random()*rect.w;
-        let y = rect.y + Math.random()*rect.h;
+        let x = rect.x + prng()*rect.w;
+        let y = rect.y + prng()*rect.h;
         ctx.beginPath(); ctx.moveTo(x,y);
         for(let j=0;j<6;j++){
-          x += (Math.random()*20-10);
-          y += (Math.random()*10-5);
+          x += (prng()*20-10);
+          y += (prng()*10-5);
           ctx.lineTo(x,y);
         }
         ctx.stroke();
       }
       ctx.restore();
     }
-    function drawRugged(ctx, rect){
+    function drawRugged(ctx, rect, prng){
       ctx.save();
       for(let i=0;i<160;i++){
-        const x=rect.x + Math.random()*rect.w;
-        const y=rect.y + Math.random()*rect.h;
-        const r=Math.random()*2.2+0.6;
-        ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.06+0.04})`;
+        const x=rect.x + prng()*rect.w;
+        const y=rect.y + prng()*rect.h;
+        const r=prng()*2.2+0.6;
+        ctx.fillStyle=`rgba(0,0,0,${prng()*0.06+0.04})`;
         ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
       }
       ctx.restore();
     }
-    function drawSpeckles(ctx, rect, amount=120){
+    function drawSpeckles(ctx, rect, prng, amount=120){
       ctx.save();
       for(let i=0;i<amount;i++){
-        const x=rect.x + Math.random()*rect.w;
-        const y=rect.y + Math.random()*rect.h;
-        ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.06})`;
+        const x=rect.x + prng()*rect.w;
+        const y=rect.y + prng()*rect.h;
+        ctx.fillStyle=`rgba(0,0,0,${prng()*0.06})`;
         ctx.fillRect(x,y,1,1);
+      }
+      ctx.restore();
+    }
+    function drawMicroScratches(ctx, rect, prng, amount=80){
+      ctx.save(); ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.lineWidth=.6;
+      for(let i=0;i<amount;i++){
+        const x = rect.x + prng()*rect.w;
+        const y = rect.y + prng()*rect.h;
+        const len = prng()*12+4;
+        const ang = prng()*Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+Math.cos(ang)*len, y+Math.sin(ang)*len);
+        ctx.stroke();
       }
       ctx.restore();
     }
@@ -514,20 +541,22 @@
       const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
       ctx.clearRect(0,0,W,H);
 
+      const prng=PRNG(area.id*10007 + Math.floor(area.modifier*1000));
+
       // slab
       const slabH=22; const slabY=H-slabH; ctx.fillStyle=baseConcreteColor(area);
       ctx.fillRect(0,slabY,W,slabH);
       ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.beginPath(); for(let x=0;x<W;x+=10){ctx.moveTo(x,slabY);ctx.lineTo(x+5,slabY+5);} ctx.stroke();
 
-      // detail by surface type
       const st=reverseFindTypeByFactor(area.modifier)||"Custom";
       const slabRect={x:0,y:slabY,w:W,h:slabH};
-      if(st==="Light Grind"){ drawSpeckles(ctx,slabRect,80); }
-      else if(st==="Medium Grind"){ drawSpeckles(ctx,slabRect,140); }
-      else if(st==="Rough"){ drawRugged(ctx,slabRect); }
-      else if(st==="Porous/Cracked"){ drawRugged(ctx,slabRect); drawCracks(ctx,slabRect,7); }
+      if(st==="Smooth"){ drawSpeckles(ctx,slabRect,prng,60); drawMicroScratches(ctx,slabRect,prng,60); }
+      else if(st==="Light Grind"){ drawSpeckles(ctx,slabRect,prng,100); drawMicroScratches(ctx,slabRect,prng,80); }
+      else if(st==="Medium Grind"){ drawSpeckles(ctx,slabRect,prng,150); drawRugged(ctx,slabRect,prng); }
+      else if(st==="Rough"){ drawRugged(ctx,slabRect,prng); drawSpeckles(ctx,slabRect,prng,80); }
+      else if(st==="Porous/Cracked"){ drawRugged(ctx,slabRect,prng); drawCracks(ctx,slabRect,prng,7); }
 
-      // layers (stack)
+      // layers
       const totalLayers = area.products.reduce((a,p)=>a+Math.max(1,Number(p.layers||1)),0)||1;
       const space = H-slabH-10, gap=1.5, unitH=(space-gap*(totalLayers-1))/Math.max(1,totalLayers);
       const rects=[]; let y=H-slabH-gap;
@@ -535,7 +564,7 @@
         const L=Math.max(1,Number(p.layers||1));
         for(let i=0;i<L;i++){
           const h=unitH, top=y-h, col = layerColor(p);
-          ctx.save(); ctx.globalAlpha = (hoverSlab?0.85:1);
+          ctx.save(); ctx.globalAlpha = (hoverSlab?0.9:1);
           if(rects.length===hoverIdx) ctx.filter="brightness(1.24)";
           ctx.fillStyle=col;
           ctx.fillRect(6,top,W-12,h);
@@ -567,7 +596,7 @@
           const html = `<div><strong>${t("hoverProduct")}:</strong> ${p.name||"-"}</div>
             <div>• ${t("layers")}: ${p.layers||1} • ${t("thickness")}: ${p.thickness||0} mm</div>
             <div>• ${t("unit")}: ${p.packUnit||"kg"} • ${t("packSize")}: ${p.packSize||0}</div>
-            <div>• ${t("pricePack")}: ${p.price||0}</div>`;
+            <div>• ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}: ${p.price||0}</div>`;
           show(html,e.clientX,e.clientY);
           hideInline();
         }else if(onSlab){
@@ -580,13 +609,14 @@
       canvas.addEventListener("mouseleave",()=>{drawAreaIllustration(canvas,area,-1,false); hoverTip.style.display="none"; hideInline();});
     }
 
-    /* ================== UI HELPERS ================== */
+    /* ================== EL HELPER ================== */
     function el(tag,attrs={},txt){const e=document.createElement(tag);Object.entries(attrs).forEach(([k,v])=>{if(k==="class")e.className=v;else if(k==="style")e.setAttribute("style",v);else e.setAttribute(k,v);});if(txt!=null)e.textContent=txt;return e;}
     function cloneProductData(prod){
       return JSON.parse(JSON.stringify({
         name:prod.name||"", color:prod.color||null,
         layers:prod.layers||1, thickness:prod.thickness||0, density:(prod.density===null?null:prod.density||0),
-        packSize:prod.packSize||1, packUnit:prod.packUnit||"kg", price:prod.price||0,
+        packSize:prod.packSize||1, packUnit:prod.packUnit||"kg",
+        price:prod.price||0, priceMode:prod.priceMode||"perPack",
         calcMode: prod.calcMode || "thickness",
         usagePerM2: prod.usagePerM2 || 0,
         coverSqmPerPack: prod.coverSqmPerPack || 0,
@@ -620,8 +650,9 @@
       const unit=el("div",{class:"unit"},t("sq"));
       sizeWrap.appendChild(sizeI); sizeWrap.appendChild(unit); header.appendChild(sizeWrap);
 
-      const tip=el("div",{class:"pill"}, t("prodInfo")+" / "+t("projectInfo"));
-      header.appendChild(tip);
+      // mini caption below title line
+      const miniCap=el("div",{class:"mini-caption"}, `${t("prodInfo")} / ${t("projectInfo")}`);
+      header.appendChild(miniCap);
 
       // small illustration top-right
       const mini=el("div",{class:"mini-illustration"});
@@ -634,17 +665,17 @@
 
       wrap.appendChild(header);
 
-      // table
+      // table (re-ordered columns: move density/pack/price & priceMode to PRODUCTDATA)
       const table=el("table",{class:"area-table","data-area-id":area.id});
       const thead=el("thead");
       const grp=el("tr");
-      grp.appendChild(el("th",{class:"th-group",colspan:"7"},t("prodInfo")));
-      grp.appendChild(el("th",{class:"th-group",colspan:"8"},t("projectInfo")));
+      grp.appendChild(el("th",{class:"th-group",colspan:"11"},t("prodInfo")));
+      grp.appendChild(el("th",{class:"th-group",colspan:"5"},t("projectInfo")));
       thead.appendChild(grp);
+
       const head=el("tr");
-      ["",t("product"),t("color"),t("calc"),t("usage"),t("coverSqm"),t("coverLayers"),
-       t("layers"),t("thickness"),t("density"),t("packSize"),t("unit"),t("pricePack"),
-       t("needed"),t("packages"),t("cost")].forEach(h=>head.appendChild(el("th",{},h)));
+      ["",t("product"),t("color"),t("calc"),t("usage"),t("density"),t("packSize"),t("unit"),t("priceMode"),t("pricePack"),t("coverSqm"),t("coverLayers"),
+       t("layers"),t("thickness"),t("needed"),t("packages"),t("cost")].forEach(h=>head.appendChild(el("th",{},h)));
       thead.appendChild(head);
       table.appendChild(thead);
 
@@ -652,19 +683,19 @@
       area.products.forEach((p)=>tbody.appendChild(buildProductRow(area,p)));
       table.appendChild(tbody);
 
-      // inline surface info (below table)
+      // inline surface info
       const inlineInfo=el("div",{class:"surface-inline","data-bind":"inlineSurface"});
       wrap.appendChild(table);
       wrap.appendChild(inlineInfo);
 
-      // buttons (Add Product and Add Area below) — full width, same size
-      const btnWrap=el("div",{style:"display:flex; flex-direction:column; gap:8px; margin-top:6px"});
-      const addProdBtn=el("button",{class:"btn btn-primary"}, t("addProduct"));
+      // footer buttons — stacked, same vertical line & size
+      const btnWrap=el("div",{class:"footer-buttons"});
+      const addProdBtn=el("button",{class:"btn btn-primary btn-slim"}, t("addProduct"));
       addProdBtn.addEventListener("click",()=>{
         const firstAdd = area.products.length===0 && state.lastAddedProductTemplate;
         const frag = addProduct(area,tbody);
         if(firstAdd){
-          if(confirm(`Clone last product "${state.lastAddedProductTemplate.name}" to this area?`)){
+          if(confirm(`Klona senaste produkt "${state.lastAddedProductTemplate.name}" till detta område?`)){
             applyProductDataToRow(area,frag,state.lastAddedProductTemplate);
             log(`Cloned last product template to "${area.name}"`);
             updateCalculations(true);
@@ -673,9 +704,10 @@
       });
       btnWrap.appendChild(addProdBtn);
 
-      const addAreaBelow=el("button",{class:"btn btn-primary"}, t("addAreaBelow"));
-      addAreaBelow.addEventListener("click",()=>insertAreaBelow(area.id));
-      btnWrap.appendChild(addAreaBelow);
+      // "Lägg till område" (NOT "under") — aligned & same width as product button
+      const addAreaAfter=el("button",{class:"btn btn-primary btn-slim"}, t("addArea"));
+      addAreaAfter.addEventListener("click",()=>insertAreaAfter(area.id));
+      btnWrap.appendChild(addAreaAfter);
       wrap.appendChild(btnWrap);
 
       // listeners
@@ -710,10 +742,8 @@
         log(`Surface factor "${area.name}" → ${v}`);
         updateCalculations(true); updateAreaInfoboxAndCanvas(true);
       });
-      sizeI.addEventListener("change",()=>{
-        const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Area size "${area.name}" → ${v} m²`);
-        updateCalculations();
-      });
+      const sizeIChange=()=>{const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Area size "${area.name}" → ${v} m²`); updateCalculations();};
+      sizeI.addEventListener("change",sizeIChange);
 
       // enable sorting
       enableDragSort(tbody, area);
@@ -726,9 +756,9 @@
       if(product.usagePerM2==null) product.usagePerM2=0;
       if(product.coverSqmPerPack==null) product.coverSqmPerPack=0;
       if(product.coverLayersPerPack==null||product.coverLayersPerPack<=0) product.coverLayersPerPack=1;
+      if(!product.priceMode) product.priceMode="perPack";
 
       const tr=el("tr",{class:"product-row","data-product-id":product.id, draggable:"true"});
-
       const td=(child,cls)=>{const c=document.createElement("td"); if(cls) c.className=cls; c.appendChild(child); return c;};
 
       const drag=el("span",{class:"drag-handle",title:"Drag to reorder"},"☰");
@@ -738,7 +768,6 @@
       nameI.addEventListener("change",()=>{product.name=nameI.value; state.lastAddedProductTemplate=cloneProductData(product); log(`Renamed product ${product.id} in "${area.name}" → "${product.name}"`);});
       tr.appendChild(td(nameI,"td-prod"));
 
-      // color picker (reflects in JSON and illustration)
       const colorI=el("input",{type:"color",value:product.color||"#6cb2ff",title:t("color")});
       colorI.addEventListener("input",()=>{product.color=colorI.value; const canv=document.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`); if(canv) drawAreaIllustration(canv,area);});
       tr.appendChild(td(colorI,"td-prod"));
@@ -749,31 +778,40 @@
       mode.value=product.calcMode;
       tr.appendChild(td(mode,"td-prod"));
 
-      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0}); tr.appendChild(td(usageI,"td-prod"));
-      const coverSqmI=el("input",{type:"number",min:"0",step:"0.01",value:product.coverSqmPerPack||0}); tr.appendChild(td(coverSqmI,"td-prod"));
-      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1}); tr.appendChild(td(coverLayersI,"td-prod"));
+      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0, title:t("usageHint")}); 
+      tr.appendChild(td(usageI,"td-prod"));
+
+      const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); densI.placeholder=t("density");
+      tr.appendChild(td(densI,"td-prod"));
+
+      const packI=el("input",{type:"number",min:"0.0001",step:"0.1",value:product.packSize||1});
+      packI.addEventListener("change",()=>{product.packSize=Math.max(0.0001,parseFloat(packI.value)||1); packI.value=product.packSize; log(`Pack size "${product.name}" → ${product.packSize} ${product.packUnit}`); updateCalculations();});
+      tr.appendChild(td(packI,"td-prod"));
+
+      const unitSel=el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; unitSel.appendChild(o);}); unitSel.value=product.packUnit||"kg";
+      tr.appendChild(td(unitSel,"td-prod"));
+
+      const priceModeSel=el("select");
+      [["perPack",t("perPack")],["perKg",t("perKg")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;priceModeSel.appendChild(o);});
+      priceModeSel.value=product.priceMode;
+      tr.appendChild(td(priceModeSel,"td-prod"));
+
+      const priceI=el("input",{type:"number",min:"0",step:"0.01",value:product.price||0, placeholder:t("pricePack")});
+      tr.appendChild(td(priceI,"td-prod"));
+
+      const coverSqmI=el("input",{type:"number",min:"0",step:"0.1",value:product.coverSqmPerPack||0}); 
+      tr.appendChild(td(coverSqmI,"td-prod"));
+
+      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1}); 
+      tr.appendChild(td(coverLayersI,"td-prod"));
 
       const layersI=el("input",{type:"number",min:"1",step:"1",value:product.layers||1});
-      layersI.addEventListener("change",()=>{product.layers=Math.max(1,parseInt(layersI.value)||1); layersI.value=product.layers; log(`Layers "${product.name}" in "${area.name}" → ${product.layers}`); updateCalculations();});
+      layersI.addEventListener("change",()=>{product.layers=Math.max(1,parseInt(layersI.value)||1); layersI.value=product.layers; log(`Layers "${product.name}" → ${product.layers}`); updateCalculations();});
       tr.appendChild(td(layersI,"td-proj"));
 
       const thickI=el("input",{type:"number",min:"0",step:"0.1",value:product.thickness||0});
       thickI.addEventListener("change",()=>{product.thickness=toPosFloat(thickI.value,0); thickI.value=product.thickness; log(`Thickness "${product.name}" → ${product.thickness} mm`); updateCalculations();});
       tr.appendChild(td(thickI,"td-proj"));
-
-      const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); densI.placeholder=t("density");
-      tr.appendChild(td(densI,"td-proj"));
-
-      const packI=el("input",{type:"number",min:"0.0001",step:"0.1",value:product.packSize||1});
-      packI.addEventListener("change",()=>{product.packSize=Math.max(0.0001,parseFloat(packI.value)||1); packI.value=product.packSize; log(`Pack size "${product.name}" → ${product.packSize} ${product.packUnit}`); updateCalculations();});
-      tr.appendChild(td(packI,"td-proj"));
-
-      const unitSel=el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; unitSel.appendChild(o);}); unitSel.value=product.packUnit||"kg";
-      tr.appendChild(td(unitSel,"td-proj"));
-
-      const priceI=el("input",{type:"number",min:"0",step:"0.01",value:product.price||0});
-      priceI.addEventListener("change",()=>{product.price=toPosFloat(priceI.value,0); priceI.value=product.price.toFixed(2); log(`Price/pack "${product.name}" → ${product.price}`); updateCalculations();});
-      tr.appendChild(td(priceI,"td-proj"));
 
       const needSpan=el("span",{class:"neededQty"},"0"); tr.appendChild(td(needSpan,"td-proj"));
       const pkgSpan=el("span",{class:"packageCount"},"0"); tr.appendChild(td(pkgSpan,"td-proj"));
@@ -788,12 +826,12 @@
       overlay.appendChild(cloneAll); overlay.appendChild(cloneBelow); overlay.appendChild(infoBtn); overlay.appendChild(delBtn);
       tr.appendChild(overlay);
 
-      // breakdown row (for step mode)
+      // breakdown row
       const br=document.createElement("tr"); br.className="breakdown";
       const brtd=document.createElement("td"); brtd.colSpan=16; br.appendChild(brtd);
       const brbox=el("div",{class:"breakdown"}); brtd.appendChild(brbox);
 
-      // mode binding
+      // mode binding & interactions
       function bindModeUI(){
         const M=product.calcMode;
         const isUsage=(M==="usage"), isThick=(M==="thickness"), isCover=(M==="coverage");
@@ -811,6 +849,8 @@
       densI.addEventListener("change",()=>{const v=toPosFloat(densI.value,0); product.density=(densI.value===""?null:v); applyCalc();});
       coverSqmI.addEventListener("change",()=>{product.coverSqmPerPack=toPosFloat(coverSqmI.value,0); applyCalc();});
       coverLayersI.addEventListener("change",()=>{product.coverLayersPerPack=Math.max(1,parseInt(coverLayersI.value)||1); coverLayersI.value=product.coverLayersPerPack; applyCalc();});
+      priceModeSel.addEventListener("change",()=>{product.priceMode=priceModeSel.value; priceI.placeholder = (product.priceMode==='perKg')?t("priceKg"):t("pricePack"); applyCalc();});
+      priceI.addEventListener("change",()=>{product.price=toPosFloat(priceI.value,0); priceI.value=product.price.toFixed(2); log(`Price "${product.name}" → ${product.price} (${product.priceMode})`); applyCalc();});
 
       delBtn.addEventListener("click",()=>removeProduct(area,product.id));
       cloneAll.addEventListener("click",()=>{
@@ -836,7 +876,7 @@
     }
 
     function addProduct(area,tbody){
-      const p={id:state.nextProductId++,name:"",color:null,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,
+      const p={id:state.nextProductId++,name:"",color:null,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,priceMode:"perPack",
         calcMode:"thickness",usagePerM2:0,coverSqmPerPack:0,coverLayersPerPack:1};
       area.products.push(p);
       const frag=buildProductRow(area,p);
@@ -852,14 +892,14 @@
       const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
       if(areaEl){ areaEl.replaceWith(createAreaElement(area)); }
     }
-    function insertAreaBelow(areaId){
+    function insertAreaAfter(areaId){
       const idx=state.project.areas.findIndex(a=>a.id===areaId);
       const id=state.nextAreaId++;
       const nm=(LANG==="sv"?"Område ":"Area ")+id;
       const a={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
-      pushStateForUndo(`Insert area below ${areaId}`);
+      pushStateForUndo(`Insert area after ${areaId}`);
       state.project.areas.splice(idx+1,0,a);
-      renderAll(); log(`Added area "${nm}" below`);
+      renderAll(); log(`Added area "${nm}"`);
     }
     function removeArea(areaElem){
       const id=parseInt(areaElem.dataset.areaId);
@@ -867,6 +907,8 @@
       const nm=state.project.areas[idx].name||`Area ${id}`;
       pushStateForUndo(`Removed area ${nm}`); state.project.areas.splice(idx,1);
       areaElem.remove(); log(`Removed area "${nm}"`); updateCalculations(true);
+      // If no areas left, show top dock button again
+      if(state.project.areas.length===0){ topAddDock.style.display="flex"; }
     }
     function removeProduct(area,prodId){
       const i=area.products.findIndex(p=>p.id===prodId); if(i===-1) return;
@@ -931,7 +973,7 @@
     function updateCalculations(fromSurface=false){
       const S=state.project.settings;
       let totalCostExVAT=0;
-      const totalsMap=new Map(); // key: name|unit -> aggregate
+      const totalsMap=new Map(); // name|unit -> aggregate
 
       state.project.areas.forEach(area=>{
         let areaCost=0;
@@ -944,8 +986,9 @@
           const unit   = p.packUnit||"kg";
           const price  = Number(p.price)||0;
           const pack   = Math.max(0.0001, Number(p.packSize)||0);
+          const priceMode = p.priceMode || "perPack";
 
-          let neededUnits=0;  // in kg or L
+          let neededUnits=0;  // kg or L
           let packages=0;
           let breakdown=[];
 
@@ -979,7 +1022,9 @@
             breakdown.push(`Units = Packs × PackSize = ${fmt(packages)} × ${pack} = ${fmt(neededUnits)} ${unit}`);
           }
 
-          const cost = (packages * price); areaCost += cost;
+          // COST by price mode
+          const cost = (priceMode==='perKg') ? (neededUnits * price) : (packages * price);
+          areaCost += cost;
 
           // update UI row
           const prodRow = rows[idx];
@@ -996,17 +1041,17 @@
             if(brRow && brRow.querySelector(".breakdown")){
               const box=brRow.querySelector(".breakdown");
               box.innerHTML = `
-                <div><strong>${p.name||"Product"} — ${p.calcMode}</strong></div>
+                <div><strong>${p.name||"Product"} — ${p.calcMode} — ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}</strong></div>
                 <div>${breakdown.join("<br/>")}</div>
-                <div><strong>Cost</strong> = Packages × Price = ${S.exactMode?fmt(packages):packages} × ${price} = <strong>${cost.toFixed(2)}</strong></div>
+                <div><strong>Cost</strong> = ${(p.priceMode==='perKg')?'Needed × Price/kg':'Packages × Price/pack'} = ${(p.priceMode==='perKg')?fmt(neededUnits): (S.exactMode?fmt(packages):packages)} × ${price} = <strong>${cost.toFixed(2)}</strong></div>
               `;
               brRow.style.display = S.stepMode ? "" : "none";
             }
           }
 
-          // aggregate totals
+          // aggregate totals for info summary
           const key=(p.name||"(unnamed)")+"|"+unit;
-          const rec= totalsMap.get(key) || {name:(p.name||"(unnamed)"),unit,needed:0,pack:pack,price:price,exactPackages:0};
+          const rec= totalsMap.get(key) || {name:(p.name||"(unnamed)"),unit,needed:0,pack:pack,price:price,priceMode:priceMode,exactPackages:0};
           rec.needed += neededUnits;
           rec.exactPackages += (neededUnits/pack);
           totalsMap.set(key,rec);
@@ -1032,34 +1077,54 @@
 
     function renderTotalsInfo(totalsMap, S){
       const arr=[...totalsMap.values()];
-      if(!arr.length){ infoBody.innerHTML = `<em>${t("infoEmpty")}</em>`; return; }
-      const parts=[];
+      const info = document.getElementById("infoBody");
+      if(!arr.length){ info.innerHTML = `
+        <div class="info-card" id="moistureCard">
+          <strong>Fukt & fuktighet</strong>
+          <p style="margin:.4em 0 .2em 0; color:var(--muted)">
+            Hög fukthalt i underlag/luft kan öka åtgången (absorptionsförluster) och förlänga torktider. Rekommendation:
+            torr och dammfri yta, RF ≤ 75–80% när datablad kräver det, provyta vid tveksamhet.
+            <em>(Informativt — påverkar inte beräkning automatiskt.)</em>
+          </p>
+        </div>
+        <em>${t("infoEmpty")}</em>`; 
+        return; 
+      }
+      const parts=[
+        `<div class="info-card" id="moistureCard">
+          <strong>Fukt & fuktighet</strong>
+          <p style="margin:.4em 0 .2em 0; color:var(--muted)">
+            Hög fukthalt i underlag/luft kan öka åtgången och förlänga torktider. Torka och dammsug ytan noga. Följ databladens klimatkrav.
+            <em>(Informativt — påverkar inte beräkning automatiskt.)</em>
+          </p>
+        </div>`
+      ];
       arr.forEach(rec=>{
         const exactPk = rec.exactPackages;
         const roundedPk = Math.ceil(exactPk);
         const recommendedPk = roundedPk + 1;
-        const exactCost = exactPk * rec.price;
-        const roundedCost = roundedPk * rec.price;
-        const recommendedCost = recommendedPk * rec.price;
+        const exactCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (exactPk*rec.price);
+        const roundedCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (roundedPk*rec.price);
+        const recommendedCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (recommendedPk*rec.price);
 
         parts.push(`
           <div class="product-total">
             <h5>${rec.name} <span class="dim">[${rec.unit}]</span></h5>
             <div>${LANG==="sv"?"Totalt behov":"Total need"}: <strong>${fmt(rec.needed)} ${rec.unit}</strong></div>
             <div>${LANG==="sv"?"Förpackningar":"Packages"}: ${LANG==="sv"?"exakt":"exact"} ${fmt(exactPk)}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedPk}, <em>${LANG==="sv"?"rekommenderat":"recommended"}</em> ${recommendedPk} (${LANG==="sv"?"ta lite extra för säkerhets skull":"take a little extra for safety"})</div>
-            <div>${LANG==="sv"?"Täckning (exempel)":"Coverage (example)"}: 1 ${LANG==="sv"?"lager":"layer"} = ${fmt(rec.pack)} ${rec.unit} / ${LANG==="sv"?"förp":"pack"} • 2 ${LANG==="sv"?"lager":"layers"} ≈ ${fmt(rec.pack/2)} ${rec.unit} • 3 ${LANG==="sv"?"lager":"layers"} ≈ ${fmt(rec.pack/3)} ${rec.unit}</div>
-            <div>${LANG==="sv"?"Kostnad":"Cost"}: ${LANG==="sv"?"exakt":"exact"} ${exactCost.toFixed(2)}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedCost.toFixed(2)}, ${LANG==="sv"?"rekommenderat":"recommended"} ${recommendedCost.toFixed(2)}</div>
+            <div>${LANG==="sv"?"Kostnad":"Cost"} (${rec.priceMode==='perKg'?(LANG==="sv"?"pris/kg":"per kg"):(LANG==="sv"?"pris/förp":"per pack")}):
+               ${LANG==="sv"?"exakt":"exact"} ${exactCost.toFixed(2)}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedCost.toFixed(2)}, ${LANG==="sv"?"rekommenderat":"recommended"} ${recommendedCost.toFixed(2)}</div>
           </div>
         `);
       });
-      infoBody.innerHTML = parts.join("");
+      info.innerHTML = parts.join("");
     }
 
     /* ================== RENDER ALL ================== */
     function renderAll(){
       areasContainer.innerHTML="";
       state.project.areas.forEach(a=>areasContainer.appendChild(createAreaElement(a)));
-      // toolbar state
+
       vatToggle.checked=state.project.settings.vatIncluded;
       vatPercentInput.value=state.project.settings.vatRate;
       overageToggle.checked=state.project.settings.overageIncluded;
@@ -1074,7 +1139,9 @@
       applyI18n();
       updateCalculations(true);
 
-      // update undo/redo titles
+      // hide top add dock if at least one area exists
+      topAddDock.style.display = state.project.areas.length ? "none" : "flex";
+
       const ud=state.undoStack.at(-1)?.desc || (LANG==="sv"?"Inget att ångra":"Nothing to undo");
       const rd=state.redoStack.at(-1)?.desc || (LANG==="sv"?"Inget att göra om":"Nothing to redo");
       undoBtn.title = (LANG==="sv"?"Ångra: ":"Undo: ")+ud;
@@ -1085,17 +1152,18 @@
 
     /* ================== TEMPLATES (bottom) ================== */
     const TKEY="__TEMPLATES__";
-    function newTemplate(){ return {id:state.nextTemplateId++,name:"",color:"#6cb2ff",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,coverSqmPerPack:0,coverLayersPerPack:1}; }
+    function newTemplate(){ return {id:state.nextTemplateId++,name:"",color:"#6cb2ff",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,priceMode:"perPack",coverSqmPerPack:0,coverLayersPerPack:1}; }
     function getTemplates(){ if(!state._templates) state._templates=[]; return state._templates; }
     function saveTemplates(){ localStorage.setItem(TKEY, JSON.stringify(getTemplates())); }
     function loadTemplates(){ try{ const raw=localStorage.getItem(TKEY); if(raw){const arr=JSON.parse(raw)||[]; state._templates=arr; state.nextTemplateId=(Math.max(0,...arr.map(x=>x.id||0))+1)||1;}}catch{state._templates=[];} }
 
     function renderTemplates(){
+      const templatesBody=document.getElementById("templatesBody");
       templatesBody.innerHTML="";
       const list=getTemplates();
       if(!list.length){ templatesBody.innerHTML=`<div style="color:var(--muted)">${LANG==="sv"?"Inga mallar ännu.":"No templates yet."}</div>`; return; }
       list.forEach(t=>{
-        const row=el("div",{style:"display:grid;grid-template-columns: 200px 80px 140px 90px 110px 110px 110px 90px 120px 120px 120px auto;gap:8px;align-items:center;margin:6px 0"});
+        const row=el("div",{style:"display:grid;grid-template-columns: 200px 80px 140px 120px 120px 110px 110px 90px 130px 120px 120px 120px auto;gap:8px;align-items:center;margin:6px 0"});
         const n=el("input",{value:t.name,placeholder:t("product")}); row.appendChild(n);
         const color=el("input",{type:"color",value:t.color||"#6cb2ff"}); row.appendChild(color);
         const mode=el("select"); [["thickness",t("calcThickness")],["usage",t("calcUsage")],["coverage",t("calcCoverage")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);}); mode.value=t.calcMode; row.appendChild(mode);
@@ -1105,22 +1173,23 @@
         const de =el("input",{type:"number",min:"0",step:"0.01",value:(t.density??"")}); row.appendChild(de);
         const ps =el("input",{type:"number",min:"0.0001",step:"0.1",value:t.packSize||1}); row.appendChild(ps);
         const pu =el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; pu.appendChild(o);}); pu.value=t.packUnit||"kg"; row.appendChild(pu);
+        const pm =el("select"); [["perPack",t("perPack")],["perKg",t("perKg")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;pm.appendChild(o);}); pm.value=t.priceMode||"perPack"; row.appendChild(pm);
         const pr =el("input",{type:"number",min:"0",step:"0.01",value:t.price||0}); row.appendChild(pr);
         const coverS =el("input",{type:"number",min:"0",step:"0.1",value:t.coverSqmPerPack||0,placeholder:t("coverSqm")}); row.appendChild(coverS);
         const coverL =el("input",{type:"number",min:"1",step:"1",value:t.coverLayersPerPack||1,placeholder:t("coverLayers")}); row.appendChild(coverL);
 
         const actions=el("div",{style:"display:flex;gap:8px;justify-content:flex-end"});
-        const applyAll=el("button",{class:"btn btn-ghost"} , t("applyAllTemplates"));
-        const applyCurrent=el("button",{class:"btn btn-ghost"}, LANG==="sv"?"Använd på aktuellt område":"Apply to current area");
-        const del=el("button",{class:"btn btn-ghost",style:"border:1px solid var(--line)"},"Delete");
+        const applyAll=el("button",{class:"btn"} , t("applyAllTemplates"));
+        const applyCurrent=el("button",{class:"btn"}, LANG==="sv"?"Använd på aktuellt område":"Apply to current area");
+        const del=el("button",{class:"btn",style:"border:1px solid var(--line)"},"Delete");
         actions.appendChild(applyAll); actions.appendChild(applyCurrent); actions.appendChild(del);
         row.appendChild(actions);
 
         const bind=()=>{ t.name=n.value; t.color=color.value; t.calcMode=mode.value; t.usagePerM2=toPosFloat(use.value,0); t.layers=Math.max(1,parseInt(lay.value)||1); t.thickness=toPosFloat(th.value,0);
-          t.density=(de.value===""?null:toPosFloat(de.value,0)); t.packSize=Math.max(0.0001,parseFloat(ps.value)||1); t.packUnit=pu.value; t.price=toPosFloat(pr.value,0);
+          t.density=(de.value===""?null:toPosFloat(de.value,0)); t.packSize=Math.max(0.0001,parseFloat(ps.value)||1); t.packUnit=pu.value; t.price=toPosFloat(pr.value,0); t.priceMode=pm.value;
           t.coverSqmPerPack=toPosFloat(coverS.value,0); t.coverLayersPerPack=Math.max(1,parseInt(coverL.value)||1);
         };
-        [n,color,mode,use,lay,th,de,ps,pu,pr,coverS,coverL].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
+        [n,color,mode,use,lay,th,de,ps,pu,pm,pr,coverS,coverL].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
 
         applyAll.addEventListener("click",()=>{
           bind(); saveTemplates();
@@ -1158,7 +1227,7 @@
       }else if(name.endsWith(".csv")){
         try{
           const lines=content.split(/\r?\n/).filter(l=>l.trim().length>0); if(!lines.length) throw new Error("Empty CSV");
-          let start=0, headers=[]; if(/area\s*name|areaname/i.test(lines[0])){headers=parseCSVLine(lines[0]);start=1;} else headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
+          let start=0, headers=[]; if(/area\s*name|areaname/i.test(lines[0])){headers=parseCSVLine(lines[0]);start=1;} else headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","PriceMode","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
           const idx={}; headers.forEach((c,i)=>idx[c]=i);
           const importedAreas=[]; const map={}; let importedSettings={};
           for(let i=start;i<lines.length;i++){
@@ -1175,6 +1244,7 @@
             const pSize =parseFloat(v[idx["PackSize"]])||1;
             const pUnit =v[idx["PackUnit"]]||"kg";
             const price =parseFloat(v[idx["Price"]])||0;
+            const pMode =v[idx["PriceMode"]]||"perPack";
             const mode  =v[idx["CalcMode"]]||"thickness";
             const usage =parseFloat(v[idx["UsagePerM2"]])||0;
             const covS  =parseFloat(v[idx["CoverSqmPerPack"]])||0;
@@ -1189,7 +1259,7 @@
             if(!area){ area={id:state.nextAreaId++,name:aName,modifier:sMod,size:aSize,products:[]}; map[aName]=area; importedAreas.push(area); }
             if(pName || price>0 || thick>0){
               area.products.push({
-                id:state.nextProductId++, name:pName, color, layers, thickness:thick, density:dens, packSize:pSize, packUnit:pUnit, price,
+                id:state.nextProductId++, name:pName, color, layers, thickness:thick, density:dens, packSize:pSize, packUnit:pUnit, price, priceMode:pMode,
                 calcMode:mode, usagePerM2:usage, coverSqmPerPack:covS, coverLayersPerPack:covL
               });
             }
@@ -1208,21 +1278,23 @@
       }
       out.push(cur.trim()); return out;
     }
+
     function exportJSON(){ const blob=new Blob([JSON.stringify(state.project,null,2)],{type:"application/json"}); downloadBlob(blob,"project_export.json"); log("Exported JSON"); }
     function exportCSV(){
-      const headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
+      const headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","PriceMode","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
       const lines=[headers.join(",")]; const S=state.project.settings;
       state.project.areas.forEach(a=>{
         if(!a.products.length){
-          lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,"","", "", "", "", "", "", "", S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent,"","","",""].map(formatCSVValue).join(","));
+          lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,"","", "", "", "", "", "", "", "", S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent,"","","",""].map(formatCSVValue).join(","));
         }else{
           a.products.forEach(p=>{
-            lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size, p.name||"", p.color||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price, S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent, p.calcMode, p.usagePerM2, p.coverSqmPerPack, p.coverLayersPerPack].map(formatCSVValue).join(","));
+            lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size, p.name||"", p.color||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price, p.priceMode||"perPack", S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent, p.calcMode, p.usagePerM2, p.coverSqmPerPack, p.coverLayersPerPack].map(formatCSVValue).join(","));
           });
         }
       });
       downloadBlob(new Blob([lines.join("\n")],{type:"text/csv"}),"project_export.csv"); log("Exported CSV");
     }
+
     function generateExcelXML(){
       const nl="\r\n";
       let xml='<?xml version="1.0"?>'+nl;
@@ -1230,10 +1302,10 @@
       xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+nl;
       xml+='<Styles>'+nl+'<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>'+nl+'<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>'+nl+'<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>'+nl+'</Styles>'+nl;
       xml+='<Worksheet ss:Name="Estimate">'+nl;
-      const COLS=18; let rows=1; state.project.areas.forEach(a=>{rows+=a.products.length; rows+=1;}); rows+=1;
+      const COLS=20; let rows=1; state.project.areas.forEach(a=>{rows+=a.products.length; rows+=1;}); rows+=1;
       xml+=`<Table ss:ExpandedColumnCount="${COLS}" ss:ExpandedRowCount="${rows}">`+nl;
       for(let j=0;j<COLS;j++){xml+='<Column ss:AutoFitWidth="1"/>'+nl;}
-      const headers=["Area","Surface Mod","Area Size (m²)","Product","Color","# Mode","Usage/m²","Cover m²/pack","Cover layers/pack","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost"];
+      const headers=["Area","Surface Mod","Area Size (m²)","Product","Color","# Mode","Usage kg/m²","Density kg/L","Pack size","Unit","Price Mode","Price","Cover m²/pack","Cover layers/pack","Layers","Thickness (mm)","Needed","Packages","Cost"];
       xml+='<Row ss:StyleID="Bold">'+nl; headers.forEach(h=>xml+=`<Cell><Data ss:Type="String">${h}</Data></Cell>`+nl); xml+='</Row>'+nl;
 
       let rowIndex=1, areaTotalRows=[];
@@ -1242,7 +1314,7 @@
           rowIndex++;
           const S=state.project.settings;
           const areaSize=Number(a.size)||0, layers=Math.max(1,Number(p.layers)||1);
-          const unit=p.packUnit||"kg", price=Number(p.price)||0, packSize=Math.max(0.0001,Number(p.packSize)||0);
+          const unit=p.packUnit||"kg", price=Number(p.price)||0, packSize=Math.max(0.0001,Number(p.packSize)||0), priceMode=p.priceMode||"perPack";
           let needed=0, packages=0;
           if((p.calcMode||"thickness")==="usage"){
             let base= areaSize*layers*(Number(p.usagePerM2)||0); base*=a.modifier; if(S.overageIncluded) base*=(1+S.overagePercent/100);
@@ -1257,7 +1329,8 @@
             packages = S.exactMode ? packNeed : Math.ceil(packNeed);
             needed = packages * packSize;
           }
-          const cost=packages*price;
+          const cost=(priceMode==='perKg')?(needed*price):(packages*price);
+
           xml+='<Row>'+nl;
           xml+=`<Cell><Data ss:Type="String">${escapeXML(a.name)}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${a.modifier}</Data></Cell>`+nl;
@@ -1266,14 +1339,15 @@
           xml+=`<Cell><Data ss:Type="String">${escapeXML(p.color||"")}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="String">${p.calcMode}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${p.usagePerM2||0}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${(p.density!=null?p.density:"")}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${p.packSize||0}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="String">${unit}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="String">${priceMode}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${price}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${p.coverSqmPerPack||0}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${p.coverLayersPerPack||1}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${layers}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${p.thickness||0}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${(p.density!=null?p.density:"")}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${p.packSize||0}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="String">${unit}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${price}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${needed.toFixed(1)}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${S.exactMode?fmt(packages):packages}</Data></Cell>`+nl;
           xml+=`<Cell ss:StyleID="TwoDec"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>`+nl;
@@ -1283,7 +1357,7 @@
         let areaTotal=0;
         a.products.forEach(p=>{
           const S=state.project.settings; const areaSize=Number(a.size)||0; const layers=Math.max(1,Number(p.layers)||1);
-          const unit=p.packUnit||"kg"; const price=Number(p.price)||0; const packSize=Math.max(0.0001,Number(p.packSize)||0);
+          const unit=p.packUnit||"kg"; const price=Number(p.price)||0; const packSize=Math.max(0.0001,Number(p.packSize)||0); const priceMode=p.priceMode||"perPack";
           let needed=0, packages=0;
           if((p.calcMode||"thickness")==="usage"){
             let base= areaSize*layers*(Number(p.usagePerM2)||0); base*=a.modifier; if(S.overageIncluded) base*=(1+S.overagePercent/100);
@@ -1298,16 +1372,16 @@
             packages = S.exactMode ? packNeed : Math.ceil(packNeed);
             needed = packages * packSize;
           }
-          areaTotal += packages*price;
+          areaTotal += (priceMode==='perKg')?(needed*price):(packages*price);
         });
         xml+='<Row ss:StyleID="Bold">'+nl;
-        xml+=`<Cell ss:MergeAcross="16"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
+        xml+=`<Cell ss:MergeAcross="17"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
         xml+=`<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotal.toFixed(2)}</Data></Cell>`+nl;
         xml+='</Row>'+nl;
       });
       rowIndex++;
       xml+='<Row ss:StyleID="Bold">'+nl;
-      xml+='<Cell ss:MergeAcross="16"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
+      xml+='<Cell ss:MergeAcross="17"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
       if(areaTotalRows.length){ const refs=areaTotalRows.map(r=>`R${r}C`); xml+=`<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${refs.join(",")})"><Data ss:Type="Number"></Data></Cell>`+nl; }
       else xml+='<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>'+nl;
       xml+='</Row>'+nl + '</Table>'+nl + '</Worksheet>'+nl + '</Workbook>';
@@ -1316,12 +1390,14 @@
     function exportExcel(){ downloadBlob(new Blob([generateExcelXML()],{type:"application/vnd.ms-excel"}),"project_estimate.xls"); log("Exported Excel"); }
 
     /* ================== EVENTS ================== */
+    // Top add area (hide after first area exists)
     btnAddAreaDock.addEventListener("click",()=>{
       const id=state.nextAreaId++; const nm=(LANG==="sv"?"Område ":"Area ")+id;
       const a={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
       state.project.areas.push(a); const el=createAreaElement(a); areasContainer.appendChild(el);
       log(`Added area "${nm}"`); pushStateForUndo(`Added area ${nm}`); updateCalculations();
       el.scrollIntoView({behavior:"smooth",block:"center"});
+      topAddDock.style.display="none";
     });
     undoBtn.addEventListener("click",undo); redoBtn.addEventListener("click",redo);
 
@@ -1352,23 +1428,8 @@
     langSV.addEventListener("click",()=>{LANG="sv"; langSV.classList.add("active"); langEN.classList.remove("active"); applyI18n(); renderAll();});
     langEN.addEventListener("click",()=>{LANG="en"; langEN.classList.add("active"); langSV.classList.remove("active"); applyI18n(); renderAll();});
 
-    // Templates buttons (ensure "Lägg till mall" works and visible immediately)
-    addTemplateBtn.addEventListener("click",()=>{
-      const tmpl=newTemplate(); const L=getTemplates(); L.push(tmpl); saveTemplates(); renderTemplates(); log(t("tmplAdded"));
-      document.getElementById("globalProducts").scrollIntoView({behavior:"smooth"});
-      // focus new template name
-      setTimeout(()=>{const inputs=templatesBody.querySelectorAll("input"); if(inputs.length) inputs[0].focus();},200);
-    });
-    applyAllTemplatesBtn.addEventListener("click",()=>{
-      const L=getTemplates(); if(!L.length) return;
-      pushStateForUndo("Apply ALL templates to ALL areas");
-      state.project.areas.forEach(a=>{
-        L.forEach(tpl=>{const np=cloneProductData(tpl); np.id=state.nextProductId++; a.products.push(np);});
-      });
-      log(t("tmplApplyAll")); renderAll();
-    });
-
     /* ================== INIT ================== */
+    function applyI18n(){document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));}); refreshSummaryLabels();}
     loadTemplates();
     applyI18n();
     log("App started");
