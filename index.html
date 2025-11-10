@@ -1,323 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Concrete Surface Cost Estimator</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Concrete Surface Cost Estimator — Pro</title>
   <style>
-    /* ===== Base Styling ===== */
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      color: #212121;
-      margin: 0;
-      padding: 0;
-      line-height: 1.4;
+    /* ===== Base Styling (kept) ===== */
+    :root{
+      --bg:#f9f9f9;--fg:#212121;--muted:#6b7280;--panel:#ffffff;--line:#ddd;
+      --accent:#0ea5e9;--accent-2:#22c55e;--danger:#ef4444;--warn:#f59e0b;
+      --panel-2:#f0f0f0;--chip:#e5e7eb;--shadow:0 4px 14px rgba(0,0,0,.08);
     }
-    .toolbar {
-      background: #e0e0e0;
-      padding: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
+    body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--fg);margin:0}
+    .toolbar{
+      position:sticky;top:0;z-index:5;background:#e0e0e0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+      padding:10px;border-bottom:1px solid #cfcfcf
     }
-    .toolbar label {
-      margin-right: 5px;
-      font-weight: bold;
+    .toolbar label{font-weight:bold}
+    .toolbar input[type="number"]{width:70px}
+    .toolbar button,.toolbar input[type="checkbox"],.toolbar select{margin-right:12px}
+    .toolbar .split{flex:1}
+    .toolbar .chip{background:var(--chip);border-radius:999px;padding:3px 9px;font-size:.9em}
+
+    /* ===== Areas ===== */
+    #areasContainer{padding:10px 10px 70px}
+    .area{background:var(--panel);box-shadow:var(--shadow);border:1px solid #ccc;border-radius:10px;margin:14px;padding:12px}
+    .area-header{display:grid;grid-template-columns: 180px 170px 120px 120px 1fr auto;gap:8px;align-items:center;margin-bottom:10px}
+    .area-header input[type="text"]{font-weight:bold}
+    .area-header .remove-area{justify-self:end;background:#ff5555;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer}
+    .area-header .remove-area:hover{opacity:.9}
+
+    table.area-table{width:100%;border-collapse:collapse;margin-bottom:6px}
+    table.area-table th,table.area-table td{border:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:middle}
+    table.area-table th{background:var(--panel-2)}
+    table.area-table td input,table.area-table td select{width:100%;box-sizing:border-box;padding:4px;border:1px solid #ccc;border-radius:6px;font:inherit}
+    .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .mini{font-size:.85em;padding:4px 6px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer}
+    .mini.primary{border-color:var(--accent);color:#0369a1}
+    .mini.warn{border-color:var(--warn);color:#92400e;background:#fff7ed}
+    .mini.ghost{border-color:#ddd;color:#374151}
+    .mini.danger{border-color:#ef4444;color:#991b1b;background:#fee2e2}
+    .remove-product{background:#ff7777;color:#fff;border:none;padding:4px 8px;border-radius:6px;cursor:pointer}
+
+    .area-grid{display:grid;grid-template-columns: minmax(0,1fr) 320px;gap:12px}
+    .area-side{display:flex;flex-direction:column;gap:10px}
+    .infobox{border:1px dashed #cbd5e1;background:#f8fafc;padding:10px;border-radius:8px;font-size:.92em}
+    .infobox h4{margin:0 0 6px 0}
+    .infobox .note{color:#334155}
+    .canvas-wrap{border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:8px}
+    .canvas-wrap header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .canvas-wrap small{color:var(--muted)}
+    .canvas-wrap canvas{width:100%;height:140px;border-radius:6px;background:#fff}
+
+    .breakdown{display:none;font-family:ui-monospace,Consolas,monospace;background:#f6f6f6;border:1px solid #e5e7eb;border-radius:8px;padding:8px;margin:6px 0}
+    .step-on .breakdown{display:block}
+
+    .project-summary{margin:16px;font-size:1.1em;font-weight:bold}
+
+    /* ===== Global products & info ===== */
+    #globalProducts, #infoSummary{margin:14px;background:var(--panel);border:1px solid #d4d4d4;border-radius:10px;box-shadow:var(--shadow)}
+    #globalProducts header, #infoSummary header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;padding:10px 12px}
+    #globalProducts .body, #infoSummary .body{padding:10px 12px}
+    .template-row{display:grid;grid-template-columns: 180px 115px 110px 110px 80px 80px 110px auto;gap:8px;align-items:center;margin:6px 0}
+    .template-row input, .template-row select{padding:6px;border:1px solid #ccc;border-radius:6px}
+    .template-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+    /* ===== Floating Info Toast ===== */
+    #infoToast{
+      position:fixed;right:16px;bottom:68px;background:#111827;color:#fff;padding:10px 12px;border-radius:999px;
+      cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:6
     }
-    .toolbar input[type="number"] {
-      width: 60px;
-    }
-    .toolbar button, .toolbar input[type="checkbox"], .toolbar select {
-      margin-right: 15px;
-    }
-    /* Area container styling */
-    .area {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin: 10px;
-      background: #fff;
-    }
-    .area-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 8px;
-      gap: 8px;
-    }
-    .area-header input[type="text"] {
-      font-weight: bold;
-      width: 120px;
-    }
-    .area-header select, .area-header input[type="number"] {
-      width: auto;
-    }
-    .area-header .remove-area {
-      margin-left: auto;  /* push remove button to right end */
-      background: #ff5555;
-      color: #fff;
-      border: none;
-      padding: 5px 8px;
-      cursor: pointer;
-    }
-    .area-header .remove-area:hover {
-      opacity: 0.8;
-    }
-    /* Layers table styling */
-    table.area-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 5px;
-    }
-    table.area-table th, table.area-table td {
-      border: 1px solid #ddd;
-      padding: 4px 6px;
-      text-align: left;
-      vertical-align: middle;
-    }
-    table.area-table th {
-      background: #f0f0f0;
-    }
-    table.area-table td input, table.area-table td select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 2px;
-      margin: 0;
-      border: 1px solid #ccc;
-      border-radius: 2px;
-      font: inherit;
-    }
-    table.area-table td input::-webkit-outer-spin-button,
-    table.area-table td input::-webkit-inner-spin-button {
-      /* Hide spin buttons for number inputs */
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    table.area-table td input[type=number] {
-      -moz-appearance: textfield;
-    }
-    table.area-table .remove-product {
-      background: #ff7777;
-      color: #fff;
-      border: none;
-      padding: 2px 6px;
-      cursor: pointer;
-    }
-    table.area-table .remove-product:hover {
-      opacity: 0.8;
-    }
-    /* Area total row styling */
-    .area-total-row td {
-      font-weight: bold;
-      background: #f7f7f7;
-    }
-    .area-total-label {
-      text-align: right;
-    }
-    /* Project summary styling */
-    #projectSummary {
-      margin: 20px;
-      font-size: 1.1em;
-      font-weight: bold;
-    }
-    /* ===== Logs Panel Styling ===== */
-    #logPanel {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #333;
-      color: #eee;
-      font-family: monospace;
-      font-size: 0.9em;
-      /* default height when expanded */
-      max-height: 200px;
-      display: flex;
-      flex-direction: column;
-      border-top: 2px solid #555;
-    }
-    #logHeader {
-      background: #444;
-      padding: 4px;
-      font-weight: bold;
-      cursor: default;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    #logHeader button {
-      background: #555;
-      color: #fff;
-      border: none;
-      padding: 2px 6px;
-      margin-left: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    #logHeader button:hover {
-      background: #666;
-    }
-    #logContent {
-      overflow-y: auto;
-      padding: 4px;
-    }
-    #logContent p {
-      margin: 2px 0;
-    }
-    /* Minimized state: hide content, show only header */
-    #logPanel.minimized {
-      max-height: none;
-      height: auto;
-    }
-    #logPanel.minimized #logContent {
-      display: none;
-    }
-    /* Maximized state: taller panel (e.g. 60% of viewport height) */
-    #logPanel.maximized {
-      max-height: 60vh;
-    }
-    /* ===== Dark Mode Styling ===== */
-    body.dark-mode {
-      background: #212121;
-      color: #e0e0e0;
-    }
-    body.dark-mode .toolbar {
-      background: #424242;
-      color: #e0e0e0;
-    }
-    body.dark-mode .toolbar button, 
-    body.dark-mode .toolbar input[type="checkbox"], 
-    body.dark-mode .toolbar select, 
-    body.dark-mode .toolbar input[type="number"] {
-      background: #616161;
-      color: #fff;
-      border: 1px solid #555;
-    }
-    body.dark-mode .toolbar label {
-      color: #fff;
-    }
-    body.dark-mode .area {
-      background: #2f2f2f;
-      border: 1px solid #555;
-      color: #e0e0e0;
-    }
-    body.dark-mode table.area-table th {
-      background: #555;
-      color: #eee;
-    }
-    body.dark-mode table.area-table td {
-      border-color: #555;
-    }
-    body.dark-mode table.area-table td input, 
-    body.dark-mode table.area-table td select {
-      background: #424242;
-      color: #f0f0f0;
-      border: 1px solid #666;
-    }
-    body.dark-mode .area-header .remove-area {
-      background: #c62828;
-    }
-    body.dark-mode table.area-table .remove-product {
-      background: #e53935;
-    }
-    body.dark-mode #projectSummary {
-      color: #fff;
-    }
-    /* Dark mode logs panel adjustments */
-    body.dark-mode #logPanel {
-      background: #212121;
-      color: #ddd;
-      border-top-color: #555;
-    }
-    body.dark-mode #logHeader {
-      background: #333;
-      color: #ccc;
-    }
-    body.dark-mode #logHeader button {
-      background: #555;
-    }
-    body.dark-mode #logHeader button:hover {
-      background: #666;
-    }
-    body.dark-mode #logContent {
-      background: #212121;
-    }
-    /* ===== Print Styles ===== */
-    @media print {
-      body.dark-mode {
-        /* Force light mode for printing (white background, black text) */
-        background: #fff;
-        color: #000;
-      }
-      .toolbar, #logPanel {
-        display: none !important; /* hide controls and logs panel when printing */
-      }
-      .area, #projectSummary {
-        border: none;
-        margin: 0;
-        page-break-inside: avoid;
-      }
-      .area-header .remove-area {
-        display: none;
-      }
-      table.area-table {
-        width: 100%;
-        border: 1px solid #000;
-      }
-      table.area-table th, table.area-table td {
-        border: 1px solid #000;
-      }
-      table.area-table td input, table.area-table td select {
-        /* Remove input styling, show as plain text */
-        border: none;
-        background: transparent;
-        pointer-events: none;
-      }
-      table.area-table td input::-ms-expand {
-        display: none;
-      }
+    #infoToast .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
+
+    /* ===== Logs Panel (kept and improved) ===== */
+    #logPanel{position:fixed;bottom:0;left:0;right:0;background:#333;color:#eee;font-family:monospace;font-size:.9em;max-height:220px;display:flex;flex-direction:column;border-top:2px solid #555}
+    #logHeader{background:#444;padding:4px 8px;font-weight:bold;display:flex;align-items:center;gap:8px}
+    #logHeader .sp{flex:1}
+    #logHeader button{background:#555;color:#fff;border:none;padding:2px 6px;margin-left:5px;cursor:pointer;font-weight:bold;border-radius:6px}
+    #logHeader button:hover{background:#666}
+    #logContent{overflow-y:auto;padding:6px}
+    #logPanel.minimized{max-height:none;height:auto}
+    #logPanel.minimized #logContent{display:none}
+    #logPanel.maximized{max-height:60vh}
+
+    /* ===== Dark Mode (kept) ===== */
+    body.dark-mode{--bg:#111827;--fg:#e5e7eb;--panel:#1f2937;--panel-2:#374151;--line:#2c3340;--chip:#374151}
+    body.dark-mode .area-header .remove-area{background:#c62828}
+    body.dark-mode .remove-product{background:#e53935}
+    body.dark-mode .template-row input, body.dark-mode .template-row select,
+    body.dark-mode table.area-table td input, body.dark-mode table.area-table td select{background:#111827;color:#e5e7eb;border-color:#374151}
+    body.dark-mode .infobox{background:#111827;border-color:#374151}
+    body.dark-mode .canvas-wrap{background:#111827;border-color:#374151}
+
+    /* ===== Print (kept) ===== */
+    @media print{
+      .toolbar,#logPanel,#globalProducts,#infoToast{display:none!important}
+      .area, .project-summary{border:none;margin:0;page-break-inside:avoid}
+      .area-header .remove-area,.row-actions{display:none}
+      table.area-table{width:100%;border:1px solid #000}
+      table.area-table th,table.area-table td{border:1px solid #000}
+      table.area-table td input,table.area-table td select{border:none;background:transparent;pointer-events:none}
     }
   </style>
 </head>
 <body>
-  <!-- Toolbar with global controls -->
+  <!-- ===== Toolbar (kept + new controls) ===== -->
   <div class="toolbar">
     <button id="addArea">Add Area</button>
     <button id="undo" disabled>Undo</button>
     <button id="redo" disabled>Redo</button>
-    <!-- VAT toggle and percent -->
-    <label for="vatToggle">Include VAT:</label>
-    <input type="checkbox" id="vatToggle" />
-    <input type="number" id="vatPercent" value="25" step="1" />%
-    <!-- Overage toggle and percent -->
-    <label for="overageToggle">Include Overage:</label>
-    <input type="checkbox" id="overageToggle" />
-    <input type="number" id="overagePercent" value="10" step="1" />%
-    <!-- Dark mode toggle -->
-    <label for="darkModeToggle">Dark Mode:</label>
-    <input type="checkbox" id="darkModeToggle" />
-    <!-- Import/Export buttons -->
+
+    <span class="chip">VAT</span>
+    <label for="vatToggle">Include:</label><input type="checkbox" id="vatToggle"/>
+    <input type="number" id="vatPercent" value="25" step="1"/>%
+
+    <span class="chip">Overage</span>
+    <label for="overageToggle">Include:</label><input type="checkbox" id="overageToggle"/>
+    <input type="number" id="overagePercent" value="10" step="1"/>%
+
+    <span class="chip">View</span>
+    <label for="darkModeToggle">Dark:</label><input type="checkbox" id="darkModeToggle"/>
+    <label for="stepModeToggle">Step-by-step:</label><input type="checkbox" id="stepModeToggle"/>
+
+    <span class="split"></span>
+
     <button id="importData">Import</button>
-    <input type="file" id="fileInput" accept=".json,.csv,.xls,.xlsx" style="display:none;" />
+    <input type="file" id="fileInput" accept=".json,.csv,.xls,.xlsx" style="display:none;"/>
     <button id="exportJSON">Export JSON</button>
     <button id="exportCSV">Export CSV</button>
     <button id="exportExcel">Export Excel</button>
-    <!-- Print button -->
     <button id="printBtn">Print/PDF</button>
   </div>
 
-  <!-- Container for areas -->
+  <!-- ===== Global Products (new) ===== -->
+  <section id="globalProducts">
+    <header>
+      <strong>Global Product Templates</strong>
+      <div class="template-actions">
+        <button id="addTemplate" class="mini primary">+ Add Template</button>
+        <button id="applyAllTemplates" class="mini">Apply ALL to ALL Areas</button>
+      </div>
+    </header>
+    <div class="body" id="templatesBody">
+      <!-- template rows inserted here -->
+      <div class="template-row" data-template-id="__starter" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- ===== Areas ===== -->
   <div id="areasContainer"></div>
 
-  <!-- Project summary -->
-  <div id="projectSummary">Project Total (excl. VAT): 0</div>
+  <!-- ===== Project Summary ===== -->
+  <div class="project-summary" id="projectSummary">Project Total (excl. VAT): 0</div>
 
-  <!-- Logs panel -->
+  <!-- ===== Info + Summary (new) ===== -->
+  <section id="infoSummary">
+    <header>
+      <strong>Info Boxes & Summary</strong>
+      <small id="lastInfoTime" style="color:var(--muted)"></small>
+    </header>
+    <div class="body" id="infoBody">
+      <em>No info yet. Change surface types or products to see guidance.</em>
+    </div>
+  </section>
+
+  <!-- ===== Floating info toast ===== -->
+  <div id="infoToast" title="Click to scroll to Info Boxes">
+    <span class="dot"></span>
+    <span>Info updated — View</span>
+  </div>
+
+  <!-- ===== Logs (kept) ===== -->
   <div id="logPanel" class="minimized">
-    <div id="logHeader">
-      Logs
-      <span style="flex:1 1 auto;"></span>
+    <div id="logHeader">Logs <span class="sp"></span>
       <button id="minimizeLog">_</button>
       <button id="maximizeLog">&#9723;</button>
     </div>
@@ -325,1175 +180,984 @@
   </div>
 
   <script>
-    /* ===== JavaScript Application Logic ===== */
-    (() => {
-      "use strict";
+  (()=>{"use strict";
 
-      // State data structure
-      const state = {
-        project: {
-          areas: [],       // list of area objects
-          settings: {
-            vatIncluded: false,
-            vatRate: 25,
-            overageIncluded: false,
-            overagePercent: 10,
-            surfaceTypes: { // predefined surface types with usage modifiers
-              "Smooth": 1.0,
-              "Rough": 1.1,
-              "Porous": 1.2
-            }
+    /* ===== State (kept + extended) ===== */
+    const state={
+      project:{
+        areas:[],
+        settings:{
+          vatIncluded:false,vatRate:25,
+          overageIncluded:false,overagePercent:10,
+          stepMode:false,darkMode:false,
+          surfaceTypes:{
+            "Smooth":1.00,"Light Grind":1.05,"Medium Grind":1.10,"Rough":1.15,"Porous/Cracked":1.25
+          },
+          surfaceInfo:{
+            "Smooth":{title:"Smooth troweled / polished",desc:"Closed pores; low absorption. Baseline consumption.",hint:"≈ baseline use"},
+            "Light Grind":{title:"Lightly ground",desc:"Faint scratches / micro texture. Slightly higher uptake.",hint:"+5% vs smooth"},
+            "Medium Grind":{title:"Medium ground",desc:"Noticeable open texture; hairline cracks possible.",hint:"+10% vs smooth"},
+            "Rough":{title:"Rough / broomed",desc:"Coarse profile, higher absorption.",hint:"+15% vs smooth"},
+            "Porous/Cracked":{title:"Highly porous or cracked",desc:"Significant voids and capillaries; will drink material.",hint:"+25% vs smooth"},
+            "Custom":{title:"Custom factor",desc:"User-defined surface factor.",hint:"depends on factor"}
           }
-        },
-        // Undo/redo history stacks
-        undoStack: [],
-        redoStack: [],
-        // Unique ID generators for areas and products
-        nextAreaId: 1,
-        nextProductId: 1
+        }
+      },
+      undoStack:[],redoStack:[],
+      nextAreaId:1,nextProductId:1,nextTemplateId:1,
+      lastAddedProductTemplate:null
+    };
+
+    /* ===== DOM ===== */
+    const areasContainer=document.getElementById("areasContainer");
+    const projectSummaryEl=document.getElementById("projectSummary");
+    const addAreaBtn=document.getElementById("addArea");
+    const undoBtn=document.getElementById("undo");
+    const redoBtn=document.getElementById("redo");
+    const vatToggle=document.getElementById("vatToggle");
+    const vatPercentInput=document.getElementById("vatPercent");
+    const overageToggle=document.getElementById("overageToggle");
+    const overagePercentInput=document.getElementById("overagePercent");
+    const darkModeToggle=document.getElementById("darkModeToggle");
+    const stepModeToggle=document.getElementById("stepModeToggle");
+    const importBtn=document.getElementById("importData");
+    const fileInput=document.getElementById("fileInput");
+    const exportJSONBtn=document.getElementById("exportJSON");
+    const exportCSVBtn=document.getElementById("exportCSV");
+    const exportExcelBtn=document.getElementById("exportExcel");
+    const printBtn=document.getElementById("printBtn");
+    const logPanel=document.getElementById("logPanel");
+    const logContent=document.getElementById("logContent");
+    const minimizeLogBtn=document.getElementById("minimizeLog");
+    const maximizeLogBtn=document.getElementById("maximizeLog");
+    const infoToast=document.getElementById("infoToast");
+    const infoBody=document.getElementById("infoBody");
+    const lastInfoTime=document.getElementById("lastInfoTime");
+
+    const templatesBody=document.getElementById("templatesBody");
+    const addTemplateBtn=document.getElementById("addTemplate");
+    const applyAllTemplatesBtn=document.getElementById("applyAllTemplates");
+
+    /* ===== Utils & Logging (kept) ===== */
+    function log(msg){
+      const t=new Date().toLocaleTimeString();
+      const p=document.createElement("p");
+      p.textContent=`[${t}] ${msg}`;
+      logContent.appendChild(p);
+      if(logContent.scrollHeight-logContent.clientHeight-logContent.scrollTop<5){logContent.scrollTop=logContent.scrollHeight;}
+    }
+    function pushStateForUndo(desc){
+      const snap=JSON.parse(JSON.stringify(state.project));
+      state.undoStack.push({data:snap,desc});
+      state.redoStack.length=0;
+      undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=true;
+    }
+    function undo(){
+      if(!state.undoStack.length) return;
+      const last=state.undoStack.pop(); const snap=last.data; const desc=last.desc;
+      state.redoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
+      state.project=snap; renderAll(); log(`Undo: ${desc}`);
+      undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
+    }
+    function redo(){
+      if(!state.redoStack.length) return;
+      const last=state.redoStack.pop(); const snap=last.data; const desc=last.desc;
+      state.undoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
+      state.project=snap; renderAll(); log(`Redo: ${desc}`);
+      undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
+    }
+    function downloadBlob(blob,filename){
+      const url=URL.createObjectURL(blob); const a=document.createElement("a");
+      a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+    function formatCSVValue(v){const s=String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
+    function escapeXML(s){if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+    const showInfoToast=(()=>{
+      let hideTimer=null;
+      return ()=>{
+        infoToast.style.display="flex";
+        if(hideTimer) clearTimeout(hideTimer);
+        hideTimer=setTimeout(()=>{infoToast.style.display="none";},3500);
       };
-
-      // DOM element references
-      const areasContainer = document.getElementById('areasContainer');
-      const projectSummaryEl = document.getElementById('projectSummary');
-      const addAreaBtn = document.getElementById('addArea');
-      const undoBtn = document.getElementById('undo');
-      const redoBtn = document.getElementById('redo');
-      const vatToggle = document.getElementById('vatToggle');
-      const vatPercentInput = document.getElementById('vatPercent');
-      const overageToggle = document.getElementById('overageToggle');
-      const overagePercentInput = document.getElementById('overagePercent');
-      const darkModeToggle = document.getElementById('darkModeToggle');
-      const importBtn = document.getElementById('importData');
-      const fileInput = document.getElementById('fileInput');
-      const exportJSONBtn = document.getElementById('exportJSON');
-      const exportCSVBtn = document.getElementById('exportCSV');
-      const exportExcelBtn = document.getElementById('exportExcel');
-      const printBtn = document.getElementById('printBtn');
-      const logPanel = document.getElementById('logPanel');
-      const logContent = document.getElementById('logContent');
-      const minimizeLogBtn = document.getElementById('minimizeLog');
-      const maximizeLogBtn = document.getElementById('maximizeLog');
-
-      // Logging utility: adds a message to the log panel
-      function log(message) {
-        const time = new Date();
-        const timestamp = time.toLocaleTimeString();
-        const entry = document.createElement('p');
-        entry.textContent = `[${timestamp}] ${message}`;
-        logContent.appendChild(entry);
-        // Auto-scroll to bottom if not scrolled up by user
-        if (logContent.scrollHeight - logContent.clientHeight - logContent.scrollTop < 5) {
-          logContent.scrollTop = logContent.scrollHeight;
-        }
-      }
-
-      // Save current state for undo (push a deep copy of project to undo stack)
-      function pushStateForUndo(actionDescription) {
-        // Clone project data (areas and settings) for history
-        const stateClone = JSON.parse(JSON.stringify(state.project));
-        state.undoStack.push({ data: stateClone, desc: actionDescription });
-        // Clear redo stack because new action invalidates redo history
-        state.redoStack.length = 0;
-        // Enable undo button
-        undoBtn.disabled = state.undoStack.length === 0;
-        redoBtn.disabled = true;
-      }
-
-      // Undo last action
-      function undo() {
-        if (state.undoStack.length === 0) return;
-        // Get last saved state and description
-        const last = state.undoStack.pop();
-        const prevProjectState = last.data;
-        const actionDesc = last.desc;
-        // Push current state to redo stack for potential redo
-        const currentStateClone = JSON.parse(JSON.stringify(state.project));
-        state.redoStack.push({ data: currentStateClone, desc: actionDesc });
-        // Restore project state to the previous snapshot
-        state.project = prevProjectState;
-        // Rebuild the UI to reflect this state
-        renderAll();
-        log(`Undo: ${actionDesc}`);
-        // Update undo/redo buttons
-        undoBtn.disabled = state.undoStack.length === 0;
-        redoBtn.disabled = state.redoStack.length === 0;
-      }
-
-      // Redo last undone action
-      function redo() {
-        if (state.redoStack.length === 0) return;
-        const last = state.redoStack.pop();
-        const nextProjectState = last.data;
-        const actionDesc = last.desc;
-        // Push current state to undo stack
-        const currentStateClone = JSON.parse(JSON.stringify(state.project));
-        state.undoStack.push({ data: currentStateClone, desc: actionDesc });
-        // Apply the redone state
-        state.project = nextProjectState;
-        renderAll();
-        log(`Redo: ${actionDesc}`);
-        undoBtn.disabled = state.undoStack.length === 0;
-        redoBtn.disabled = state.redoStack.length === 0;
-      }
-
-      // Create and append a new area DOM element and state object
-      function addArea() {
-        const areaId = state.nextAreaId++;
-        // Determine default area name (Area 1, Area 2, etc.)
-        const defaultName = "Area " + areaId;
-        const newArea = {
-          id: areaId,
-          name: defaultName,
-          surfaceType: "Smooth", // default type
-          modifier: state.project.settings.surfaceTypes["Smooth"],
-          size: 0,
-          products: []
-        };
-        // Update state
-        state.project.areas.push(newArea);
-        // Create UI elements for the new area
-        const areaElem = createAreaElement(newArea);
-        areasContainer.appendChild(areaElem);
-        log(`Added area "${defaultName}"`);
-        // Push state for undo
-        pushStateForUndo(`Added area ${defaultName}`);
-        // Recalculate everything (though new area has no products, cost remains same)
-        updateCalculations();
-      }
-
-      // Remove an area by its DOM element (and state)
-      function removeArea(areaElem) {
-        const areaId = parseInt(areaElem.getAttribute('data-area-id'));
-        const areaIndex = state.project.areas.findIndex(a => a.id === areaId);
-        if (areaIndex === -1) return;
-        const area = state.project.areas[areaIndex];
-        // Save area name for logging
-        const name = area.name || ("Area " + areaId);
-        // Push current state for undo
-        pushStateForUndo(`Removed area ${name}`);
-        // Remove from state
-        state.project.areas.splice(areaIndex, 1);
-        // Remove area element from DOM
-        areaElem.remove();
-        log(`Removed area "${name}"`);
-        // Recalculate project totals
-        updateCalculations();
-      }
-
-      // Create a DOM element for a product layer row in a given area
-      function createProductRowElement(area, product) {
-        const areaId = area.id;
-        const productId = product.id;
-        // Create table row
-        const tr = document.createElement('tr');
-        tr.className = 'product-row';
-        tr.setAttribute('data-product-id', productId);
-        // Helper to create cell with an input or select
-        function createCell(contentElem) {
-          const td = document.createElement('td');
-          td.appendChild(contentElem);
-          return td;
-        }
-        // Product name (text input)
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.value = product.name;
-        nameInput.placeholder = "Product name";
-        // on change, update state
-        nameInput.addEventListener('change', () => {
-          product.name = nameInput.value;
-          log(`Renamed product ${productId} in area "${area.name}" to "${product.name}"`);
-        });
-        tr.appendChild(createCell(nameInput));
-        // Number of layers (number input)
-        const layersInput = document.createElement('input');
-        layersInput.type = 'number';
-        layersInput.min = "1";
-        layersInput.value = product.layers;
-        layersInput.addEventListener('change', () => {
-          let val = parseInt(layersInput.value);
-          if (isNaN(val) || val < 1) {
-            val = 1;
-            layersInput.value = val;
-          }
-          product.layers = val;
-          log(`Updated layers for product "${product.name}" in "${area.name}" to ${val}`);
-          updateCalculations();
-        });
-        tr.appendChild(createCell(layersInput));
-        // Thickness (mm) (number input)
-        const thickInput = document.createElement('input');
-        thickInput.type = 'number';
-        thickInput.min = "0";
-        thickInput.step = "0.1";
-        thickInput.value = product.thickness;
-        thickInput.addEventListener('change', () => {
-          let val = parseFloat(thickInput.value);
-          if (isNaN(val) || val < 0) {
-            val = 0;
-            thickInput.value = val;
-          }
-          product.thickness = val;
-          log(`Updated thickness for product "${product.name}" in "${area.name}" to ${val} mm`);
-          updateCalculations();
-        });
-        tr.appendChild(createCell(thickInput));
-        // Density (kg/L) (number input)
-        const densityInput = document.createElement('input');
-        densityInput.type = 'number';
-        densityInput.min = "0";
-        densityInput.step = "0.1";
-        densityInput.value = (product.density !== null && product.density !== undefined) ? product.density : '';
-        densityInput.placeholder = "density";
-        // Only needed if unit is kg; we will enable/disable based on unit select
-        densityInput.disabled = (product.packUnit === 'L');
-        densityInput.addEventListener('change', () => {
-          let val = parseFloat(densityInput.value);
-          if (isNaN(val) || val < 0) {
-            val = 0;
-            densityInput.value = val;
-          }
-          product.density = val;
-          log(`Updated density for product "${product.name}" in "${area.name}" to ${val} kg/L`);
-          updateCalculations();
-        });
-        tr.appendChild(createCell(densityInput));
-        // Package size (number input)
-        const packSizeInput = document.createElement('input');
-        packSizeInput.type = 'number';
-        packSizeInput.min = "0.0001";
-        packSizeInput.step = "0.1";
-        packSizeInput.value = product.packSize;
-        packSizeInput.addEventListener('change', () => {
-          let val = parseFloat(packSizeInput.value);
-          if (isNaN(val) || val <= 0) {
-            val = 1;
-            packSizeInput.value = val;
-          }
-          product.packSize = val;
-          log(`Updated package size for product "${product.name}" in "${area.name}" to ${val} ${product.packUnit}`);
-          updateCalculations();
-        });
-        tr.appendChild(createCell(packSizeInput));
-        // Unit (select kg/L)
-        const unitSelect = document.createElement('select');
-        const optionKg = document.createElement('option');
-        optionKg.value = 'kg';
-        optionKg.textContent = 'kg';
-        const optionL = document.createElement('option');
-        optionL.value = 'L';
-        optionL.textContent = 'L';
-        unitSelect.appendChild(optionKg);
-        unitSelect.appendChild(optionL);
-        unitSelect.value = product.packUnit;
-        unitSelect.addEventListener('change', () => {
-          const newUnit = unitSelect.value;
-          product.packUnit = newUnit;
-          // Enable/disable density field depending on new unit
-          if (newUnit === 'kg') {
-            densityInput.disabled = false;
-            // If density was 0 or null, require user to fill it for accurate calc
-          } else { // 'L'
-            densityInput.disabled = true;
-            // We keep density value but it's not used in calc for volume-based
-          }
-          log(`Changed unit for product "${product.name}" in "${area.name}" to ${newUnit}`);
-          updateCalculations();
-        });
-        tr.appendChild(createCell(unitSelect));
-        // Price per package (number input)
-        const priceInput = document.createElement('input');
-        priceInput.type = 'number';
-        priceInput.min = "0";
-        priceInput.step = "0.01";
-        priceInput.value = product.price;
-        priceInput.placeholder = "price";
-        priceInput.addEventListener('change', () => {
-          let val = parseFloat(priceInput.value);
-          if (isNaN(val) || val < 0) {
-            val = 0;
-            priceInput.value = val.toFixed(2);
-          }
-          product.price = val;
-          log(`Updated price for product "${product.name}" in "${area.name}" to ${val}`);
-          updateCalculations();
-        });
-        tr.appendChild(createCell(priceInput));
-        // Needed quantity (output span, not editable)
-        const neededSpan = document.createElement('span');
-        neededSpan.className = 'neededQty';
-        neededSpan.textContent = '0';  // will be updated in calc
-        tr.appendChild(createCell(neededSpan));
-        // Packages needed (output span, not editable)
-        const packagesSpan = document.createElement('span');
-        packagesSpan.className = 'packageCount';
-        packagesSpan.textContent = '0';
-        tr.appendChild(createCell(packagesSpan));
-        // Cost (output span, not editable)
-        const costSpan = document.createElement('span');
-        costSpan.className = 'cost';
-        costSpan.textContent = '0';
-        tr.appendChild(createCell(costSpan));
-        // Remove product button
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'X';
-        removeBtn.className = 'remove-product';
-        removeBtn.addEventListener('click', () => {
-          removeProduct(area, product.id);
-        });
-        tr.appendChild(createCell(removeBtn));
-        return tr;
-      }
-
-      // Create the entire DOM structure for an area (header + table)
-      function createAreaElement(area) {
-        const areaDiv = document.createElement('div');
-        areaDiv.className = 'area';
-        areaDiv.setAttribute('data-area-id', area.id);
-        // Area header with name, surface type + mod, size, and remove button
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'area-header';
-        // Area name input
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.className = 'area-name';
-        nameInput.value = area.name;
-        nameInput.placeholder = "Area name";
-        nameInput.addEventListener('change', () => {
-          const oldName = area.name;
-          area.name = nameInput.value;
-          log(`Renamed area "${oldName}" to "${area.name}"`);
-        });
-        headerDiv.appendChild(nameInput);
-        // Surface type select
-        const surfaceSelect = document.createElement('select');
-        surfaceSelect.className = 'surface-type';
-        // Populate with known types + a "Custom" option
-        for (let typeName in state.project.settings.surfaceTypes) {
-          const opt = document.createElement('option');
-          opt.value = typeName;
-          opt.textContent = typeName;
-          surfaceSelect.appendChild(opt);
-        }
-        const customOpt = document.createElement('option');
-        customOpt.value = 'Custom';
-        customOpt.textContent = 'Custom';
-        surfaceSelect.appendChild(customOpt);
-        // Determine which option to select based on current modifier
-        // If current mod matches a preset exactly, select that, else select Custom
-        let matchedType = Object.keys(state.project.settings.surfaceTypes)
-                              .find(t => state.project.settings.surfaceTypes[t] === area.modifier);
-        if (!matchedType) matchedType = 'Custom';
-        surfaceSelect.value = matchedType;
-        headerDiv.appendChild(surfaceSelect);
-        // Surface modifier input (number)
-        const modInput = document.createElement('input');
-        modInput.type = 'number';
-        modInput.step = "0.01";
-        modInput.className = 'surface-mod';
-        modInput.value = area.modifier;
-        // Enable editing only if Custom type
-        modInput.disabled = (matchedType !== 'Custom');
-        headerDiv.appendChild(modInput);
-        // Event: changing surface type select
-        surfaceSelect.addEventListener('change', () => {
-          const type = surfaceSelect.value;
-          if (type === 'Custom') {
-            // Enable custom modifier editing
-            modInput.disabled = false;
-            // Keep current modifier value (user can adjust)
-          } else {
-            // Set modifier to preset value and disable direct editing
-            area.modifier = state.project.settings.surfaceTypes[type];
-            modInput.value = area.modifier;
-            modInput.disabled = true;
-            log(`Set surface type of "${area.name}" to ${type} (modifier x${area.modifier})`);
-            updateCalculations();
-          }
-        });
-        // Event: changing the surface modifier input (for custom)
-        modInput.addEventListener('change', () => {
-          let val = parseFloat(modInput.value);
-          if (isNaN(val) || val < 0) {
-            val = 1.0;
-            modInput.value = val;
-          }
-          area.modifier = val;
-          // If user manually adjusted to a value that matches a known preset, we could auto-select that type
-          const presetType = Object.keys(state.project.settings.surfaceTypes)
-                              .find(t => Math.abs(state.project.settings.surfaceTypes[t] - val) < 1e-6);
-          if (presetType) {
-            surfaceSelect.value = presetType;
-            modInput.disabled = true;
-          } else {
-            surfaceSelect.value = 'Custom';
-          }
-          log(`Updated surface modifier for "${area.name}" to ${area.modifier}`);
-          updateCalculations();
-        });
-        // Area size (m²) input
-        const sizeInput = document.createElement('input');
-        sizeInput.type = 'number';
-        sizeInput.className = 'area-size';
-        sizeInput.placeholder = "Size (m²)";
-        sizeInput.min = "0";
-        sizeInput.step = "0.1";
-        sizeInput.value = area.size;
-        sizeInput.addEventListener('change', () => {
-          let val = parseFloat(sizeInput.value);
-          if (isNaN(val) || val < 0) {
-            val = 0;
-            sizeInput.value = val;
-          }
-          area.size = val;
-          log(`Updated area size for "${area.name}" to ${val} m²`);
-          updateCalculations();
-        });
-        headerDiv.appendChild(sizeInput);
-        // Remove area button
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-area';
-        removeBtn.textContent = 'Delete Area';
-        removeBtn.addEventListener('click', () => {
-          removeArea(areaDiv);
-        });
-        headerDiv.appendChild(removeBtn);
-        areaDiv.appendChild(headerDiv);
-        // Product layers table
-        const table = document.createElement('table');
-        table.className = 'area-table';
-        // Table header
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        const headers = ["Product", "Layers", "Thickness (mm)", "Density (kg/L)", "Pack size", "Unit", "Price/Pack", "Needed", "Packages", "Cost", ""];
-        headers.forEach(text => {
-          const th = document.createElement('th');
-          th.textContent = text;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-        // Table body
-        const tbody = document.createElement('tbody');
-        // Add existing products (if any)
-        area.products.forEach(prod => {
-          const rowElem = createProductRowElement(area, prod);
-          tbody.appendChild(rowElem);
-        });
-        table.appendChild(tbody);
-        areaDiv.appendChild(table);
-        // "Add product" button below table
-        const addProductBtn = document.createElement('button');
-        addProductBtn.textContent = "Add Product Layer";
-        addProductBtn.addEventListener('click', () => {
-          addProduct(area, tbody);
-        });
-        areaDiv.appendChild(addProductBtn);
-        return areaDiv;
-      }
-
-      // Add a new product layer to a given area
-      function addProduct(area, tbodyElem) {
-        const productId = state.nextProductId++;
-        const newProduct = {
-          id: productId,
-          name: "",        // default empty name
-          layers: 1,
-          thickness: 0,
-          density: null,   // unknown until provided if needed
-          packSize: 1,
-          packUnit: "kg",
-          price: 0
-        };
-        area.products.push(newProduct);
-        // Create a new row in the table for this product
-        const newRow = createProductRowElement(area, newProduct);
-        tbodyElem.appendChild(newRow);
-        log(`Added new product layer in "${area.name}" (Product ID ${productId})`);
-        pushStateForUndo(`Added product in area ${area.name}`);
-        updateCalculations();
-      }
-
-      // Remove a product by productId from an area
-      function removeProduct(area, productId) {
-        const index = area.products.findIndex(p => p.id === productId);
-        if (index === -1) return;
-        const prod = area.products[index];
-        area.products.splice(index, 1);
-        // Remove from DOM: find the row in the area table
-        const areaElem = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
-        if (areaElem) {
-          const row = areaElem.querySelector(`tr.product-row[data-product-id="${productId}"]`);
-          if (row) {
-            row.remove();
-          }
-        }
-        log(`Removed product "${prod.name || '(unnamed)'}" from "${area.name}"`);
-        pushStateForUndo(`Removed product from area ${area.name}`);
-        updateCalculations();
-      }
-
-      // Recalculate all usage and cost values, update UI accordingly
-      function updateCalculations() {
-        const settings = state.project.settings;
-        let totalCostExVAT = 0;
-        // Loop through each area and calculate its total
-        state.project.areas.forEach(area => {
-          let areaCost = 0;
-          // For each product in area, compute needed quantity, packages, cost
-          area.products.forEach(product => {
-            const areaSize = area.size;
-            const layers = product.layers;
-            const thickness_mm = product.thickness;
-            const density = (product.density !== null) ? product.density : 0;
-            const packSize = product.packSize;
-            const unit = product.packUnit;
-            const price = product.price;
-            // Base calculations
-            let neededQuantity = 0; // in same unit as packaging (kg or L)
-            if (areaSize > 0 && layers > 0) {
-              if (unit === 'kg') {
-                // need density to compute weight from volume
-                if (density > 0) {
-                  // volume in liters = area(m2) * thickness(mm)
-                  let volumeLiters = areaSize * thickness_mm * layers;
-                  // apply surface modifier
-                  volumeLiters *= area.modifier;
-                  // apply overage
-                  if (settings.overageIncluded) {
-                    volumeLiters *= (1 + settings.overagePercent/100);
-                  }
-                  // weight needed (kg) = volume (L) * density (kg/L)
-                  neededQuantity = volumeLiters * density;
-                } else {
-                  neededQuantity = 0;
-                }
-              } else if (unit === 'L') {
-                // volume needed in liters = area * thickness(mm) * layers
-                let volumeLiters = areaSize * thickness_mm * layers;
-                volumeLiters *= area.modifier;
-                if (settings.overageIncluded) {
-                  volumeLiters *= (1 + settings.overagePercent/100);
-                }
-                neededQuantity = volumeLiters;
-              }
-            }
-            // Determine number of packages (ceiling)
-            let packagesNeeded = 0;
-            if (packSize > 0 && neededQuantity > 0) {
-              packagesNeeded = Math.ceil(neededQuantity / packSize);
-            }
-            // Cost for this product
-            const cost = packagesNeeded * price;
-            areaCost += cost;
-            // Update the UI for this product
-            const areaElem = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
-            if (areaElem) {
-              const prodRow = areaElem.querySelector(`tr.product-row[data-product-id="${product.id}"]`);
-              if (prodRow) {
-                // Fill needed quantity (with unit)
-                const neededCell = prodRow.querySelector('.neededQty');
-                const packagesCell = prodRow.querySelector('.packageCount');
-                const costCell = prodRow.querySelector('.cost');
-                if (neededCell) {
-                  // Show needed quantity with one decimal (or none if very large)
-                  neededCell.textContent = neededQuantity ? neededQuantity.toFixed(1) + " " + unit : "0";
-                }
-                if (packagesCell) {
-                  packagesCell.textContent = packagesNeeded.toString();
-                }
-                if (costCell) {
-                  // Show cost with two decimals
-                  costCell.textContent = cost.toFixed(2);
-                }
-              }
-            }
-          });
-          // Display area total in UI (if we had an area total element)
-          // We didn't implement a separate area total output field in HTML for each area.
-          // Instead, area total can be inferred by summing product costs visually.
-          // If desired, could add a line "Area Total: X" in UI here.
-          totalCostExVAT += areaCost;
-        });
-        // Update project total in UI
-        const vatIncluded = settings.vatIncluded;
-        const vatRate = settings.vatRate;
-        let displayCost;
-        if (vatIncluded) {
-          const totalWithVAT = totalCostExVAT * (1 + vatRate/100);
-          displayCost = totalWithVAT.toFixed(2);
-          projectSummaryEl.textContent = `Project Total (incl. VAT): ${displayCost}`;
-        } else {
-          displayCost = totalCostExVAT.toFixed(2);
-          projectSummaryEl.textContent = `Project Total (excl. VAT): ${displayCost}`;
-        }
-      }
-
-      // Rebuild entire UI from state (used on undo/redo or import)
-      function renderAll() {
-        // Clear areas container
-        areasContainer.innerHTML = "";
-        // Recreate all area elements
-        state.project.areas.forEach(area => {
-          const areaElem = createAreaElement(area);
-          areasContainer.appendChild(areaElem);
-        });
-        // Update global controls (VAT, overage toggles and values, dark mode)
-        vatToggle.checked = state.project.settings.vatIncluded;
-        vatPercentInput.value = state.project.settings.vatRate;
-        overageToggle.checked = state.project.settings.overageIncluded;
-        overagePercentInput.value = state.project.settings.overagePercent;
-        // Reapply dark mode class if needed
-        document.body.classList.toggle('dark-mode', state.project.settings.darkMode);
-        darkModeToggle.checked = state.project.settings.darkMode || false;
-        // Recalculate everything to update outputs
-        updateCalculations();
-      }
-
-      // Import project data from JSON/CSV
-      function importData(file, content) {
-        const fileName = file.name;
-        if (fileName.endsWith(".json")) {
-          try {
-            const imported = JSON.parse(content);
-            // Basic validation: must have areas and settings
-            if (!imported.areas || !imported.settings) {
-              throw new Error("Invalid JSON format");
-            }
-            // Push current state for undo
-            pushStateForUndo(`Imported JSON (${fileName})`);
-            // Apply imported data to state
-            state.project.areas = imported.areas;
-            state.project.settings = imported.settings;
-            // Reset ID counters (we can recompute highest id to continue unique id assignment)
-            state.nextAreaId = 1;
-            state.nextProductId = 1;
-            state.project.areas.forEach(area => {
-              if (area.id >= state.nextAreaId) state.nextAreaId = area.id + 1;
-              area.products.forEach(prod => {
-                if (prod.id >= state.nextProductId) state.nextProductId = prod.id + 1;
-              });
-            });
-            renderAll();
-            log(`Imported project from JSON file "${fileName}"`);
-          } catch (err) {
-            alert("Failed to import JSON: " + err.message);
-            log(`Error importing JSON: ${err.message}`);
-          }
-        } else if (fileName.endsWith(".csv")) {
-          try {
-            // Parse CSV content
-            const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
-            if (lines.length === 0) throw new Error("Empty CSV file");
-            // First line could be header
-            let startIndex = 0;
-            let headers = [];
-            if (lines[0].toLowerCase().includes("areaname") || lines[0].toLowerCase().includes("area name")) {
-              // Assume first line is header
-              headers = parseCSVLine(lines[0]);
-              startIndex = 1;
-            } else {
-              // Define expected columns if no header provided
-              headers = ["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
-            }
-            // Map header names to indices for flexibility
-            const colIndex = {};
-            headers.forEach((col, idx) => { colIndex[col] = idx; });
-            // Prepare new state objects
-            const importedAreas = [];
-            const areaMap = {}; // map area name to area object (for grouping products)
-            let importedSettings = { vatIncluded: false, vatRate: 0, overageIncluded: false, overagePercent: 0, surfaceTypes: {} };
-            for (let i = startIndex; i < lines.length; i++) {
-              const line = lines[i];
-              const values = parseCSVLine(line);
-              if (values.length === 0) continue;
-              // Read fields (use header indices if available)
-              const areaName = values[colIndex["AreaName"] || colIndex["areaName"] || 0] || "";
-              if (!areaName) continue; // skip if no area name
-              const surfaceType = values[colIndex["SurfaceType"]] || "Custom";
-              const surfaceModStr = values[colIndex["SurfaceMod"]];
-              const areaSizeStr = values[colIndex["AreaSize"]];
-              const productName = values[colIndex["ProductName"]] || "";
-              const layersStr = values[colIndex["Layers"]];
-              const thicknessStr = values[colIndex["Thickness"]];
-              const densityStr = values[colIndex["Density"]];
-              const packSizeStr = values[colIndex["PackSize"]];
-              const packUnit = values[colIndex["PackUnit"]] || "kg";
-              const priceStr = values[colIndex["Price"]];
-              // Global settings (should be same for all lines, take from first data line)
-              if (i === startIndex) {
-                const vatInclStr = values[colIndex["VATIncluded"]];
-                const vatRateStr = values[colIndex["VATRate"]];
-                const overInclStr = values[colIndex["OverageIncluded"]];
-                const overPercentStr = values[colIndex["OveragePercent"]];
-                importedSettings.vatIncluded = (vatInclStr || "").toLowerCase() === "true" || vatInclStr === "1";
-                importedSettings.vatRate = parseFloat(vatRateStr) || importedSettings.vatRate;
-                importedSettings.overageIncluded = (overInclStr || "").toLowerCase() === "true" || overInclStr === "1";
-                importedSettings.overagePercent = parseFloat(overPercentStr) || importedSettings.overagePercent;
-                // Keep existing surfaceTypes definitions or initialize if none
-                importedSettings.surfaceTypes = state.project.settings.surfaceTypes;
-              }
-              // Convert numeric fields
-              const surfaceMod = parseFloat(surfaceModStr) || 1.0;
-              const areaSize = parseFloat(areaSizeStr) || 0;
-              const layers = parseInt(layersStr) || 1;
-              const thickness = parseFloat(thicknessStr) || 0;
-              const density = (densityStr !== undefined && densityStr !== "") ? parseFloat(densityStr) : null;
-              const packSize = parseFloat(packSizeStr) || 1;
-              const price = parseFloat(priceStr) || 0;
-              // Find or create area
-              let area;
-              if (areaMap[areaName]) {
-                area = areaMap[areaName];
-                // If area already exists but data is different, log a warning
-                if (Math.abs(area.modifier - surfaceMod) > 1e-6 || Math.abs(area.size - areaSize) > 1e-6) {
-                  log(`Warning: Inconsistent data for area "${areaName}" in CSV.`);
-                }
-              } else {
-                area = {
-                  id: state.nextAreaId++,  // assign new IDs
-                  name: areaName,
-                  surfaceType: surfaceType,
-                  modifier: surfaceMod,
-                  size: areaSize,
-                  products: []
-                };
-                areaMap[areaName] = area;
-                importedAreas.push(area);
-              }
-              // Create product object
-              const product = {
-                id: state.nextProductId++,
-                name: productName,
-                layers: layers,
-                thickness: thickness,
-                density: density,
-                packSize: packSize,
-                packUnit: packUnit,
-                price: price
-              };
-              // Only add product if there's meaningful data (we consider an entry with no product name as possibly indicating an area with no products)
-              if (productName || layers > 0 || thickness > 0 || price > 0) {
-                area.products.push(product);
-              }
-            }
-            // Push state for undo
-            pushStateForUndo(`Imported CSV (${fileName})`);
-            // Apply imported data to state
-            state.project.areas = importedAreas;
-            state.project.settings = { 
-              ...state.project.settings, // keep any existing fields (like darkMode, surfaceTypes)
-              vatIncluded: importedSettings.vatIncluded,
-              vatRate: importedSettings.vatRate,
-              overageIncluded: importedSettings.overageIncluded,
-              overagePercent: importedSettings.overagePercent
-            };
-            renderAll();
-            log(`Imported project from CSV file "${fileName}"`);
-          } catch (err) {
-            alert("Failed to import CSV: " + err.message);
-            log(`Error importing CSV: ${err.message}`);
-          }
-        } else {
-          alert("Unsupported file format for import.");
-          log("Import failed: unsupported file type.");
-        }
-      }
-
-      // Helper: parse a single CSV line into array of values (handles quotes and commas)
-      function parseCSVLine(line) {
-        const result = [];
-        let current = "";
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (!inQuotes) {
-            if (char === ',') {
-              // field separator
-              result.push(current);
-              current = "";
-            } else if (char === '"') {
-              inQuotes = true;
-            } else {
-              current += char;
-            }
-          } else {
-            // inside quotes
-            if (char === '"') {
-              // peek next char
-              if (i + 1 < line.length && line[i+1] === '"') {
-                // double quote -> literal quote
-                current += '"';
-                i++; // skip the escaped quote
-              } else {
-                inQuotes = false;
-              }
-            } else {
-              current += char;
-            }
-          }
-        }
-        // push last field
-        result.push(current);
-        // Trim whitespace from each field
-        return result.map(val => val.trim());
-      }
-
-      // Export current project state to JSON, CSV, or Excel
-      function exportJSON() {
-        // Create an object without logs or history
-        const exportData = JSON.stringify(state.project, null, 2);
-        const blob = new Blob([exportData], { type: "application/json" });
-        downloadBlob(blob, "project_export.json");
-        log("Exported project to JSON file");
-      }
-      function exportCSV() {
-        // Compose CSV header and rows
-        const headers = ["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
-        const lines = [];
-        lines.push(headers.join(","));
-        const settings = state.project.settings;
-        state.project.areas.forEach(area => {
-          if (area.products.length === 0) {
-            // Area with no products: output one line with area info and empty product fields
-            const row = [
-              area.name,
-              area.surfaceType || "",
-              area.modifier,
-              area.size,
-              "", // no product name
-              "", // no layers
-              "", // no thickness
-              "", // no density
-              "", // no packSize
-              "", // no packUnit
-              "", // no price
-              settings.vatIncluded,
-              settings.vatRate,
-              settings.overageIncluded,
-              settings.overagePercent
-            ];
-            lines.push(row.map(val => formatCSVValue(val)).join(","));
-          } else {
-            area.products.forEach(product => {
-              const row = [
-                area.name,
-                area.surfaceType || "",
-                area.modifier,
-                area.size,
-                product.name || "",
-                product.layers,
-                product.thickness,
-                product.density !== null ? product.density : "",
-                product.packSize,
-                product.packUnit,
-                product.price,
-                settings.vatIncluded,
-                settings.vatRate,
-                settings.overageIncluded,
-                settings.overagePercent
-              ];
-              lines.push(row.map(val => formatCSVValue(val)).join(","));
-            });
-          }
-        });
-        const csvContent = lines.join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv" });
-        downloadBlob(blob, "project_export.csv");
-        log("Exported project to CSV file");
-      }
-      function exportExcel() {
-        // Generate Excel 2003 XML content with formulas
-        const xmlContent = generateExcelXML();
-        const blob = new Blob([xmlContent], { type: "application/vnd.ms-excel" });
-        downloadBlob(blob, "project_estimate.xls");
-        log("Exported project to Excel file");
-      }
-      // Helper: format a value for CSV (add quotes if needed)
-      function formatCSVValue(val) {
-        const str = String(val);
-        if (/[",\n]/.test(str)) {
-          // escape double quotes
-          const escaped = str.replace(/"/g, '""');
-          return `"${escaped}"`;
-        }
-        return str;
-      }
-      // Helper: trigger a download of a Blob as a file
-      function downloadBlob(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-
-      // Generate Excel XML (SpreadsheetML) for current project state
-      function generateExcelXML() {
-        const newline = "\r\n";
-        let xml = '<?xml version="1.0"?>' + newline;
-        xml += '<?mso-application progid="Excel.Sheet"?>' + newline;
-        xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ';
-        xml += 'xmlns:o="urn:schemas-microsoft-com:office:office" ';
-        xml += 'xmlns:x="urn:schemas-microsoft-com:office:excel" ';
-        xml += 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ';
-        xml += 'xmlns:html="http://www.w3.org/TR/REC-html40">' + newline;
-        // Define styles (bold, two decimals, bold+two decimals)
-        xml += '<Styles>' + newline;
-        xml += '<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>' + newline;
-        xml += '<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>' + newline;
-        xml += '<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>' + newline;
-        xml += '</Styles>' + newline;
-        xml += `<Worksheet ss:Name="Estimate">` + newline;
-        // We'll create one sheet with a header row and each product on separate row
-        const colCount = 13; // we will include: Area, SurfaceMod, AreaSize, Product, Layers, Thickness, Density, PackSize, Unit, Price, Needed, Packages, Cost
-        // Count total rows: 1 header + for each area: each product row + 1 area total row + 1 project total row
-        let totalRows = 1; // header
-        state.project.areas.forEach(area => {
-          totalRows += area.products.length;
-          totalRows += 1; // area total row
-        });
-        totalRows += 1; // project total row
-        xml += `<Table ss:ExpandedColumnCount="${colCount}" ss:ExpandedRowCount="${totalRows}">` + newline;
-        // Column definitions (optional widths)
-        for (let j = 0; j < colCount; j++) {
-          xml += '<Column ss:AutoFitWidth="1"/>' + newline;
-        }
-        // Header row
-        const headerTitles = ["Area", "Surface Mod", "Area Size (m²)", "Product", "Layers", "Thickness (mm)", "Density (kg/L)", "Pack size", "Unit", "Price/Pack", "Needed Qty", "Packages", "Cost"];
-        xml += '<Row ss:StyleID="Bold">' + newline;
-        headerTitles.forEach(title => {
-          xml += `<Cell><Data ss:Type="String">${title}</Data></Cell>` + newline;
-        });
-        xml += '</Row>' + newline;
-        // Keep track of Excel row index for formulas
-        let currentExcelRow = 1; // header was row 1
-        const areaTotalRows = []; // to store row indices of area total rows
-        // Data rows for each product and area total
-        state.project.areas.forEach(area => {
-          const areaNameEsc = escapeXML(area.name);
-          const mod = area.modifier;
-          const size = area.size;
-          // Product rows for this area
-          area.products.forEach(product => {
-            currentExcelRow++;
-            const prodNameEsc = escapeXML(product.name);
-            const layers = product.layers;
-            const thickness = product.thickness;
-            const density = (product.density !== null && product.density !== undefined) ? product.density : "";
-            const packSize = product.packSize;
-            const packUnit = product.packUnit;
-            const price = product.price;
-            // Recalculate needed, packages for export accuracy (should be up-to-date, but recalc to be safe)
-            let needed = 0;
-            if (packUnit === 'kg') {
-              if (density && density > 0) {
-                let volL = area.size * thickness * layers * area.modifier;
-                if (state.project.settings.overageIncluded) {
-                  volL *= (1 + state.project.settings.overagePercent/100);
-                }
-                needed = volL * density;
-              } else {
-                needed = 0;
-              }
-            } else {
-              let volL = area.size * thickness * layers * area.modifier;
-              if (state.project.settings.overageIncluded) {
-                volL *= (1 + state.project.settings.overagePercent/100);
-              }
-              needed = volL;
-            }
-            const packages = (packSize > 0) ? Math.ceil(needed / packSize) : 0;
-            const cost = packages * price;
-            // Build row cells
-            xml += '<Row>' + newline;
-            xml += `<Cell><Data ss:Type="String">${areaNameEsc}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="Number">${mod}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="Number">${size}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="String">${prodNameEsc}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="Number">${layers}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="Number">${thickness}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="Number">${density !== "" ? density : ""}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="Number">${packSize}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="String">${packUnit}</Data></Cell>` + newline;
-            xml += `<Cell><Data ss:Type="Number">${price}</Data></Cell>` + newline;
-            // Needed quantity (one decimal)
-            xml += `<Cell><Data ss:Type="Number">${needed.toFixed(1)}</Data></Cell>` + newline;
-            // Packages (integer)
-            xml += `<Cell><Data ss:Type="Number">${packages}</Data></Cell>` + newline;
-            // Cost (two decimals)
-            xml += `<Cell ss:StyleID="TwoDec"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>` + newline;
-            xml += '</Row>' + newline;
-          });
-          // Area total row
-          currentExcelRow++;
-          areaTotalRows.push(currentExcelRow);
-          // Calculate area total cost (sum of product costs we calculated above for this area)
-          let areaTotalCost = 0;
-          area.products.forEach(prod => {
-            const density = (prod.density !== null) ? prod.density : 0;
-            let needed = 0;
-            if (prod.packUnit === 'kg') {
-              if (density && density > 0) {
-                let volL = area.size * prod.thickness * prod.layers * area.modifier;
-                if (state.project.settings.overageIncluded) {
-                  volL *= (1 + state.project.settings.overagePercent/100);
-                }
-                needed = volL * density;
-              } else {
-                needed = 0;
-              }
-            } else {
-              let volL = area.size * prod.thickness * prod.layers * area.modifier;
-              if (state.project.settings.overageIncluded) {
-                volL *= (1 + state.project.settings.overagePercent/100);
-              }
-              needed = volL;
-            }
-            const packages = (prod.packSize > 0) ? Math.ceil(needed / prod.packSize) : 0;
-            const cost = packages * prod.price;
-            areaTotalCost += cost;
-          });
-          xml += '<Row ss:StyleID="Bold">' + newline;
-          // Merge first 12 cells for label, last cell for cost
-          xml += `<Cell ss:MergeAcross="11"><Data ss:Type="String">${areaNameEsc} Total</Data></Cell>` + newline;
-          xml += `<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotalCost.toFixed(2)}</Data></Cell>` + newline;
-          xml += '</Row>' + newline;
-        });
-        // Project total row (sum of area totals)
-        currentExcelRow++;
-        xml += '<Row ss:StyleID="Bold">' + newline;
-        xml += `<Cell ss:MergeAcross="11"><Data ss:Type="String">Project Total</Data></Cell>` + newline;
-        if (areaTotalRows.length > 0) {
-          // Build formula referencing each area total cost cell
-          const formulaParts = areaTotalRows.map(rowNum => `R${rowNum}C`);
-          // The project total formula sums those cells in current column
-          xml += `<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${formulaParts.join(",")})"><Data ss:Type="Number"></Data></Cell>` + newline;
-        } else {
-          xml += `<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>` + newline;
-        }
-        xml += '</Row>' + newline;
-        xml += '</Table>' + newline;
-        xml += '</Worksheet>' + newline;
-        xml += '</Workbook>';
-        return xml;
-      }
-      // Helper: escape XML special characters
-      function escapeXML(str) {
-        if (str === null || str === undefined) return "";
-        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      }
-
-      // Event bindings for global toolbar controls
-      addAreaBtn.addEventListener('click', () => {
-        addArea();
-      });
-      undoBtn.addEventListener('click', () => {
-        undo();
-      });
-      redoBtn.addEventListener('click', () => {
-        redo();
-      });
-      vatToggle.addEventListener('change', () => {
-        state.project.settings.vatIncluded = vatToggle.checked;
-        log(`VAT ${vatToggle.checked ? "included" : "excluded"} in calculations`);
-        updateCalculations();
-      });
-      vatPercentInput.addEventListener('change', () => {
-        let val = parseFloat(vatPercentInput.value);
-        if (isNaN(val) || val < 0) {
-          val = 0;
-        }
-        state.project.settings.vatRate = val;
-        log(`Set VAT rate to ${val}%`);
-        updateCalculations();
-      });
-      overageToggle.addEventListener('change', () => {
-        state.project.settings.overageIncluded = overageToggle.checked;
-        log(`${overageToggle.checked ? "Applied" : "Removed"} overage in calculations`);
-        updateCalculations();
-      });
-      overagePercentInput.addEventListener('change', () => {
-        let val = parseFloat(overagePercentInput.value);
-        if (isNaN(val) || val < 0) {
-          val = 0;
-        }
-        state.project.settings.overagePercent = val;
-        log(`Set overage to ${val}%`);
-        if (state.project.settings.overageIncluded) {
-          updateCalculations();
-        }
-      });
-      darkModeToggle.addEventListener('change', () => {
-        const enabled = darkModeToggle.checked;
-        state.project.settings.darkMode = enabled;
-        document.body.classList.toggle('dark-mode', enabled);
-        log(`Switched to ${enabled ? "dark" : "light"} mode`);
-      });
-      importBtn.addEventListener('click', () => {
-        // Trigger file input dialog
-        fileInput.click();
-      });
-      fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          importData(file, reader.result);
-        };
-        reader.onerror = () => {
-          alert("Failed to read file");
-          log("Error reading file for import");
-        };
-        reader.readAsText(file);
-        // reset file input value to allow re-selecting same file later if needed
-        fileInput.value = "";
-      });
-      exportJSONBtn.addEventListener('click', () => {
-        exportJSON();
-      });
-      exportCSVBtn.addEventListener('click', () => {
-        exportCSV();
-      });
-      exportExcelBtn.addEventListener('click', () => {
-        exportExcel();
-      });
-      printBtn.addEventListener('click', () => {
-        window.print();
-        log("Initiated print/PDF export");
-      });
-      // Log panel control buttons
-      minimizeLogBtn.addEventListener('click', () => {
-        if (!logPanel.classList.contains('minimized')) {
-          // Minimize panel
-          logPanel.classList.add('minimized');
-        } else {
-          // If already minimized, restore to normal (not maximized)
-          logPanel.classList.remove('minimized');
-          logPanel.classList.remove('maximized');
-        }
-      });
-      maximizeLogBtn.addEventListener('click', () => {
-        if (logPanel.classList.contains('maximized')) {
-          // If currently maximized, restore to normal size
-          logPanel.classList.remove('maximized');
-        } else {
-          // Ensure it's not minimized and then maximize
-          logPanel.classList.remove('minimized');
-          logPanel.classList.add('maximized');
-        }
-      });
-
-      // Initialize default content (no areas initially)
-      log("Application started");
-      // We start with an empty project (user can add areas manually)
-      // Alternatively, could add a default area for convenience:
-      // addArea();
     })();
+
+    /* ===== Surface help text ===== */
+    function surfaceExpl(area){
+      const t = reverseFindTypeByFactor(area.modifier) || "Custom";
+      const meta = state.project.settings.surfaceInfo[t] || state.project.settings.surfaceInfo["Custom"];
+      const factor = area.modifier.toFixed(2);
+      return {type:t, title:meta.title, desc:meta.desc, hint:meta.hint, factor};
+    }
+    function reverseFindTypeByFactor(f){
+      // exact match -> name; otherwise null
+      const m=Object.entries(state.project.settings.surfaceTypes).find(([k,v])=>Math.abs(v-f)<1e-6);
+      return m?m[0]:null;
+    }
+
+    /* ===== Illustration ===== */
+    function colorFromName(name){
+      // hash string -> HSL
+      let h=0; for(let i=0;i<name.length;i++){h=(h*31 + name.charCodeAt(i))>>>0;}
+      return `hsl(${h%360} 65% 55%)`;
+    }
+    function drawAreaIllustration(canvas, area){
+      const ctx=canvas.getContext("2d"); const W=canvas.width=canvas.clientWidth; const H=canvas.height=canvas.clientHeight;
+      // background texture by surface type
+      ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,W,H);
+      const t=reverseFindTypeByFactor(area.modifier) || "Custom";
+      if(t==="Smooth"){ /* no texture */ }
+      else if(t==="Light Grind"||t==="Medium Grind"){
+        ctx.strokeStyle="rgba(0,0,0,.08)";
+        const step=t==="Light Grind"?12:8;
+        for(let y=8;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y-6);ctx.stroke();}
+      }else if(t==="Rough"||t==="Porous/Cracked"){
+        const dots=t==="Rough"?500:900;
+        ctx.fillStyle="rgba(0,0,0,.06)";
+        for(let i=0;i<dots;i++){const x=Math.random()*W; const y=Math.random()*H; const r=Math.random()*(t==="Rough"?1.5:2.2);
+          ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();}
+        if(t==="Porous/Cracked"){
+          // few cracks
+          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.lineWidth=1;
+          for(let c=0;c<3;c++){ctx.beginPath(); let x= Math.random()*W; let y= Math.random()*H; ctx.moveTo(x,y);
+            for(let k=0;k<8;k++){x+= (Math.random()*40-20); y+= (Math.random()*20-10); ctx.lineTo(Math.max(0,Math.min(W,x)),Math.max(0,Math.min(H,y)));}
+            ctx.stroke();}
+        }
+      }
+      // Layers stack by products (sum layers)
+      const totalLayers=area.products.reduce((a,p)=>a+Number(p.layers||0),0) || 1;
+      let y=H-8, margin=6, unitH=(H-16 - (totalLayers-1)*3)/totalLayers;
+      area.products.forEach(p=>{
+        const layers=Math.max(1,Number(p.layers||1));
+        for(let i=0;i<layers;i++){
+          ctx.fillStyle=colorFromName(p.name||"Layer");
+          ctx.fillRect(8,y-unitH, W-16, unitH);
+          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.strokeRect(8,y-unitH, W-16, unitH);
+          y= y - unitH - 3;
+        }
+      });
+      // Legend
+      const legendY=8; let lx=10;
+      area.products.slice(0,4).forEach(p=>{
+        ctx.fillStyle=colorFromName(p.name||"Layer"); ctx.fillRect(lx,legendY,14,14);
+        ctx.fillStyle="#111"; ctx.font="12px sans-serif"; ctx.fillText((p.name||"Product"), lx+18, legendY+12);
+        lx+= (W/2>220? W/2:180);
+      });
+    }
+
+    /* ===== Clone helpers ===== */
+    function cloneProductData(prod){
+      return JSON.parse(JSON.stringify({
+        name:prod.name||"", layers:prod.layers||1, thickness:prod.thickness||0,
+        density:(prod.density===null?null:prod.density||0), packSize:prod.packSize||1,
+        packUnit:prod.packUnit||"kg", price:prod.price||0,
+        calcMode: prod.calcMode || "thickness",
+        usagePerM2: prod.usagePerM2 || 0
+      }));
+    }
+
+    /* ===== Build Area ===== */
+    function createAreaElement(area){
+      const wrap=document.createElement("div"); wrap.className="area"; wrap.dataset.areaId=area.id;
+
+      // Header
+      const header=document.createElement("div"); header.className="area-header";
+      const nameI=el("input",{type:"text",value:area.name,placeholder:"Area name"});
+      nameI.addEventListener("change",()=>{const old=area.name; area.name=nameI.value; log(`Renamed area "${old}" → "${area.name}"`);});
+      header.appendChild(nameI);
+
+      const surfaceSel=el("select"); // options
+      Object.keys(state.project.settings.surfaceTypes).concat(["Custom"]).forEach(n=>{
+        const o=el("option",{value:n}); o.textContent=n; surfaceSel.appendChild(o);
+      });
+      const matched=reverseFindTypeByFactor(area.modifier) || "Custom"; surfaceSel.value=matched; header.appendChild(surfaceSel);
+
+      const modI=el("input",{type:"number",step:"0.01",value:area.modifier}); modI.disabled=(matched!=="Custom"); header.appendChild(modI);
+
+      const sizeI=el("input",{type:"number",placeholder:"Size (m²)",min:"0",step:"0.1",value:area.size||0});
+      sizeI.addEventListener("change",()=>{const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Updated size for "${area.name}" → ${v} m²`); updateCalculations(true);});
+      header.appendChild(sizeI);
+
+      const cloneInfo=el("div",{style:"justify-self:start;color:var(--muted);font-size:.9em"}, "Tip: Use row actions to clone to other areas");
+      header.appendChild(cloneInfo);
+
+      const delBtn=el("button",{class:"remove-area"},"Delete Area");
+      delBtn.addEventListener("click",()=>removeArea(wrap));
+      header.appendChild(delBtn);
+
+      wrap.appendChild(header);
+
+      // Grid: table + right side (illustration + infobox)
+      const grid=el("div",{class:"area-grid"});
+      // Table
+      const table=el("table",{class:"area-table"});
+      const thead=el("thead");
+      const headRow=el("tr");
+      [
+        "Product","Calc","Usage (per m²/layer)","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost","Actions"
+      ].forEach(h=>headRow.appendChild(el("th",{},h)));
+      thead.appendChild(headRow); table.appendChild(thead);
+      const tbody=el("tbody");
+
+      // existing rows
+      area.products.forEach(p=>tbody.appendChild(createProductRowElement(area,p)));
+
+      table.appendChild(tbody);
+
+      // Add product button (with smart clone on first add)
+      const addPBtn=el("button",{class:"mini primary",style:"margin:8px 0"},"+ Add Product Layer");
+      addPBtn.addEventListener("click",()=>{
+        const firstAdd = area.products.length===0 && state.lastAddedProductTemplate;
+        const row = addProduct(area,tbody);
+        if(firstAdd){
+          if(confirm(`Clone last product "${state.lastAddedProductTemplate.name}" to this area?`)){
+            applyProductDataToRow(area,row,state.lastAddedProductTemplate);
+            log(`Cloned last product template to "${area.name}"`);
+            updateCalculations(true);
+          }
+        }
+      });
+
+      // Side: Canvas + Infobox
+      const side=el("div",{class:"area-side"});
+      const canvBox=el("div",{class:"canvas-wrap"});
+      const canvHeader=el("header");
+      canvHeader.appendChild(el("strong",{},"Area Illustration"));
+      canvHeader.appendChild(el("small",{}, "Layers, color-coded by product"));
+      canvBox.appendChild(canvHeader);
+      const canvas=document.createElement("canvas");
+      canvBox.appendChild(canvas);
+      side.appendChild(canvBox);
+
+      const info=el("div",{class:"infobox"});
+      info.appendChild(el("h4",{},"Surface Info"));
+      info.appendChild(el("div",{class:"note","data-bind":"infotext"}));
+      side.appendChild(info);
+
+      grid.appendChild(table);
+      grid.appendChild(side);
+      wrap.appendChild(grid);
+      wrap.appendChild(addPBtn);
+
+      // listeners
+      surfaceSel.addEventListener("change",()=>{
+        if(surfaceSel.value==="Custom"){ modI.disabled=false; }
+        else{
+          area.modifier=state.project.settings.surfaceTypes[surfaceSel.value];
+          modI.value=area.modifier; modI.disabled=true;
+          log(`Set surface of "${area.name}" → ${surfaceSel.value} (x${area.modifier})`);
+          updateCalculations(true);
+        }
+        updateAreaInfoboxAndCanvas();
+      });
+      modI.addEventListener("change",()=>{
+        const v=toPosFloat(modI.value,1.0); modI.value=v; area.modifier=v;
+        surfaceSel.value = reverseFindTypeByFactor(v) || "Custom";
+        if(surfaceSel.value!=="Custom"){ modI.disabled=true; }
+        log(`Updated surface factor for "${area.name}" → ${v}`);
+        updateCalculations(true);
+        updateAreaInfoboxAndCanvas();
+      });
+
+      function updateAreaInfoboxAndCanvas(){
+        const meta=surfaceExpl(area);
+        const note=wrap.querySelector('[data-bind="infotext"]');
+        if(note){
+          note.innerHTML=`
+            <div><strong>Type:</strong> ${meta.title} <span style="color:var(--muted)">(${meta.type})</span></div>
+            <div><strong>Factor:</strong> ×${meta.factor} &nbsp; <em>${meta.hint}</em></div>
+            <div style="margin-top:4px">${meta.desc}</div>
+            <div style="margin-top:6px"><small>Tip: higher factor ⇒ higher material consumption.</small></div>
+          `;
+        }
+        drawAreaIllustration(canvas,area);
+      }
+      updateAreaInfoboxAndCanvas();
+
+      return wrap;
+    }
+
+    function createProductRowElement(area,product){
+      // defaults
+      if(!product.calcMode) product.calcMode="thickness";
+      if(typeof product.usagePerM2!=="number") product.usagePerM2=0;
+
+      const tr=document.createElement("tr"); tr.className="product-row"; tr.dataset.productId=product.id;
+
+      // helper
+      const td=(child)=>{const c=document.createElement("td"); c.appendChild(child); return c;};
+
+      // product name
+      const nameI=el("input",{type:"text",value:product.name,placeholder:"Product name"});
+      nameI.addEventListener("change",()=>{product.name=nameI.value; state.lastAddedProductTemplate=cloneProductData(product); log(`Renamed product ${product.id} in "${area.name}" → "${product.name}"`);});
+      tr.appendChild(td(nameI));
+
+      // calc mode
+      const modeSel=el("select");
+      [["thickness","Thickness"],["usage","Usage/m²"]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;modeSel.appendChild(o);});
+      modeSel.value=product.calcMode;
+      tr.appendChild(td(modeSel));
+
+      // usage per m² per layer
+      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:(product.usagePerM2||0)});
+      tr.appendChild(td(usageI));
+
+      // layers
+      const layersI=el("input",{type:"number",min:"1",step:"1",value:product.layers||1});
+      layersI.addEventListener("change",()=>{product.layers=Math.max(1,parseInt(layersI.value)||1); layersI.value=product.layers; log(`Layers "${product.name}" in "${area.name}" → ${product.layers}`); updateCalculations();});
+      tr.appendChild(td(layersI));
+
+      // thickness
+      const thickI=el("input",{type:"number",min:"0",step:"0.1",value:product.thickness||0});
+      thickI.addEventListener("change",()=>{product.thickness=toPosFloat(thickI.value,0); thickI.value=product.thickness; log(`Thickness "${product.name}" in "${area.name}" → ${product.thickness} mm`); updateCalculations();});
+      tr.appendChild(td(thickI));
+
+      // density
+      const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); // allow ''
+      densI.placeholder="density";
+      tr.appendChild(td(densI));
+
+      // pack size
+      const packI=el("input",{type:"number",min:"0.0001",step:"0.1",value:product.packSize||1});
+      packI.addEventListener("change",()=>{product.packSize=Math.max(0.0001,parseFloat(packI.value)||1); packI.value=product.packSize; log(`Pack size "${product.name}" → ${product.packSize} ${product.packUnit}`); updateCalculations();});
+      tr.appendChild(td(packI));
+
+      // unit
+      const unitSel=el("select");
+      ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; unitSel.appendChild(o);});
+      unitSel.value=product.packUnit||"kg";
+      tr.appendChild(td(unitSel));
+
+      // price/pack
+      const priceI=el("input",{type:"number",min:"0",step:"0.01",value:product.price||0});
+      priceI.addEventListener("change",()=>{product.price=toPosFloat(priceI.value,0); priceI.value=product.price.toFixed(2); log(`Price/pack "${product.name}" → ${product.price}`); updateCalculations();});
+      tr.appendChild(td(priceI));
+
+      // outputs
+      const needSpan=el("span",{class:"neededQty"},"0");
+      tr.appendChild(td(needSpan));
+      const pkgSpan=el("span",{class:"packageCount"},"0");
+      tr.appendChild(td(pkgSpan));
+      const costSpan=el("span",{class:"cost"},"0");
+      tr.appendChild(td(costSpan));
+
+      // actions
+      const acts=el("div",{class:"row-actions"});
+      const cloneAll=el("button",{class:"mini ghost"},"Clone → All");
+      const cloneBelow=el("button",{class:"mini ghost"},"Clone ↓ Below");
+      const infoBtn=el("button",{class:"mini warn"},"ℹ Breakdown");
+      const delBtn=el("button",{class:"remove-product"},"Remove");
+
+      acts.appendChild(cloneAll); acts.appendChild(cloneBelow); acts.appendChild(infoBtn); acts.appendChild(delBtn);
+      tr.appendChild(td(acts));
+
+      // breakdown row (expands when step mode)
+      const br=document.createElement("tr"); br.className="breakdown";
+      const brtd=document.createElement("td"); brtd.colSpan=13; br.appendChild(brtd);
+      const brbox=el("div",{class:"breakdown"}); brtd.appendChild(brbox);
+
+      // Listeners + mode bindings
+      function bindModeUI(){
+        const isUsage=(product.calcMode==="usage");
+        usageI.disabled=!isUsage;
+        thickI.disabled=isUsage;
+        densI.disabled=isUsage || unitSel.value==="L"; // density only for kg && thickness mode
+      }
+      bindModeUI();
+
+      modeSel.addEventListener("change",()=>{
+        product.calcMode=modeSel.value;
+        bindModeUI();
+        log(`Calc mode "${product.name}" in "${area.name}" → ${product.calcMode}`);
+        updateCalculations(true);
+      });
+      usageI.addEventListener("change",()=>{
+        product.usagePerM2=toPosFloat(usageI.value,0); usageI.value=product.usagePerM2;
+        state.lastAddedProductTemplate=cloneProductData(product);
+        updateCalculations();
+      });
+      densI.addEventListener("change",()=>{
+        const v=toPosFloat(densI.value,0); product.density=v; densI.value=(v||""); updateCalculations();
+      });
+      unitSel.addEventListener("change",()=>{
+        product.packUnit=unitSel.value;
+        // enable/disable density depending on unit and mode
+        bindModeUI();
+        log(`Unit "${product.name}" → ${product.packUnit}`);
+        updateCalculations();
+      });
+
+      delBtn.addEventListener("click",()=>removeProduct(area,product.id));
+
+      cloneAll.addEventListener("click",()=>{
+        pushStateForUndo(`Clone product "${product.name}" to all areas`);
+        state.project.areas.forEach(a=>{
+          if(a.id===area.id) return;
+          const clone=cloneProductData(product); clone.id=state.nextProductId++;
+          a.products.push(clone);
+        });
+        log(`Cloned "${product.name}" to all areas`);
+        renderAll();
+      });
+      cloneBelow.addEventListener("click",()=>{
+        pushStateForUndo(`Clone product "${product.name}" to areas below`);
+        const idx = state.project.areas.findIndex(a=>a.id===area.id);
+        state.project.areas.slice(idx+1).forEach(a=>{
+          const clone=cloneProductData(product); clone.id=state.nextProductId++;
+          a.products.push(clone);
+        });
+        log(`Cloned "${product.name}" to areas below`);
+        renderAll();
+      });
+
+      infoBtn.addEventListener("click",()=>{
+        state.project.settings.stepMode=!state.project.settings.stepMode;
+        stepModeToggle.checked=state.project.settings.stepMode;
+        document.body.classList.toggle("step-on", state.project.settings.stepMode);
+        updateCalculations(true);
+      });
+
+      // attach rows
+      const frag=document.createDocumentFragment();
+      frag.appendChild(tr); frag.appendChild(br);
+      return frag;
+    }
+
+    function addProduct(area,tbody){
+      const p={
+        id:state.nextProductId++,name:"",layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,
+        calcMode:"thickness", usagePerM2:0
+      };
+      area.products.push(p);
+      const frag=createProductRowElement(area,p);
+      tbody.appendChild(frag);
+      log(`Added product in "${area.name}" (ID ${p.id})`);
+      pushStateForUndo(`Added product in area ${area.name}`);
+      updateCalculations();
+      return frag; // tr + breakdown tr
+    }
+
+    function applyProductDataToRow(area,frag,data){
+      // find product by last child dataset? simpler: update last product in area
+      const prod=area.products[area.products.length-1];
+      Object.assign(prod, cloneProductData(data));
+      // re-render area to refresh inputs
+      const areaEl = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+      if(areaEl){ areaEl.replaceWith(createAreaElement(area)); }
+    }
+
+    function removeArea(areaElem){
+      const id=parseInt(areaElem.dataset.areaId);
+      const idx=state.project.areas.findIndex(a=>a.id===id);
+      if(idx===-1) return;
+      const nm=state.project.areas[idx].name||`Area ${id}`;
+      pushStateForUndo(`Removed area ${nm}`);
+      state.project.areas.splice(idx,1);
+      areaElem.remove();
+      log(`Removed area "${nm}"`);
+      updateCalculations(true);
+    }
+
+    function addArea(){
+      const id=state.nextAreaId++; const nm=`Area ${id}`;
+      const area={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
+      state.project.areas.push(area);
+      const el=createAreaElement(area);
+      areasContainer.appendChild(el);
+      log(`Added area "${nm}"`);
+      pushStateForUndo(`Added area ${nm}`);
+      updateCalculations();
+    }
+
+    function removeProduct(area,prodId){
+      const i=area.products.findIndex(p=>p.id===prodId); if(i===-1) return;
+      const nm=area.products[i].name||"(unnamed)";
+      area.products.splice(i,1);
+      const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+      if(areaEl){ // remove row
+        const rows=areaEl.querySelectorAll(`tr.product-row[data-product-id="${prodId}"], tr.breakdown`);
+        rows.forEach(r=>r.remove());
+      }
+      log(`Removed product "${nm}" from "${area.name}"`);
+      pushStateForUndo(`Removed product from area ${area.name}`);
+      updateCalculations(true);
+    }
+
+    /* ===== Calculations (kept + extended) ===== */
+    function updateCalculations(fromSurfaceChange=false){
+      const S=state.project.settings;
+      let totalCostExVAT=0;
+
+      const infoLines=[];
+
+      state.project.areas.forEach(area=>{
+        let areaCost=0;
+
+        const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+        const rows = areaEl? areaEl.querySelectorAll("tbody tr.product-row"): [];
+
+        area.products.forEach((product,idx)=>{
+          // gather inputs
+          const areaSize = Number(area.size)||0;
+          const layers   = Math.max(1, Number(product.layers)||1);
+          const unit     = product.packUnit||"kg";
+          const price    = Number(product.price)||0;
+          const packSize = Number(product.packSize)||0;
+
+          let needed=0;
+          let breakdown=[];
+
+          if(product.calcMode==="usage"){
+            const use = Number(product.usagePerM2)||0; // kg or L per m² per layer
+            const base = areaSize * layers * use;
+            breakdown.push(`Base = Area(${areaSize}) × Layers(${layers}) × Usage(${use}/${unit}·m²) = ${fmt(base)}`);
+            let withSurf = base * area.modifier;
+            breakdown.push(`Surface factor ×${area.modifier} ⇒ ${fmt(withSurf)}`);
+            if(S.overageIncluded){withSurf*= (1+S.overagePercent/100); breakdown.push(`Overage +${S.overagePercent}% ⇒ ${fmt(withSurf)}`);}
+            needed=withSurf;
+          }else{
+            // thickness-based
+            const th = Number(product.thickness)||0; // mm
+            const volL_base = areaSize * th * layers; // liters if we treat 1 mm over 1 m² = 1 L
+            breakdown.push(`Volume L = Area(${areaSize}) × Thickness(${th}mm) × Layers(${layers}) = ${fmt(volL_base)} L`);
+            let volL = volL_base * area.modifier;
+            breakdown.push(`Surface factor ×${area.modifier} ⇒ ${fmt(volL)} L`);
+            if(S.overageIncluded){volL*= (1+S.overagePercent/100); breakdown.push(`Overage +${S.overagePercent}% ⇒ ${fmt(volL)} L`);}
+            if(unit==="kg"){
+              const dens = Number(product.density)||0;
+              if(dens>0){ needed = volL * dens; breakdown.push(`Needed kg = Volume(${fmt(volL)}L) × Density(${dens}kg/L) = ${fmt(needed)} kg`);}
+              else { needed=0; breakdown.push(`Density missing ⇒ needed set to 0 kg`); }
+            }else{ needed = volL; breakdown.push(`Needed L = ${fmt(needed)} L`); }
+          }
+
+          let packages=0; if(packSize>0 && needed>0){ packages = Math.ceil(needed/packSize); }
+          const cost = packages * price; areaCost+=cost;
+
+          // update UI
+          const prodRow = rows[idx];
+          if(prodRow){
+            const needSpan=prodRow.querySelector(".neededQty");
+            const pkgSpan =prodRow.querySelector(".packageCount");
+            const costSpan=prodRow.querySelector(".cost");
+            if(needSpan) needSpan.textContent = needed? `${fmt(needed)} ${unit}` : "0";
+            if(pkgSpan)  pkgSpan.textContent  = String(packages||0);
+            if(costSpan) costSpan.textContent = (cost||0).toFixed(2);
+
+            // update breakdown
+            const brRow=prodRow.nextElementSibling; // our companion breakdown row
+            if(brRow && brRow.querySelector(".breakdown")){
+              const box=brRow.querySelector(".breakdown");
+              box.innerHTML = `
+                <div><strong>${product.name||"Product"} — ${product.calcMode==="usage"?"Usage/m²":"Thickness"} mode</strong></div>
+                <div>${breakdown.join("<br/>")}</div>
+                <div><strong>Packages</strong> = CEIL(Needed / PackSize) = CEIL(${fmt(needed)} / ${packSize}) = ${packages}</div>
+                <div><strong>Cost</strong> = Packages × Price = ${packages} × ${price} = <strong>${cost.toFixed(2)}</strong></div>
+              `;
+              brRow.style.display = state.project.settings.stepMode ? "" : "none";
+            }
+          }
+
+          // collect info lines
+          infoLines.push(`<li><strong>${area.name}</strong> • ${product.name||"Product"} — Needed: ${fmt(needed)} ${unit}, Packages: ${packages}, Cost: ${cost.toFixed(2)}</li>`);
+        });
+
+        totalCostExVAT += areaCost;
+
+        // refresh area canvas (already redrawn on surface change; redraw always is fine)
+        const canv=areasContainer.querySelector(`.area[data-area-id="${area.id}"] canvas`);
+        if(canv) drawAreaIllustration(canv,area);
+      });
+
+      // project totals
+      const vatIncluded=S.vatIncluded, vatRate=S.vatRate;
+      const displayCost = vatIncluded ? (totalCostExVAT*(1+vatRate/100)).toFixed(2) : totalCostExVAT.toFixed(2);
+      projectSummaryEl.textContent = `Project Total (${vatIncluded?"incl.":"excl."} VAT): ${displayCost}`;
+
+      // info summary
+      if(infoLines.length){
+        infoBody.innerHTML = `<ul style="margin:0 0 6px 16px;padding:0">${infoLines.join("")}</ul>`;
+        lastInfoTime.textContent = "Updated " + new Date().toLocaleTimeString();
+        if(fromSurfaceChange) showInfoToast();
+      }else{
+        infoBody.innerHTML = `<em>No items yet.</em>`;
+      }
+    }
+
+    /* ===== Render all (kept) ===== */
+    function renderAll(){
+      areasContainer.innerHTML="";
+      state.project.areas.forEach(a=>areasContainer.appendChild(createAreaElement(a)));
+      // globals
+      vatToggle.checked=state.project.settings.vatIncluded;
+      vatPercentInput.value=state.project.settings.vatRate;
+      overageToggle.checked=state.project.settings.overageIncluded;
+      overagePercentInput.value=state.project.settings.overagePercent;
+      stepModeToggle.checked=state.project.settings.stepMode||false;
+      document.body.classList.toggle("step-on", state.project.settings.stepMode);
+      document.body.classList.toggle('dark-mode', state.project.settings.darkMode);
+      darkModeToggle.checked=state.project.settings.darkMode||false;
+      // templates
+      renderTemplates();
+      // recalc
+      updateCalculations(true);
+    }
+
+    /* ===== Templates (new) ===== */
+    const TKEY="__TEMPLATES__";
+    function newTemplate(){
+      return {
+        id: state.nextTemplateId++,
+        name:"",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0
+      };
+    }
+    function getTemplates(){
+      if(!state._templates) state._templates=[];
+      return state._templates;
+    }
+    function renderTemplates(){
+      templatesBody.innerHTML="";
+      const list=getTemplates();
+      if(!list.length){
+        templatesBody.innerHTML=`<div style="color:var(--muted)">No templates. Click “+ Add Template”.</div>`;
+        return;
+      }
+      list.forEach(t=>{
+        const row=el("div",{class:"template-row","data-template-id":t.id});
+        const n=el("input",{value:t.name,placeholder:"Template name"}); row.appendChild(n);
+        const mode=el("select"); [["thickness","Thickness"],["usage","Usage/m²"]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);}); mode.value=t.calcMode; row.appendChild(mode);
+        const use=el("input",{type:"number",min:"0",step:"0.001",value:t.usagePerM2||0}); row.appendChild(use);
+        const lay=el("input",{type:"number",min:"1",step:"1",value:t.layers||1}); row.appendChild(lay);
+        const th =el("input",{type:"number",min:"0",step:"0.1",value:t.thickness||0}); row.appendChild(th);
+        const de =el("input",{type:"number",min:"0",step:"0.01",value:(t.density??"")}); row.appendChild(de);
+        const ps =el("input",{type:"number",min:"0.0001",step:"0.1",value:t.packSize||1}); row.appendChild(ps);
+        const pu =el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; pu.appendChild(o);}); pu.value=t.packUnit||"kg"; row.appendChild(pu);
+        const pr =el("input",{type:"number",min:"0",step:"0.01",value:t.price||0}); row.appendChild(pr);
+
+        const actions=el("div",{class:"template-actions"});
+        const applyAll=el("button",{class:"mini primary"},"Apply to ALL Areas");
+        const del=el("button",{class:"mini danger"},"Delete");
+        actions.appendChild(applyAll); actions.appendChild(del);
+        row.appendChild(actions);
+
+        const bind=()=>{
+          t.name=n.value; t.calcMode=mode.value; t.usagePerM2=toPosFloat(use.value,0);
+          t.layers=Math.max(1,parseInt(lay.value)||1); t.thickness=toPosFloat(th.value,0);
+          t.density= (de.value===""?null:toPosFloat(de.value,0));
+          t.packSize=Math.max(0.0001,parseFloat(ps.value)||1);
+          t.packUnit=pu.value; t.price=toPosFloat(pr.value,0);
+        };
+        [n,mode,use,lay,th,de,ps,pu,pr].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
+
+        applyAll.addEventListener("click",()=>{
+          bind(); saveTemplates();
+          pushStateForUndo(`Apply template "${t.name}" to all areas`);
+          state.project.areas.forEach(a=>{
+            const np=cloneProductData(t); np.id=state.nextProductId++; // reuse same fields
+            a.products.push(np);
+          });
+          log(`Applied template "${t.name}" to all areas`);
+          renderAll();
+        });
+        del.addEventListener("click",()=>{
+          if(!confirm("Delete this template?")) return;
+          const idx=list.findIndex(x=>x.id===t.id); if(idx>-1){list.splice(idx,1); saveTemplates(); renderTemplates();}
+        });
+
+        templatesBody.appendChild(row);
+      });
+    }
+    function saveTemplates(){ localStorage.setItem(TKEY, JSON.stringify(getTemplates())); }
+    function loadTemplates(){
+      try{
+        const raw=localStorage.getItem(TKEY);
+        if(raw){ const arr=JSON.parse(raw)||[]; state._templates=arr; state.nextTemplateId = (Math.max(0,...arr.map(x=>x.id||0))+1) || 1; }
+      }catch(e){ state._templates=[]; }
+    }
+
+    /* ===== Import/Export (kept) ===== */
+    function importData(file,content){
+      const name=file.name;
+      if(name.endsWith(".json")){
+        try{
+          const parsed=JSON.parse(content);
+          if(!parsed.areas||!parsed.settings) throw new Error("Invalid JSON format");
+          pushStateForUndo(`Imported JSON (${name})`);
+          state.project.areas=parsed.areas; state.project.settings={...state.project.settings,...parsed.settings};
+          state.nextAreaId=1; state.nextProductId=1;
+          state.project.areas.forEach(a=>{ if(a.id>=state.nextAreaId) state.nextAreaId=a.id+1; a.products.forEach(p=>{ if(p.id>=state.nextProductId) state.nextProductId=p.id+1;});});
+          renderAll(); log(`Imported JSON "${name}"`);
+        }catch(err){ alert("Failed to import JSON: "+err.message); log("Error importing JSON: "+err.message); }
+      }else if(name.endsWith(".csv")){
+        try{
+          const lines=content.split(/\r?\n/).filter(l=>l.trim().length>0);
+          if(!lines.length) throw new Error("Empty CSV");
+          let start=0, headers=[];
+          if(/area\s*name|areaname/i.test(lines[0])){ headers=parseCSVLine(lines[0]); start=1; }
+          else { headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"]; }
+          const idx={}; headers.forEach((c,i)=>idx[c]=i);
+          const importedAreas=[]; const map={}; let importedSettings={};
+          for(let i=start;i<lines.length;i++){
+            const v=parseCSVLine(lines[i]); if(!v.length) continue;
+            const aName=v[idx["AreaName"]??0]||""; if(!aName) continue;
+            const sType=v[idx["SurfaceType"]]||"Custom";
+            const sMod =parseFloat(v[idx["SurfaceMod"]])||1.0;
+            const aSize=parseFloat(v[idx["AreaSize"]])||0;
+            const pName=v[idx["ProductName"]]||"";
+            const layers=parseInt(v[idx["Layers"]])||1;
+            const thick =parseFloat(v[idx["Thickness"]])||0;
+            const dens =(v[idx["Density"]]!=="" && v[idx["Density"]]!=null)? parseFloat(v[idx["Density"]]): null;
+            const pSize =parseFloat(v[idx["PackSize"]])||1;
+            const pUnit =v[idx["PackUnit"]]||"kg";
+            const price =parseFloat(v[idx["Price"]])||0;
+
+            if(i===start){
+              importedSettings.vatIncluded = /^(true|1)$/i.test(v[idx["VATIncluded"]]||"");
+              importedSettings.vatRate     = parseFloat(v[idx["VATRate"]]) || state.project.settings.vatRate;
+              importedSettings.overageIncluded = /^(true|1)$/i.test(v[idx["OverageIncluded"]]||"");
+              importedSettings.overagePercent  = parseFloat(v[idx["OveragePercent"]]) || state.project.settings.overagePercent;
+            }
+
+            let area = map[aName];
+            if(!area){
+              area={id:state.nextAreaId++,name:aName,modifier:sMod,size:aSize,products:[]};
+              map[aName]=area; importedAreas.push(area);
+            }
+            if(pName || price>0 || thick>0){
+              area.products.push({
+                id:state.nextProductId++, name:pName, layers, thickness:thick, density:dens,
+                packSize:pSize, packUnit:pUnit, price,
+                calcMode:"thickness", usagePerM2:0
+              });
+            }
+          }
+          pushStateForUndo(`Imported CSV (${name})`);
+          state.project.areas=importedAreas;
+          state.project.settings={...state.project.settings,...importedSettings};
+          renderAll();
+          log(`Imported CSV "${name}"`);
+        }catch(err){ alert("Failed to import CSV: "+err.message); log("Error importing CSV: "+err.message); }
+      }else{ alert("Unsupported file format."); log("Import failed: unsupported file"); }
+    }
+    function parseCSVLine(line){
+      const out=[]; let cur=""; let q=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(!q){
+          if(ch===','){ out.push(cur.trim()); cur=""; }
+          else if(ch==='"'){ q=true; }
+          else cur+=ch;
+        }else{
+          if(ch==='"'){
+            if(i+1<line.length && line[i+1]==='"'){ cur+='"'; i++; }
+            else q=false;
+          }else cur+=ch;
+        }
+      }
+      out.push(cur.trim()); return out;
+    }
+    function exportJSON(){
+      const blob=new Blob([JSON.stringify(state.project,null,2)],{type:"application/json"});
+      downloadBlob(blob,"project_export.json"); log("Exported JSON");
+    }
+    function exportCSV(){
+      const headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
+      const lines=[headers.join(",")];
+      const S=state.project.settings;
+      state.project.areas.forEach(a=>{
+        if(!a.products.length){
+          lines.push([
+            a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,
+            "", "", "", "", "", "", "",
+            S.vatIncluded, S.vatRate, S.overageIncluded, S.overagePercent
+          ].map(formatCSVValue).join(","));
+        }else{
+          a.products.forEach(p=>{
+            lines.push([
+              a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,
+              p.name||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price,
+              S.vatIncluded, S.vatRate, S.overageIncluded, S.overagePercent
+            ].map(formatCSVValue).join(","));
+          });
+        }
+      });
+      const blob=new Blob([lines.join("\n")],{type:"text/csv"});
+      downloadBlob(blob,"project_export.csv"); log("Exported CSV");
+    }
+    function generateExcelXML(){
+      const nl="\r\n";
+      let xml='<?xml version="1.0"?>'+nl;
+      xml+='<?mso-application progid="Excel.Sheet"?>'+nl;
+      xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+nl;
+      xml+='<Styles>'+nl+'<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>'+nl+'<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>'+nl+'<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>'+nl+'</Styles>'+nl;
+      xml+='<Worksheet ss:Name="Estimate">'+nl;
+      const COLS=13; let rows=1;
+      state.project.areas.forEach(a=>{ rows+=a.products.length; rows+=1;}); rows+=1;
+      xml+=`<Table ss:ExpandedColumnCount="${COLS}" ss:ExpandedRowCount="${rows}">`+nl;
+      for(let j=0;j<COLS;j++){xml+='<Column ss:AutoFitWidth="1"/>'+nl;}
+      const headers=["Area","Surface Mod","Area Size (m²)","Product","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost"];
+      xml+='<Row ss:StyleID="Bold">'+nl; headers.forEach(t=>xml+=`<Cell><Data ss:Type="String">${t}</Data></Cell>`+nl); xml+='</Row>'+nl;
+
+      let rowIndex=1; const areaTotalRows=[];
+      state.project.areas.forEach(a=>{
+        a.products.forEach(p=>{
+          rowIndex++;
+          // compute again for export
+          const S=state.project.settings;
+          const areaSize=Number(a.size)||0;
+          const layers=Math.max(1,Number(p.layers)||1);
+          const unit = p.packUnit||"kg";
+          const price=Number(p.price)||0;
+          const packSize=Number(p.packSize)||0;
+          let needed=0;
+          if((p.calcMode||"thickness")==="usage"){
+            let val= areaSize*layers*(Number(p.usagePerM2)||0);
+            val*=a.modifier; if(S.overageIncluded) val*= (1+S.overagePercent/100);
+            needed=val;
+          }else{
+            let volL= areaSize*(Number(p.thickness)||0)*layers;
+            volL*=a.modifier; if(S.overageIncluded) volL*= (1+S.overagePercent/100);
+            needed = (unit==="kg") ? ( (Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0 ) : volL;
+          }
+          const packages=(packSize>0 && needed>0)? Math.ceil(needed/packSize):0;
+          const cost=packages*price;
+
+          xml+='<Row>'+nl;
+          xml+=`<Cell><Data ss:Type="String">${escapeXML(a.name)}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${a.modifier}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${a.size}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="String">${escapeXML(p.name||"")}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${layers}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${p.thickness||0}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${(p.density!=null?p.density:"")}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${p.packSize||0}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="String">${unit}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${price}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${needed.toFixed(1)}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${packages}</Data></Cell>`+nl;
+          xml+=`<Cell ss:StyleID="TwoDec"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>`+nl;
+          xml+='</Row>'+nl;
+        });
+        rowIndex++; areaTotalRows.push(rowIndex);
+        // recompute area total
+        let areaTotal=0;
+        a.products.forEach(p=>{
+          const S=state.project.settings; const areaSize=Number(a.size)||0; const layers=Math.max(1,Number(p.layers)||1);
+          const unit=p.packUnit||"kg"; const price=Number(p.price)||0; const packSize=Number(p.packSize)||0;
+          let needed=0;
+          if((p.calcMode||"thickness")==="usage"){
+            let val= areaSize*layers*(Number(p.usagePerM2)||0);
+            val*=a.modifier; if(S.overageIncluded) val*= (1+S.overagePercent/100);
+            needed=val;
+          }else{
+            let volL= areaSize*(Number(p.thickness)||0)*layers;
+            volL*=a.modifier; if(S.overageIncluded) volL*= (1+S.overagePercent/100);
+            needed = (unit==="kg") ? ( (Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0 ) : volL;
+          }
+          const packages=(packSize>0 && needed>0)? Math.ceil(needed/packSize):0;
+          areaTotal += packages * price;
+        });
+        xml+='<Row ss:StyleID="Bold">'+nl;
+        xml+=`<Cell ss:MergeAcross="11"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
+        xml+=`<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotal.toFixed(2)}</Data></Cell>`+nl;
+        xml+='</Row>'+nl;
+      });
+      rowIndex++;
+      xml+='<Row ss:StyleID="Bold">'+nl;
+      xml+='<Cell ss:MergeAcross="11"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
+      if(areaTotalRows.length){
+        const refs=areaTotalRows.map(r=>`R${r}C`);
+        xml+=`<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${refs.join(",")})"><Data ss:Type="Number"></Data></Cell>`+nl;
+      }else{
+        xml+='<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>'+nl;
+      }
+      xml+='</Row>'+nl + '</Table>'+nl + '</Worksheet>'+nl + '</Workbook>';
+      return xml;
+    }
+    function exportExcel(){
+      const blob=new Blob([generateExcelXML()],{type:"application/vnd.ms-excel"});
+      downloadBlob(blob,"project_estimate.xls"); log("Exported Excel");
+    }
+
+    /* ===== Helpers ===== */
+    function el(tag, attrs={}, text){
+      const e=document.createElement(tag);
+      Object.entries(attrs).forEach(([k,v])=>{
+        if(k==="class") e.className=v;
+        else if(k==="style") e.setAttribute("style",v);
+        else e.setAttribute(k,v);
+      });
+      if(text!=null) e.textContent=text;
+      return e;
+    }
+    function toPosFloat(v,def){const n=parseFloat(v); return (isNaN(n)||n<0)? def : n;}
+    function fmt(n){ if(!isFinite(n)) return "0"; if(Math.abs(n)>=1000) return n.toFixed(0); if(Math.abs(n)>=10) return n.toFixed(1); return n.toFixed(2); }
+
+    /* ===== Events (kept + new) ===== */
+    addAreaBtn.addEventListener("click", addArea);
+    undoBtn.addEventListener("click", undo);
+    redoBtn.addEventListener("click", redo);
+
+    vatToggle.addEventListener("change",()=>{state.project.settings.vatIncluded=vatToggle.checked; log(`VAT ${vatToggle.checked?"included":"excluded"}`); updateCalculations();});
+    vatPercentInput.addEventListener("change",()=>{state.project.settings.vatRate=toPosFloat(vatPercentInput.value,0); log(`VAT rate ${state.project.settings.vatRate}%`); updateCalculations();});
+    overageToggle.addEventListener("change",()=>{state.project.settings.overageIncluded=overageToggle.checked; log(`${overageToggle.checked?"Applied":"Removed"} overage`); updateCalculations();});
+    overagePercentInput.addEventListener("change",()=>{state.project.settings.overagePercent=toPosFloat(overagePercentInput.value,0); log(`Overage ${state.project.settings.overagePercent}%`); if(state.project.settings.overageIncluded) updateCalculations();});
+    darkModeToggle.addEventListener("change",()=>{state.project.settings.darkMode=darkModeToggle.checked; document.body.classList.toggle("dark-mode", state.project.settings.darkMode); log(`Theme → ${state.project.settings.darkMode?"Dark":"Light"}`);});
+    stepModeToggle.addEventListener("change",()=>{state.project.settings.stepMode=stepModeToggle.checked; document.body.classList.toggle("step-on", state.project.settings.stepMode); updateCalculations();});
+
+    importBtn.addEventListener("click",()=>fileInput.click());
+    fileInput.addEventListener("change",(e)=>{
+      const file=e.target.files[0]; if(!file) return;
+      const r=new FileReader();
+      r.onload=()=>importData(file,r.result);
+      r.onerror=()=>{alert("Failed to read file"); log("Error reading file for import");};
+      // If reading binary Excel, we still just read as text for our simple CSV/JSON; xls/xlsx can't be parsed here.
+      r.readAsText(file);
+      fileInput.value="";
+    });
+
+    exportJSONBtn.addEventListener("click", exportJSON);
+    exportCSVBtn.addEventListener("click", exportCSV);
+    exportExcelBtn.addEventListener("click", exportExcel);
+    printBtn.addEventListener("click",()=>{window.print(); log("Print/PDF");});
+
+    minimizeLogBtn.addEventListener("click",()=>{
+      if(!logPanel.classList.contains("minimized")) logPanel.classList.add("minimized");
+      else { logPanel.classList.remove("minimized"); logPanel.classList.remove("maximized"); }
+    });
+    maximizeLogBtn.addEventListener("click",()=>{
+      if(logPanel.classList.contains("maximized")) logPanel.classList.remove("maximized");
+      else { logPanel.classList.remove("minimized"); logPanel.classList.add("maximized"); }
+    });
+
+    infoToast.addEventListener("click",()=>{
+      document.getElementById("infoSummary").scrollIntoView({behavior:"smooth",block:"start"});
+      infoToast.style.display="none";
+    });
+
+    // Templates
+    addTemplateBtn.addEventListener("click",()=>{
+      const t=newTemplate(); getTemplates().push(t); saveTemplates(); renderTemplates();
+    });
+    applyAllTemplatesBtn.addEventListener("click",()=>{
+      const list=getTemplates();
+      if(!list.length){ alert("No templates to apply."); return; }
+      pushStateForUndo("Apply ALL templates to ALL areas");
+      state.project.areas.forEach(a=>{
+        list.forEach(t=>{
+          const np=cloneProductData(t); np.id=state.nextProductId++;
+          a.products.push(np);
+        });
+      });
+      log("Applied ALL templates to ALL areas");
+      renderAll();
+    });
+
+    /* ===== Init ===== */
+    loadTemplates();
+    log("Application started");
+    renderAll(); // empty state initially
+
+  })();
   </script>
 </body>
 </html>
