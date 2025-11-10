@@ -5,55 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Betongytor — Material- & Kostnadsestimator PRO</title>
   <style>
-    /* ============ THEME (brighter, improved dark) ============ */
+    /* ================== THEME (brighter; improved dark; less gray) ================== */
     :root{
-      --bg:#f6fbff;
+      --bg:#f4f9ff;
       --fg:#0f172a;
       --muted:#475569;
       --panel:#ffffff;
       --line:#dbe5f0;
-      --accent:#2563eb;         /* blue */
-      --accent-2:#10b981;       /* green */
-      --amber:#f59e0b;          /* amber */
+      --accent:#2563eb;          /* blue */
+      --accent-2:#10b981;        /* green */
+      --amber:#f59e0b;           /* amber */
       --danger:#ef4444;
       --shadow:0 10px 24px rgba(2,32,71,.08);
-      --chip:#e9f4ff;
-      --chip2:#e8fff6;
-      --grad:linear-gradient(135deg,#eef6ff 0%,#f2fff8 100%);
       --rowBg:#ffffff;
-      --rowAlt:#f9fbff;
+      --rowAlt:#f8fbff;
+      --rowProd:#f0fbf5;         /* product-info column shade */
+      --rowProj:#f4f8ff;         /* project-info column shade */
       --tooltipBg:#111827;
       --tooltipFg:#f9fafb;
+      --grad:linear-gradient(180deg,#f8fbff 0%,#eef6ff 50%,#f7fffb 100%);
     }
     body.dark-mode{
-      --bg:#0b1120;
+      --bg:#0b0f1a;
       --fg:#e5efff;
-      --muted:#94a3b8;
+      --muted:#9fb0c8;
       --panel:#0f172a;
-      --line:#1e293b;
+      --line:#213047;
       --accent:#60a5fa;
       --accent-2:#34d399;
       --amber:#fbbf24;
       --danger:#f87171;
-      --shadow:0 10px 24px rgba(0,0,0,.35);
-      --chip:#0b1c36;
-      --chip2:#062a23;
-      --grad:linear-gradient(135deg,#0b1120 0%,#0b1720 100%);
+      --shadow:0 10px 24px rgba(0,0,0,.45);
       --rowBg:#0b1427;
       --rowAlt:#0c1a33;
-      --tooltipBg:#111827;
-      --tooltipFg:#f9fafb;
+      --rowProd:#0b1e19;
+      --rowProj:#0b1424;
+      --tooltipBg:#0b1220;
+      --tooltipFg:#e5efff;
+      --grad:linear-gradient(180deg,#0b0f1a 0%,#0b1220 100%);  /* dark, no light edges */
     }
     html,body{height:100%}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;background:var(--grad);color:var(--fg);margin:0}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+      background:var(--grad); color:var(--fg); margin:0;
+      padding-bottom:90px; /* space for sticky footer */
+    }
 
-    /* ============ TOPBAR ============ */
+    /* ================== TOP MENU ================== */
     .toolbar{
       position:sticky;top:0;z-index:30;
-      background:linear-gradient(90deg,var(--panel) 0%,rgba(255,255,255,.6) 100%);
-      backdrop-filter:saturate(1.2) blur(6px);
+      background:linear-gradient(180deg,var(--panel) 0%,rgba(255,255,255,.65) 100%);
+      backdrop-filter:saturate(1.15) blur(6px);
       padding:10px 12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;
       border-bottom:1px solid var(--line); box-shadow:0 6px 14px rgba(15,23,42,.06);
+    }
+    body.dark-mode .toolbar{
+      background:linear-gradient(180deg,#0f172a 0%,#0b1220 100%); /* dark shades only */
+      box-shadow:0 6px 14px rgba(0,0,0,.45);
     }
     .toolbar .group{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:6px 8px;border-radius:12px}
     .toolbar label{font-weight:600}
@@ -72,66 +80,81 @@
     .icon-btn{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
     .icon-btn[disabled]{opacity:.45;cursor:not-allowed}
 
-    /* ============ LAYOUT ============ */
-    #areasContainer{padding:14px 12px 120px}
+    /* Dedicated "Add Area" dock placed under the top menu */
+    #topAddDock{padding:12px; display:flex; justify-content:flex-start}
+    #btnAddAreaDock{min-width:220px}
+
+    /* ================== LAYOUT ================== */
+    #areasContainer{padding:14px 12px 16px}
     .area{
       background:var(--panel);border:1px solid var(--line);border-radius:16px;margin:16px 6px;padding:12px 12px 10px;
-      box-shadow:var(--shadow);
+      box-shadow:var(--shadow); position:relative;
     }
     .area-header{
-      display:grid;grid-template-columns: 230px 200px 150px 220px 1fr auto;gap:10px;align-items:center;margin-bottom:10px
+      display:grid;
+      grid-template-columns: 230px 210px 130px 200px 1fr 180px auto;
+      gap:10px; align-items:center; margin-bottom:10px
     }
-    .area-header .pill{background:var(--chip2);color:#065f46;border:1px solid #86efac55;border-radius:999px;padding:5px 10px;font-weight:700}
-    .del-area{background:var(--panel);color:#991b1b;border:1px solid #fecaca33;border-radius:10px;padding:8px 10px;cursor:pointer}
+    .area-header .pill{background:#e8fff6;color:#065f46;border:1px solid #86efac55;border-radius:999px;padding:5px 10px;font-weight:700}
+    body.dark-mode .area-header .pill{background:#052216}
+    .del-area{background:var(--panel);color:#991b1b;border:1px solid #fecaca55;border-radius:10px;padding:8px 10px;cursor:pointer}
     .del-area:hover{background:#ffeff157}
     .add-area-below{
-      margin:10px 0 0 0; background:var(--accent-2); color:#00140c; border:0; border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer
+      display:block; width:100%; margin:8px 0 0 0; background:var(--accent-2); color:#00140c; border:0; border-radius:10px; padding:10px 12px; font-weight:700; cursor:pointer
     }
-
     .unit-wrap{display:flex;align-items:center;gap:6px}
     .unit-wrap input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg)}
     .unit-wrap .unit{font-weight:700;color:var(--muted)}
 
-    /* ============ TABLE ============ */
-    .area-grid{display:grid;grid-template-columns: minmax(480px,1.7fr) 280px;gap:12px}
-    table.area-table{width:100%;border-collapse:separate;border-spacing:0 6px;margin-bottom:6px}
-    thead tr th{font-size:.92em;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-    table.area-table th,table.area-table td{padding:6px 8px;background:var(--rowBg);border:1px solid var(--line)}
-    table.area-table th:first-child,table.area-table td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
-    table.area-table th:last-child,table.area-table td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
-    table.area-table input,table.area-table select{width:100%;box-sizing:border-box;padding:6px 7px;border:1px solid var(--line);border-radius:9px;font:inherit;background:var(--panel);color:var(--fg)}
+    /* Small illustration top-right (50% smaller) */
+    .mini-illustration{
+      border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:6px;width:170px;justify-self:end
+    }
+    .mini-illustration canvas{width:100%;height:80px;border-radius:8px;background:var(--panel)}
+
+    /* ================== TABLE ================== */
+    .area-grid{display:block}
+    table.area-table{width:100%;border-collapse:separate;border-spacing:0 5px;margin-bottom:4px}
+    thead tr th{font-size:.76em;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:4px 6px}
+    table.area-table th,table.area-table td{padding:4px 6px;background:var(--rowBg);border:1px solid var(--line)}
+    table.area-table th:first-child,table.area-table td:first-child{border-top-left-radius:9px;border-bottom-left-radius:9px}
+    table.area-table th:last-child,table.area-table td:last-child{border-top-right-radius:9px;border-bottom-right-radius:9px}
+
+    /* thinner inputs (no growth on hover) */
+    table.area-table input,table.area-table select{
+      width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--panel);color:var(--fg);
+      height:28px; line-height:26px
+    }
 
     /* header groups */
-    .th-group{background:var(--rowAlt);font-weight:800;text-align:center;border:1px solid var(--line);padding:6px 4px}
+    .th-group{background:var(--rowAlt);font-weight:800;text-align:center;border:1px solid var(--line);padding:4px 4px}
 
-    .drag-handle{cursor:grab;font-size:18px;user-select:none}
-    .product-row{position:relative; background:var(--rowBg)}
+    /* product vs project info shading for cells */
+    .td-prod{background:var(--rowProd)}
+    .td-proj{background:var(--rowProj)}
+
+    .drag-handle{cursor:grab;font-size:16px;user-select:none}
+    .product-row{position:relative;background:var(--rowBg)}
     .product-row.dragging{opacity:.6}
-    /* thinner rows */
-    .product-row td{padding:5px 7px}
-    /* overlay row actions sitting ON TOP (doesn't change height) */
+
+    /* overlay actions shown ONLY on hover */
     .row-actions-overlay{
-      position:absolute; top:-10px; right:6px; display:none; gap:6px; z-index:3
+      position:absolute; top:-9px; right:6px; display:none; gap:6px; z-index:3
     }
-    .product-row:hover .row-actions-overlay, .product-row.active .row-actions-overlay{display:flex}
-    .mini{font-size:.78em;padding:4px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
-    .mini.green{border-color:#86efac55;background:#0df15e19;color:#14532d}
-    .mini.warn{border-color:#fde68a55;background:#fde68a19;color:#92400e}
+    .product-row:hover .row-actions-overlay{display:flex}
+
+    .mini{font-size:.76em;padding:3px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer; height:24px}
     .mini.ghost{border-color:var(--line);color:var(--muted)}
+    .mini.warn{border-color:#fde68a55;background:#fde68a19;color:#92400e}
     .mini.danger{border-color:#fecaca55;background:#fecaca22;color:#9f1239}
 
-    /* ============ SIDEBAR ============ */
-    .area-side{display:flex;flex-direction:column;gap:10px}
-    .canvas-wrap{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:8px}
-    .canvas-wrap header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-    .canvas-wrap small{color:var(--muted)}
-    .canvas-wrap canvas{width:100%;height:110px;border-radius:10px;background:var(--panel)}
-    .infobox{border:1px dashed #93c5fd66;background:#e0f2fe14;padding:10px;border-radius:10px;font-size:.95em}
-    .infobox h4{margin:0 0 6px 0}
-    .infobox .note{color:#1e3a8a}
+    /* small inline surface info under table (hidden until hover) */
+    .surface-inline{
+      display:none; margin:6px 2px 0; font-size:.92em; color:var(--muted)
+    }
+    .surface-inline.show{display:block}
 
-    /* ============ SUMMARY BOX ============ */
-    .project-summary{margin:16px;font-size:1.1em;font-weight:800}
+    /* ================== SUMMARY BOX ================== */
     #infoSummary{margin:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
     #infoSummary header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:10px 12px}
     #infoSummary .body{padding:10px 12px}
@@ -139,15 +162,34 @@
     .product-total h5{margin:0 0 4px 0}
     .product-total .dim{color:var(--muted)}
 
-    /* ============ FLOAT INFO TOAST ============ */
+    /* Sticky Footer Total (pinned bottom) */
+    #footerBar{
+      position:fixed; left:0; right:0; bottom:0; z-index:40;
+      background:linear-gradient(180deg,var(--panel) 0%, rgba(255,255,255,0.92) 100%);
+      border-top:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:10px 12px;
+      box-shadow:0 -8px 20px rgba(0,0,0,.07)
+    }
+    body.dark-mode #footerBar{
+      background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%);
+      box-shadow:0 -8px 20px rgba(0,0,0,.45)
+    }
+    #footerBar strong{font-size:1.05em}
+    #footerBar .sp{flex:1}
+    #footerBar .btn{padding:8px 12px;border-radius:10px}
+
+    /* ================== FLOAT INFO TOAST & HOVER TIP ================== */
     #infoToast{
-      position:fixed;right:16px;bottom:74px;background:var(--tooltipBg);color:var(--tooltipFg);padding:10px 12px;border-radius:999px;
-      cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:40
+      position:fixed;right:16px;bottom:86px;background:var(--tooltipBg);color:var(--tooltipFg);padding:10px 12px;border-radius:999px;
+      cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:45
     }
     #infoToast .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
+    #hoverTip{
+      position:fixed; pointer-events:none; z-index:50; display:none; max-width:320px;
+      background:var(--tooltipBg); color:var(--tooltipFg); padding:8px 10px; border-radius:10px; font-size:.9em; box-shadow:var(--shadow)
+    }
 
-    /* ============ LOGS ============ */
-    #logPanel{position:fixed;bottom:0;left:0;right:0;background:#0b1220;color:#e5e7eb;font-family:ui-monospace,Consolas,monospace;font-size:.9em;max-height:230px;display:flex;flex-direction:column;border-top:2px solid #1f2937;z-index:35}
+    /* ================== LOGS ================== */
+    #logPanel{position:fixed;bottom:50px;left:0;right:0;background:#0b1220;color:#e5e7eb;font-family:ui-monospace,Consolas,monospace;font-size:.9em;max-height:230px;display:flex;flex-direction:column;border-top:2px solid #1f2937;z-index:35}
     body:not(.dark-mode) #logPanel{background:#0b1220}
     #logHeader{background:#0f172a;padding:6px 8px;font-weight:800;display:flex;align-items:center;gap:8px}
     #logHeader .sp{flex:1}
@@ -157,28 +199,23 @@
     #logPanel.minimized #logContent{display:none}
     #logPanel.maximized{max-height:65vh}
 
-    /* ============ TOOLTIP ============ */
-    #hoverTip{
-      position:fixed; pointer-events:none; z-index:50; display:none; max-width:320px;
-      background:var(--tooltipBg); color:var(--tooltipFg); padding:8px 10px; border-radius:10px; font-size:.9em; box-shadow:var(--shadow)
-    }
-
-    /* ============ PRINT ============ */
+    /* ================== PRINT ================== */
     @media print{
-      .toolbar,#logPanel,#infoToast,#hoverTip{display:none!important}
-      .area,.project-summary{border:none;margin:0;page-break-inside:avoid}
+      .toolbar,#footerBar,#logPanel,#infoToast,#hoverTip,#topAddDock{display:none!important}
+      .area{border:none;margin:0;page-break-inside:avoid}
       .del-area,.row-actions-overlay,.drag-handle{display:none!important}
     }
   </style>
 </head>
 <body>
-  <!-- ============ TOP MENU ============ -->
+  <!-- ================== TOP MENU ================== -->
   <div class="toolbar" id="toolbar">
-    <button id="btnAddAreaTop" class="btn btn-primary" data-i18n="addArea">+ Lägg till område</button>
+    <!-- Hide the old add-area-in-toolbar button to follow user's new placement -->
+    <button id="btnAddAreaTop" class="btn btn-primary" style="display:none">+ Lägg till område</button>
 
-    <!-- Undo / Redo icons with dynamic tooltips -->
-    <button id="undo" class="btn btn-ghost icon-btn" disabled title="Undo"><span aria-hidden="true">↶</span></button>
-    <button id="redo" class="btn btn-ghost icon-btn" disabled title="Redo"><span aria-hidden="true">↷</span></button>
+    <!-- Undo / Redo with arrow icons and dynamic titles -->
+    <button id="undo" class="btn btn-ghost icon-btn" disabled title="Ångra"><span aria-hidden="true">↶</span></button>
+    <button id="redo" class="btn btn-ghost icon-btn" disabled title="Gör om"><span aria-hidden="true">↷</span></button>
 
     <div class="group">
       <strong data-i18n="language">Språk</strong>
@@ -217,13 +254,16 @@
     </div>
   </div>
 
-  <!-- ============ AREAS ============ -->
+  <!-- New Add-Area dock directly under the menu -->
+  <div id="topAddDock">
+    <button id="btnAddAreaDock" class="btn btn-primary" data-i18n="addArea">+ Lägg till område</button>
+  </div>
+
+  <!-- ================== AREAS ================== -->
   <div id="areasContainer"></div>
 
-  <!-- ============ SUMMARY ============ -->
-  <div class="project-summary" id="projectSummary">Projektets totalsumma (exkl. moms): 0</div>
-
-  <section id="infoSummary">
+  <!-- ================== SUMMARY & INFO ================== -->
+  <section id="infoSummary" style="margin-top:8px">
     <header>
       <strong data-i18n="infoTitle">Info & summeringar</strong>
       <small id="lastInfoTime" style="color:var(--muted)"></small>
@@ -231,7 +271,7 @@
     <div class="body" id="infoBody"><em data-i18n="infoEmpty">Ingen info ännu. Lägg till produkter och ytor.</em></div>
   </section>
 
-  <!-- ============ GLOBAL TEMPLATES (moved to bottom) ============ -->
+  <!-- ================== GLOBAL TEMPLATES (bottom) ================== -->
   <section id="globalProducts" style="margin:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)">
     <header style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:10px 12px">
       <strong data-i18n="templatesTitle">Globala Produktmallar</strong>
@@ -243,15 +283,21 @@
     <div class="body" id="templatesBody" style="padding:10px 12px"></div>
   </section>
 
-  <!-- ============ FLOAT TOAST ============ -->
+  <!-- ================== STICKY FOOTER TOTAL ================== -->
+  <div id="footerBar">
+    <strong id="footerTotalLabel">Projektets totalsumma (exkl. moms):</strong>
+    <strong id="footerTotalValue">0.00</strong>
+    <span class="sp"></span>
+    <button class="btn btn-ghost" id="btnScrollSummary">Visa summering</button>
+  </div>
+
+  <!-- ================== FLOAT TOAST & HOVER TIP ================== -->
   <div id="infoToast" title="Visa info">
     <span class="dot"></span><span data-i18n="toast">Info uppdaterad — Visa</span>
   </div>
-
-  <!-- ============ HOVER TOOLTIP ============ -->
   <div id="hoverTip"></div>
 
-  <!-- ============ LOGS ============ -->
+  <!-- ================== LOGS ================== -->
   <div id="logPanel" class="minimized">
     <div id="logHeader">LOGGAR<span class="sp"></span>
       <button id="minimizeLog">_</button><button id="maximizeLog">&#9723;</button>
@@ -285,8 +331,8 @@
         hoverSurface:"Yta", hoverProduct:"Produkt",
         tmplAdded:"Mall tillagd", tmplApplyAll:"Mall applicerad på alla områden",
         errUnsupported:"Filformatet stöds inte.",
-        warnInconsistent:"Avvikelse i CSV för området",
-        updated:"Uppdaterad "
+        updated:"Uppdaterad ",
+        color:"Färg"
       },
       en:{
         addArea:"+ Add Area", addAreaBelow:"+ Add Area Below",
@@ -309,18 +355,13 @@
         hoverSurface:"Surface", hoverProduct:"Product",
         tmplAdded:"Template added", tmplApplyAll:"Template applied to all areas",
         errUnsupported:"Unsupported file format.",
-        warnInconsistent:"Inconsistent CSV data for area",
-        updated:"Updated "
+        updated:"Updated ",
+        color:"Color"
       }
     };
     let LANG="sv";
-    function t(key){ return (i18n[LANG]&&i18n[LANG][key]) || key; }
-    function applyI18n(){
-      document.querySelectorAll("[data-i18n]").forEach(el=>{
-        const k=el.getAttribute("data-i18n"); el.textContent=t(k);
-      });
-      refreshSummaryLabel();
-    }
+    function t(k){return (i18n[LANG]&&i18n[LANG][k])||k;}
+    function applyI18n(){document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));}); refreshSummaryLabels();}
 
     /* ================== STATE ================== */
     const state={
@@ -342,7 +383,7 @@
             "Light Grind":{title:"Lightly ground",desc:"Micro texture opens; slightly higher uptake.",hint:"+5%", prep:"Degrease + light grind", typical:"Polished with light hone"},
             "Medium Grind":{title:"Medium ground",desc:"Visible sand; micro-cracks possible.",hint:"+10%", prep:"Grinding P80–P120", typical:"Traffic-worn interior"},
             "Rough":{title:"Rough / broomed",desc:"Coarse profile; high absorption.",hint:"+15%", prep:"Grinding + vacuum; repair spalls", typical:"Exterior broom finish"},
-            "Porous/Cracked":{title:"Highly porous / cracked",desc:"Capillaries & voids; very high absorption.",hint:"+25%", prep:"Crack injection + primer", typical:"Old slab, freeze-thaw damage"},
+            "Porous/Cracked":{title:"Highly porous / cracked",desc:"Capillaries & voids; very high absorption with cracks.",hint:"+25%", prep:"Crack injection + primer", typical:"Old slab, freeze-thaw damage"},
             "Custom":{title:"Custom",desc:"User-defined surface factor.",hint:"depends", prep:"—", typical:"—"}
           }
         }
@@ -354,44 +395,34 @@
 
     /* ================== DOM ================== */
     const areasContainer=document.getElementById("areasContainer");
-    const projectSummaryEl=document.getElementById("projectSummary");
+    const infoBody=document.getElementById("infoBody");
+    const footerTotalLabel=document.getElementById("footerTotalLabel");
+    const footerTotalValue=document.getElementById("footerTotalValue");
 
-    const btnAddAreaTop=document.getElementById("btnAddAreaTop");
+    const btnAddAreaDock=document.getElementById("btnAddAreaDock");
     const undoBtn=document.getElementById("undo"), redoBtn=document.getElementById("redo");
     const vatToggle=document.getElementById("vatToggle"), vatPercentInput=document.getElementById("vatPercent");
     const overageToggle=document.getElementById("overageToggle"), overagePercentInput=document.getElementById("overagePercent");
     const exactToggle=document.getElementById("exactToggle");
     const darkModeToggle=document.getElementById("darkModeToggle");
     const stepModeToggle=document.getElementById("stepModeToggle");
-
     const importBtn=document.getElementById("importData"), fileInput=document.getElementById("fileInput");
     const exportJSONBtn=document.getElementById("exportJSON"), exportCSVBtn=document.getElementById("exportCSV"), exportExcelBtn=document.getElementById("exportExcel");
     const printBtn=document.getElementById("printBtn");
-
-    const templatesBody=document.getElementById("templatesBody");
-    const addTemplateBtn=document.getElementById("addTemplate");
-    const applyAllTemplatesBtn=document.getElementById("applyAllTemplates");
-
+    const addTemplateBtn=document.getElementById("addTemplate"), applyAllTemplatesBtn=document.getElementById("applyAllTemplates"), templatesBody=document.getElementById("templatesBody");
     const infoToast=document.getElementById("infoToast");
-    const infoBody=document.getElementById("infoBody");
     const lastInfoTime=document.getElementById("lastInfoTime");
-
-    const logPanel=document.getElementById("logPanel");
-    const logContent=document.getElementById("logContent");
-    const minimizeLogBtn=document.getElementById("minimizeLog");
-    const maximizeLogBtn=document.getElementById("maximizeLog");
-
-    const langSV=document.getElementById("langSV");
-    const langEN=document.getElementById("langEN");
-
     const hoverTip=document.getElementById("hoverTip");
+    const btnScrollSummary=document.getElementById("btnScrollSummary");
+    const logPanel=document.getElementById("logPanel"), logContent=document.getElementById("logContent");
+    const minimizeLogBtn=document.getElementById("minimizeLog"), maximizeLogBtn=document.getElementById("maximizeLog");
+    const langSV=document.getElementById("langSV"), langEN=document.getElementById("langEN");
 
     /* ================== UTIL & LOG ================== */
     function log(msg){
       const tms=new Date().toLocaleTimeString();
       const p=document.createElement("p"); p.textContent=`[${tms}] ${msg}`; logContent.appendChild(p);
       if(logContent.scrollHeight-logContent.clientHeight-logContent.scrollTop<5){logContent.scrollTop=logContent.scrollHeight;}
-      // update undo/redo titles
       const ud=state.undoStack.at(-1)?.desc || (LANG==="sv"?"Inget att ångra":"Nothing to undo");
       const rd=state.redoStack.at(-1)?.desc || (LANG==="sv"?"Inget att göra om":"Nothing to redo");
       undoBtn.title = (LANG==="sv"?"Ångra: ":"Undo: ")+ud;
@@ -404,15 +435,13 @@
       undoBtn.title=(LANG==="sv"?"Ångra: ":"Undo: ")+desc;
       redoBtn.title=(LANG==="sv"?"Gör om: ":"Redo: ");
     }
-    function undo(){
-      if(!state.undoStack.length) return;
+    function undo(){ if(!state.undoStack.length) return;
       const last=state.undoStack.pop(); const desc=last.desc;
       state.redoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
       state.project=last.data; renderAll(); log(`Undo: ${desc}`);
       undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
     }
-    function redo(){
-      if(!state.redoStack.length) return;
+    function redo(){ if(!state.redoStack.length) return;
       const last=state.redoStack.pop(); const desc=last.desc;
       state.undoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
       state.project=last.data; renderAll(); log(`Redo: ${desc}`);
@@ -425,7 +454,7 @@
     function escapeXML(s){if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
     const showInfoToast=(()=>{let hide=null;return()=>{infoToast.style.display="flex"; if(hide) clearTimeout(hide); hide=setTimeout(()=>infoToast.style.display="none",3500);};})();
 
-    /* ================== SURFACE INFO ================== */
+    /* ================== SURFACE HELPERS ================== */
     function reverseFindTypeByFactor(f){
       const m=Object.entries(state.project.settings.surfaceTypes).find(([_,v])=>Math.abs(v-f)<1e-6);
       return m?m[0]:null;
@@ -437,51 +466,96 @@
     }
 
     /* ================== CANVAS ILLUSTRATION ================== */
-    function colorFromName(name){let h=0;for(let i=0;i<name.length;i++){h=(h*31+name.charCodeAt(i))>>>0;}return `hsl(${h%360} 70% 55%)`;}
+    function drawCracks(ctx, rect, density=6, color="rgba(0,0,0,.25)"){
+      ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=1;
+      for(let i=0;i<density;i++){
+        let x = rect.x + Math.random()*rect.w;
+        let y = rect.y + Math.random()*rect.h;
+        ctx.beginPath(); ctx.moveTo(x,y);
+        for(let j=0;j<6;j++){
+          x += (Math.random()*20-10);
+          y += (Math.random()*10-5);
+          ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    function drawRugged(ctx, rect){
+      ctx.save();
+      for(let i=0;i<160;i++){
+        const x=rect.x + Math.random()*rect.w;
+        const y=rect.y + Math.random()*rect.h;
+        const r=Math.random()*2.2+0.6;
+        ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.06+0.04})`;
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
+    function drawSpeckles(ctx, rect, amount=120){
+      ctx.save();
+      for(let i=0;i<amount;i++){
+        const x=rect.x + Math.random()*rect.w;
+        const y=rect.y + Math.random()*rect.h;
+        ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.06})`;
+        ctx.fillRect(x,y,1,1);
+      }
+      ctx.restore();
+    }
     function baseConcreteColor(area){
-      const f=area.modifier; const l = 88 - Math.min(25,(f-1)*60);
+      const f=area.modifier; const l = 90 - Math.min(28,(f-1)*65);
       return `hsl(215 14% ${l}%)`;
+    }
+    function layerColor(p){
+      return p.color || (()=>{let h=0;const s=(p.name||"Layer");for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0; return `hsl(${h%360} 70% 55%)`;})();
     }
     function drawAreaIllustration(canvas, area, hoverIdx=-1, hoverSlab=false){
       const ctx=canvas.getContext("2d");
       const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
       ctx.clearRect(0,0,W,H);
-      // ground slab
-      const slabH=26; const slabY=H-slabH; ctx.fillStyle=baseConcreteColor(area);
+
+      // slab
+      const slabH=22; const slabY=H-slabH; ctx.fillStyle=baseConcreteColor(area);
       ctx.fillRect(0,slabY,W,slabH);
-      ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.beginPath(); for(let x=0;x<W;x+=12){ctx.moveTo(x,slabY);ctx.lineTo(x+6,slabY+6);} ctx.stroke();
-      // store slab rect
-      canvas._slabRect={x:0,y:slabY,w:W,h:slabH};
+      ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.beginPath(); for(let x=0;x<W;x+=10){ctx.moveTo(x,slabY);ctx.lineTo(x+5,slabY+5);} ctx.stroke();
 
-      // layers
+      // detail by surface type
+      const st=reverseFindTypeByFactor(area.modifier)||"Custom";
+      const slabRect={x:0,y:slabY,w:W,h:slabH};
+      if(st==="Light Grind"){ drawSpeckles(ctx,slabRect,80); }
+      else if(st==="Medium Grind"){ drawSpeckles(ctx,slabRect,140); }
+      else if(st==="Rough"){ drawRugged(ctx,slabRect); }
+      else if(st==="Porous/Cracked"){ drawRugged(ctx,slabRect); drawCracks(ctx,slabRect,7); }
+
+      // layers (stack)
       const totalLayers = area.products.reduce((a,p)=>a+Math.max(1,Number(p.layers||1)),0)||1;
-      const space = H-slabH-12;
-      const gap=2, unitH=(space - gap*(totalLayers-1))/Math.max(1,totalLayers);
+      const space = H-slabH-10, gap=1.5, unitH=(space-gap*(totalLayers-1))/Math.max(1,totalLayers);
       const rects=[]; let y=H-slabH-gap;
-
       area.products.forEach(p=>{
         const L=Math.max(1,Number(p.layers||1));
         for(let i=0;i<L;i++){
-          const h=unitH;
-          const top = y - h;
-          const col=colorFromName(p.name||"Layer");
+          const h=unitH, top=y-h, col = layerColor(p);
+          ctx.save(); ctx.globalAlpha = (hoverSlab?0.85:1);
+          if(rects.length===hoverIdx) ctx.filter="brightness(1.24)";
           ctx.fillStyle=col;
-          ctx.globalAlpha = (hoverSlab?0.85:1);
-          if(rects.length===hoverIdx){ ctx.filter="brightness(1.2)"; }
-          else ctx.filter="none";
-          ctx.fillRect(8,top,W-16,h);
-          ctx.filter="none"; ctx.globalAlpha=1;
-          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.strokeRect(8,top,W-16,h);
-          rects.push({x:8,y:top,w:W-16,h, product:p});
+          ctx.fillRect(6,top,W-12,h);
+          ctx.restore();
+          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.strokeRect(6,top,W-12,h);
+          rects.push({x:6,y:top,w:W-12,h, product:p});
           y = top - gap;
         }
       });
-      canvas._layerRects = rects;
+
+      canvas._layerRects=rects;
+      canvas._slabRect=slabRect;
     }
-    function attachCanvasInteractions(canvas, area){
+    function attachCanvasInteractions(canvas, area, inlineRow){
       const tip=hoverTip;
-      const show=(html,x,y)=>{tip.innerHTML=html; tip.style.display="block"; const pad=12; tip.style.left=(x+pad)+"px"; tip.style.top=(y+pad)+"px";}
+      const show=(html,x,y)=>{tip.innerHTML=html; tip.style.display="block"; const pad=10; tip.style.left=(x+pad)+"px"; tip.style.top=(y+pad)+"px";}
       const hide=()=>{tip.style.display="none";}
+      const showInline=(html)=>{ inlineRow.innerHTML=html; inlineRow.classList.add("show"); }
+      const hideInline=()=>{ inlineRow.classList.remove("show"); inlineRow.innerHTML=""; }
+
       canvas.addEventListener("mousemove",(e)=>{
         const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
         const rects=canvas._layerRects||[]; let idx=-1;
@@ -495,25 +569,24 @@
             <div>• ${t("unit")}: ${p.packUnit||"kg"} • ${t("packSize")}: ${p.packSize||0}</div>
             <div>• ${t("pricePack")}: ${p.price||0}</div>`;
           show(html,e.clientX,e.clientY);
+          hideInline();
         }else if(onSlab){
           const meta=surfaceExpl(area);
-          const html = `<div><strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor})</div>
-            <div>${meta.desc}</div>
-            <div><em>${LANG==="sv"?"Förberedelse":"Prep"}:</em> ${meta.prep}</div>
-            <div><em>${LANG==="sv"?"Typiskt":"Typical"}:</em> ${meta.typical}</div>`;
+          const html = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
           show(html,e.clientX,e.clientY);
-        }else hide();
+          showInline(html);
+        }else{ hide(); hideInline(); }
       });
-      canvas.addEventListener("mouseleave",()=>{drawAreaIllustration(canvas,area,-1,false); hoverTip.style.display="none";});
+      canvas.addEventListener("mouseleave",()=>{drawAreaIllustration(canvas,area,-1,false); hoverTip.style.display="none"; hideInline();});
     }
 
-    /* ================== HELPERS ================== */
+    /* ================== UI HELPERS ================== */
     function el(tag,attrs={},txt){const e=document.createElement(tag);Object.entries(attrs).forEach(([k,v])=>{if(k==="class")e.className=v;else if(k==="style")e.setAttribute("style",v);else e.setAttribute(k,v);});if(txt!=null)e.textContent=txt;return e;}
     function cloneProductData(prod){
       return JSON.parse(JSON.stringify({
-        name:prod.name||"", layers:prod.layers||1, thickness:prod.thickness||0,
-        density:(prod.density===null?null:prod.density||0), packSize:prod.packSize||1,
-        packUnit:prod.packUnit||"kg", price:prod.price||0,
+        name:prod.name||"", color:prod.color||null,
+        layers:prod.layers||1, thickness:prod.thickness||0, density:(prod.density===null?null:prod.density||0),
+        packSize:prod.packSize||1, packUnit:prod.packUnit||"kg", price:prod.price||0,
         calcMode: prod.calcMode || "thickness",
         usagePerM2: prod.usagePerM2 || 0,
         coverSqmPerPack: prod.coverSqmPerPack || 0,
@@ -532,7 +605,7 @@
       nameI.addEventListener("change",()=>{const old=area.name; area.name=nameI.value; log(`Renamed area "${old}" → "${area.name}"`);});
       header.appendChild(nameI);
 
-      const surfaceSel=el("select");
+      const surfaceSel=el("select",{title:t("surface")});
       Object.keys(state.project.settings.surfaceTypes).concat(["Custom"]).forEach(n=>{
         const o=el("option",{value:n}); o.textContent=n; surfaceSel.appendChild(o);
       });
@@ -550,57 +623,42 @@
       const tip=el("div",{class:"pill"}, t("prodInfo")+" / "+t("projectInfo"));
       header.appendChild(tip);
 
+      // small illustration top-right
+      const mini=el("div",{class:"mini-illustration"});
+      const canvas=document.createElement("canvas"); mini.appendChild(canvas);
+      header.appendChild(mini);
+
       const del=el("button",{class:"del-area",title:t("deleteArea")}, t("deleteArea"));
       del.addEventListener("click",()=>removeArea(wrap));
       header.appendChild(del);
 
       wrap.appendChild(header);
 
-      // grid
-      const grid=el("div",{class:"area-grid"});
-
-      // table with header groups
-      const table=el("table",{class:"area-table", "data-area-id":area.id});
+      // table
+      const table=el("table",{class:"area-table","data-area-id":area.id});
       const thead=el("thead");
-
       const grp=el("tr");
-      grp.appendChild(el("th",{class:"th-group",colspan:"6"},t("prodInfo")));   // product info columns
-      grp.appendChild(el("th",{class:"th-group",colspan:"7"},t("projectInfo"))); // project/area calculation columns
+      grp.appendChild(el("th",{class:"th-group",colspan:"7"},t("prodInfo")));
+      grp.appendChild(el("th",{class:"th-group",colspan:"8"},t("projectInfo")));
       thead.appendChild(grp);
-
       const head=el("tr");
-      ["",t("product"),t("calc"),t("usage"),t("coverSqm"),t("coverLayers"),
+      ["",t("product"),t("color"),t("calc"),t("usage"),t("coverSqm"),t("coverLayers"),
        t("layers"),t("thickness"),t("density"),t("packSize"),t("unit"),t("pricePack"),
        t("needed"),t("packages"),t("cost")].forEach(h=>head.appendChild(el("th",{},h)));
       thead.appendChild(head);
       table.appendChild(thead);
 
-      const tbody=el("tbody");
-      tbody.setAttribute("data-area-id", area.id);
+      const tbody=el("tbody"); tbody.setAttribute("data-area-id", area.id);
       area.products.forEach((p)=>tbody.appendChild(buildProductRow(area,p)));
       table.appendChild(tbody);
 
-      // right side: illustration + infobox
-      const side=el("div",{class:"area-side"});
-      const canvBox=el("div",{class:"canvas-wrap"});
-      const canvHdr=el("header");
-      canvHdr.appendChild(el("strong",{},t("areaIllustration")));
-      canvHdr.appendChild(el("small",{},t("layersLegend")));
-      canvBox.appendChild(canvHdr);
-      const canvas=document.createElement("canvas"); canvBox.appendChild(canvas);
-      side.appendChild(canvBox);
+      // inline surface info (below table)
+      const inlineInfo=el("div",{class:"surface-inline","data-bind":"inlineSurface"});
+      wrap.appendChild(table);
+      wrap.appendChild(inlineInfo);
 
-      const info=el("div",{class:"infobox"});
-      info.appendChild(el("h4",{},"Surface / Åtgång"));
-      info.appendChild(el("div",{class:"note","data-bind":"infotext"}));
-      side.appendChild(info);
-
-      grid.appendChild(table);
-      grid.appendChild(side);
-      wrap.appendChild(grid);
-
-      // "Add product" + "Add area below"
-      const rowBtnWrap=el("div",{style:"display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0"});
+      // buttons (Add Product and Add Area below) — full width, same size
+      const btnWrap=el("div",{style:"display:flex; flex-direction:column; gap:8px; margin-top:6px"});
       const addProdBtn=el("button",{class:"btn btn-primary"}, t("addProduct"));
       addProdBtn.addEventListener("click",()=>{
         const firstAdd = area.products.length===0 && state.lastAddedProductTemplate;
@@ -613,13 +671,25 @@
           }
         }
       });
-      const addAreaBelow=el("button",{class:"add-area-below"}, t("addAreaBelow"));
+      btnWrap.appendChild(addProdBtn);
+
+      const addAreaBelow=el("button",{class:"btn btn-primary"}, t("addAreaBelow"));
       addAreaBelow.addEventListener("click",()=>insertAreaBelow(area.id));
-      rowBtnWrap.appendChild(addProdBtn);
-      rowBtnWrap.appendChild(addAreaBelow);
-      wrap.appendChild(rowBtnWrap);
+      btnWrap.appendChild(addAreaBelow);
+      wrap.appendChild(btnWrap);
 
       // listeners
+      function updateAreaInfoboxAndCanvas(showInline=false){
+        const meta=surfaceExpl(area);
+        drawAreaIllustration(canvas,area);
+        attachCanvasInteractions(canvas,area,inlineInfo);
+        if(showInline){
+          inlineInfo.innerHTML = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
+          inlineInfo.classList.add("show");
+        }
+      }
+      updateAreaInfoboxAndCanvas();
+
       surfaceSel.addEventListener("change",()=>{
         if(surfaceSel.value==="Custom"){ modI.disabled=false; }
         else{
@@ -628,37 +698,24 @@
           log(`Surface "${area.name}" → ${surfaceSel.value} (x${area.modifier})`);
           updateCalculations(true);
         }
-        updateAreaInfoboxAndCanvas();
+        updateAreaInfoboxAndCanvas(true);
       });
+      surfaceSel.addEventListener("mouseenter",()=>updateAreaInfoboxAndCanvas(true));
+      surfaceSel.addEventListener("mouseleave",()=>{inlineInfo.classList.remove("show"); inlineInfo.innerHTML="";});
+
       modI.addEventListener("change",()=>{
         const v=toPosFloat(modI.value,1.0); modI.value=v; area.modifier=v;
         surfaceSel.value = reverseFindTypeByFactor(v) || "Custom";
         if(surfaceSel.value!=="Custom"){ modI.disabled=true; }
         log(`Surface factor "${area.name}" → ${v}`);
-        updateCalculations(true); updateAreaInfoboxAndCanvas();
+        updateCalculations(true); updateAreaInfoboxAndCanvas(true);
       });
       sizeI.addEventListener("change",()=>{
         const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Area size "${area.name}" → ${v} m²`);
         updateCalculations();
       });
 
-      function updateAreaInfoboxAndCanvas(){
-        const meta=surfaceExpl(area);
-        const note=wrap.querySelector('[data-bind="infotext"]');
-        if(note){
-          note.innerHTML = `
-            <div><strong>${LANG==="sv"?"Typ":"Type"}:</strong> ${meta.title} <span style="color:var(--muted)">(${meta.type})</span></div>
-            <div><strong>${t("factor")}:</strong> ×${meta.factor} &nbsp; <em>${meta.hint}</em></div>
-            <div style="margin-top:4px">${meta.desc}</div>
-            <div style="margin-top:6px"><small>${LANG==="sv"?"Förberedelse":"Prep"}: ${meta.prep} • ${LANG==="sv"?"Typiskt":"Typical"}: ${meta.typical}</small></div>
-          `;
-        }
-        drawAreaIllustration(canvas,area);
-        attachCanvasInteractions(canvas,area);
-      }
-      updateAreaInfoboxAndCanvas();
-
-      // drag & drop sorting (tbody)
+      // enable sorting
       enableDragSort(tbody, area);
 
       return wrap;
@@ -671,54 +728,58 @@
       if(product.coverLayersPerPack==null||product.coverLayersPerPack<=0) product.coverLayersPerPack=1;
 
       const tr=el("tr",{class:"product-row","data-product-id":product.id, draggable:"true"});
-      tr.addEventListener("click",()=>{tr.classList.add("active"); tr.parentElement.querySelectorAll(".product-row").forEach(r=>{if(r!==tr) r.classList.remove("active");});});
 
-      const td=(child)=>{const c=document.createElement("td"); c.appendChild(child); return c;};
+      const td=(child,cls)=>{const c=document.createElement("td"); if(cls) c.className=cls; c.appendChild(child); return c;};
 
-      const drag=el("span",{class:"drag-handle",title:"Drag to reorder"}, "☰");
-      tr.appendChild(td(drag));
+      const drag=el("span",{class:"drag-handle",title:"Drag to reorder"},"☰");
+      tr.appendChild(td(drag,"td-prod"));
 
       const nameI=el("input",{type:"text",value:product.name,placeholder:t("product")});
       nameI.addEventListener("change",()=>{product.name=nameI.value; state.lastAddedProductTemplate=cloneProductData(product); log(`Renamed product ${product.id} in "${area.name}" → "${product.name}"`);});
-      tr.appendChild(td(nameI));
+      tr.appendChild(td(nameI,"td-prod"));
+
+      // color picker (reflects in JSON and illustration)
+      const colorI=el("input",{type:"color",value:product.color||"#6cb2ff",title:t("color")});
+      colorI.addEventListener("input",()=>{product.color=colorI.value; const canv=document.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`); if(canv) drawAreaIllustration(canv,area);});
+      tr.appendChild(td(colorI,"td-prod"));
 
       const mode=el("select");
       [["thickness",t("calcThickness")],["usage",t("calcUsage")],["coverage",t("calcCoverage")]]
         .forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);});
       mode.value=product.calcMode;
-      tr.appendChild(td(mode));
+      tr.appendChild(td(mode,"td-prod"));
 
-      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0}); tr.appendChild(td(usageI));
-      const coverSqmI=el("input",{type:"number",min:"0",step:"0.01",value:product.coverSqmPerPack||0}); tr.appendChild(td(coverSqmI));
-      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1}); tr.appendChild(td(coverLayersI));
+      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0}); tr.appendChild(td(usageI,"td-prod"));
+      const coverSqmI=el("input",{type:"number",min:"0",step:"0.01",value:product.coverSqmPerPack||0}); tr.appendChild(td(coverSqmI,"td-prod"));
+      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1}); tr.appendChild(td(coverLayersI,"td-prod"));
 
       const layersI=el("input",{type:"number",min:"1",step:"1",value:product.layers||1});
       layersI.addEventListener("change",()=>{product.layers=Math.max(1,parseInt(layersI.value)||1); layersI.value=product.layers; log(`Layers "${product.name}" in "${area.name}" → ${product.layers}`); updateCalculations();});
-      tr.appendChild(td(layersI));
+      tr.appendChild(td(layersI,"td-proj"));
 
       const thickI=el("input",{type:"number",min:"0",step:"0.1",value:product.thickness||0});
-      thickI.addEventListener("change",()=>{product.thickness=toPosFloat(thickI.value,0); thickI.value=product.thickness; log(`Thickness "${product.name}" in "${area.name}" → ${product.thickness} mm`); updateCalculations();});
-      tr.appendChild(td(thickI));
+      thickI.addEventListener("change",()=>{product.thickness=toPosFloat(thickI.value,0); thickI.value=product.thickness; log(`Thickness "${product.name}" → ${product.thickness} mm`); updateCalculations();});
+      tr.appendChild(td(thickI,"td-proj"));
 
       const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); densI.placeholder=t("density");
-      tr.appendChild(td(densI));
+      tr.appendChild(td(densI,"td-proj"));
 
       const packI=el("input",{type:"number",min:"0.0001",step:"0.1",value:product.packSize||1});
       packI.addEventListener("change",()=>{product.packSize=Math.max(0.0001,parseFloat(packI.value)||1); packI.value=product.packSize; log(`Pack size "${product.name}" → ${product.packSize} ${product.packUnit}`); updateCalculations();});
-      tr.appendChild(td(packI));
+      tr.appendChild(td(packI,"td-proj"));
 
       const unitSel=el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; unitSel.appendChild(o);}); unitSel.value=product.packUnit||"kg";
-      tr.appendChild(td(unitSel));
+      tr.appendChild(td(unitSel,"td-proj"));
 
       const priceI=el("input",{type:"number",min:"0",step:"0.01",value:product.price||0});
       priceI.addEventListener("change",()=>{product.price=toPosFloat(priceI.value,0); priceI.value=product.price.toFixed(2); log(`Price/pack "${product.name}" → ${product.price}`); updateCalculations();});
-      tr.appendChild(td(priceI));
+      tr.appendChild(td(priceI,"td-proj"));
 
-      const needSpan=el("span",{class:"neededQty"},"0"); tr.appendChild(td(needSpan));
-      const pkgSpan=el("span",{class:"packageCount"},"0"); tr.appendChild(td(pkgSpan));
-      const costSpan=el("span",{class:"cost"},"0"); tr.appendChild(td(costSpan));
+      const needSpan=el("span",{class:"neededQty"},"0"); tr.appendChild(td(needSpan,"td-proj"));
+      const pkgSpan=el("span",{class:"packageCount"},"0"); tr.appendChild(td(pkgSpan,"td-proj"));
+      const costSpan=el("span",{class:"cost"},"0"); tr.appendChild(td(costSpan,"td-proj"));
 
-      // OVERLAY ACTIONS (top-right, not affecting height)
+      // overlay actions
       const overlay=el("div",{class:"row-actions-overlay"});
       const cloneAll=el("button",{class:"mini ghost","data-i18n":"cloneAll"},t("cloneAll"));
       const cloneBelow=el("button",{class:"mini ghost","data-i18n":"cloneBelow"},t("cloneBelow"));
@@ -727,12 +788,12 @@
       overlay.appendChild(cloneAll); overlay.appendChild(cloneBelow); overlay.appendChild(infoBtn); overlay.appendChild(delBtn);
       tr.appendChild(overlay);
 
-      // breakdown row (kept for step-mode)
+      // breakdown row (for step mode)
       const br=document.createElement("tr"); br.className="breakdown";
-      const brtd=document.createElement("td"); brtd.colSpan=15; br.appendChild(brtd);
+      const brtd=document.createElement("td"); brtd.colSpan=16; br.appendChild(brtd);
       const brbox=el("div",{class:"breakdown"}); brtd.appendChild(brbox);
 
-      // Bind mode UI visibility
+      // mode binding
       function bindModeUI(){
         const M=product.calcMode;
         const isUsage=(M==="usage"), isThick=(M==="thickness"), isCover=(M==="coverage");
@@ -743,12 +804,11 @@
       }
       bindModeUI();
 
-      // events
       const applyCalc=()=>updateCalculations();
+      unitSel.addEventListener("change",()=>{product.packUnit=unitSel.value; bindModeUI(); log(`Unit "${product.name}" → ${product.packUnit}`); applyCalc();});
       mode.addEventListener("change",()=>{product.calcMode=mode.value; bindModeUI(); log(`Mode "${product.name}" → ${product.calcMode}`); updateCalculations(true);});
       usageI.addEventListener("change",()=>{product.usagePerM2=toPosFloat(usageI.value,0); usageI.value=product.usagePerM2; state.lastAddedProductTemplate=cloneProductData(product); applyCalc();});
       densI.addEventListener("change",()=>{const v=toPosFloat(densI.value,0); product.density=(densI.value===""?null:v); applyCalc();});
-      unitSel.addEventListener("change",()=>{product.packUnit=unitSel.value; bindModeUI(); log(`Unit "${product.name}" → ${product.packUnit}`); applyCalc();});
       coverSqmI.addEventListener("change",()=>{product.coverSqmPerPack=toPosFloat(coverSqmI.value,0); applyCalc();});
       coverLayersI.addEventListener("change",()=>{product.coverLayersPerPack=Math.max(1,parseInt(coverLayersI.value)||1); coverLayersI.value=product.coverLayersPerPack; applyCalc();});
 
@@ -776,7 +836,7 @@
     }
 
     function addProduct(area,tbody){
-      const p={id:state.nextProductId++,name:"",layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,
+      const p={id:state.nextProductId++,name:"",color:null,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,
         calcMode:"thickness",usagePerM2:0,coverSqmPerPack:0,coverLayersPerPack:1};
       area.products.push(p);
       const frag=buildProductRow(area,p);
@@ -860,11 +920,12 @@
     }
 
     /* ================== CALCULATIONS ================== */
-    function refreshSummaryLabel(){
+    function refreshSummaryLabels(){
       const S=state.project.settings;
-      projectSummaryEl.textContent = S.vatIncluded
-        ? (LANG==="sv" ? "Projektets totalsumma (inkl. moms): " : "Project total (incl. VAT): ")
-        : (LANG==="sv" ? "Projektets totalsumma (exkl. moms): " : "Project total (excl. VAT): ");
+      const label = S.vatIncluded
+        ? (LANG==="sv" ? "Projektets totalsumma (inkl. moms):" : "Project total (incl. VAT):")
+        : (LANG==="sv" ? "Projektets totalsumma (exkl. moms):" : "Project total (excl. VAT):");
+      footerTotalLabel.textContent = label;
     }
 
     function updateCalculations(fromSurface=false){
@@ -953,19 +1014,18 @@
 
         totalCostExVAT += areaCost;
 
-        // canvas refresh
-        const canv=areasContainer.querySelector(`.area[data-area-id="${area.id}"] canvas`);
+        const canv=areasContainer.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
         if(canv) drawAreaIllustration(canv,area);
       });
 
-      // totals
-      const vatIncluded=S.vatIncluded, vatRate=S.vatRate;
-      const displayCost = vatIncluded ? (totalCostExVAT*(1+vatRate/100)).toFixed(2) : totalCostExVAT.toFixed(2);
-      refreshSummaryLabel();
-      projectSummaryEl.textContent += displayCost;
+      const label = state.project.settings.vatIncluded
+        ? (LANG==="sv"?"Projektets totalsumma (inkl. moms):":"Project total (incl. VAT):")
+        : (LANG==="sv"?"Projektets totalsumma (exkl. moms):":"Project total (excl. VAT):");
+      footerTotalLabel.textContent=label;
+      const displayCost = state.project.settings.vatIncluded ? (totalCostExVAT*(1+state.project.settings.vatRate/100)).toFixed(2) : totalCostExVAT.toFixed(2);
+      footerTotalValue.textContent = displayCost;
 
-      // info summary
-      renderTotalsInfo(totalsMap, S);
+      renderTotalsInfo(totalsMap, state.project.settings);
 
       if(fromSurface) { lastInfoTime.textContent = t("updated")+new Date().toLocaleTimeString(); showInfoToast(); }
     }
@@ -973,7 +1033,6 @@
     function renderTotalsInfo(totalsMap, S){
       const arr=[...totalsMap.values()];
       if(!arr.length){ infoBody.innerHTML = `<em>${t("infoEmpty")}</em>`; return; }
-
       const parts=[];
       arr.forEach(rec=>{
         const exactPk = rec.exactPackages;
@@ -1024,19 +1083,21 @@
       redoBtn.disabled=state.redoStack.length===0;
     }
 
-    /* ================== TEMPLATES (bottom section) ================== */
+    /* ================== TEMPLATES (bottom) ================== */
     const TKEY="__TEMPLATES__";
-    function newTemplate(){ return {id:state.nextTemplateId++,name:"",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,coverSqmPerPack:0,coverLayersPerPack:1}; }
+    function newTemplate(){ return {id:state.nextTemplateId++,name:"",color:"#6cb2ff",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,coverSqmPerPack:0,coverLayersPerPack:1}; }
     function getTemplates(){ if(!state._templates) state._templates=[]; return state._templates; }
     function saveTemplates(){ localStorage.setItem(TKEY, JSON.stringify(getTemplates())); }
     function loadTemplates(){ try{ const raw=localStorage.getItem(TKEY); if(raw){const arr=JSON.parse(raw)||[]; state._templates=arr; state.nextTemplateId=(Math.max(0,...arr.map(x=>x.id||0))+1)||1;}}catch{state._templates=[];} }
+
     function renderTemplates(){
       templatesBody.innerHTML="";
       const list=getTemplates();
       if(!list.length){ templatesBody.innerHTML=`<div style="color:var(--muted)">${LANG==="sv"?"Inga mallar ännu.":"No templates yet."}</div>`; return; }
       list.forEach(t=>{
-        const row=el("div",{style:"display:grid;grid-template-columns: 200px 140px 150px 90px 110px 110px 110px 90px 120px 120px 120px auto;gap:8px;align-items:center;margin:6px 0"});
+        const row=el("div",{style:"display:grid;grid-template-columns: 200px 80px 140px 90px 110px 110px 110px 90px 120px 120px 120px auto;gap:8px;align-items:center;margin:6px 0"});
         const n=el("input",{value:t.name,placeholder:t("product")}); row.appendChild(n);
+        const color=el("input",{type:"color",value:t.color||"#6cb2ff"}); row.appendChild(color);
         const mode=el("select"); [["thickness",t("calcThickness")],["usage",t("calcUsage")],["coverage",t("calcCoverage")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);}); mode.value=t.calcMode; row.appendChild(mode);
         const use=el("input",{type:"number",min:"0",step:"0.001",value:t.usagePerM2||0}); row.appendChild(use);
         const lay=el("input",{type:"number",min:"1",step:"1",value:t.layers||1}); row.appendChild(lay);
@@ -1050,21 +1111,28 @@
 
         const actions=el("div",{style:"display:flex;gap:8px;justify-content:flex-end"});
         const applyAll=el("button",{class:"btn btn-ghost"} , t("applyAllTemplates"));
+        const applyCurrent=el("button",{class:"btn btn-ghost"}, LANG==="sv"?"Använd på aktuellt område":"Apply to current area");
         const del=el("button",{class:"btn btn-ghost",style:"border:1px solid var(--line)"},"Delete");
-        actions.appendChild(applyAll); actions.appendChild(del);
+        actions.appendChild(applyAll); actions.appendChild(applyCurrent); actions.appendChild(del);
         row.appendChild(actions);
 
-        const bind=()=>{ t.name=n.value; t.calcMode=mode.value; t.usagePerM2=toPosFloat(use.value,0); t.layers=Math.max(1,parseInt(lay.value)||1); t.thickness=toPosFloat(th.value,0);
+        const bind=()=>{ t.name=n.value; t.color=color.value; t.calcMode=mode.value; t.usagePerM2=toPosFloat(use.value,0); t.layers=Math.max(1,parseInt(lay.value)||1); t.thickness=toPosFloat(th.value,0);
           t.density=(de.value===""?null:toPosFloat(de.value,0)); t.packSize=Math.max(0.0001,parseFloat(ps.value)||1); t.packUnit=pu.value; t.price=toPosFloat(pr.value,0);
           t.coverSqmPerPack=toPosFloat(coverS.value,0); t.coverLayersPerPack=Math.max(1,parseInt(coverL.value)||1);
         };
-        [n,mode,use,lay,th,de,ps,pu,pr,coverS,coverL].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
+        [n,color,mode,use,lay,th,de,ps,pu,pr,coverS,coverL].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
 
         applyAll.addEventListener("click",()=>{
           bind(); saveTemplates();
           pushStateForUndo(`Apply template "${t.name}" to all areas`);
           state.project.areas.forEach(a=>{const np=cloneProductData(t); np.id=state.nextProductId++; a.products.push(np);});
           log(t("tmplApplyAll")); renderAll();
+        });
+        applyCurrent.addEventListener("click",()=>{
+          bind(); saveTemplates();
+          const a = state.project.areas[0]; if(!a){alert(LANG==="sv"?"Skapa ett område först.":"Create an area first."); return;}
+          pushStateForUndo(`Apply template "${t.name}" to first area`);
+          const np=cloneProductData(t); np.id=state.nextProductId++; a.products.push(np); renderAll();
         });
         del.addEventListener("click",()=>{
           if(!confirm(LANG==="sv"?"Ta bort mallen?":"Delete this template?")) return;
@@ -1090,7 +1158,7 @@
       }else if(name.endsWith(".csv")){
         try{
           const lines=content.split(/\r?\n/).filter(l=>l.trim().length>0); if(!lines.length) throw new Error("Empty CSV");
-          let start=0, headers=[]; if(/area\s*name|areaname/i.test(lines[0])){headers=parseCSVLine(lines[0]);start=1;} else headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
+          let start=0, headers=[]; if(/area\s*name|areaname/i.test(lines[0])){headers=parseCSVLine(lines[0]);start=1;} else headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
           const idx={}; headers.forEach((c,i)=>idx[c]=i);
           const importedAreas=[]; const map={}; let importedSettings={};
           for(let i=start;i<lines.length;i++){
@@ -1100,12 +1168,17 @@
             const sMod =parseFloat(v[idx["SurfaceMod"]])||1.0;
             const aSize=parseFloat(v[idx["AreaSize"]])||0;
             const pName=v[idx["ProductName"]]||"";
+            const color=v[idx["Color"]]||null;
             const layers=parseInt(v[idx["Layers"]])||1;
             const thick =parseFloat(v[idx["Thickness"]])||0;
             const dens =(v[idx["Density"]]!=="" && v[idx["Density"]]!=null)? parseFloat(v[idx["Density"]]): null;
             const pSize =parseFloat(v[idx["PackSize"]])||1;
             const pUnit =v[idx["PackUnit"]]||"kg";
             const price =parseFloat(v[idx["Price"]])||0;
+            const mode  =v[idx["CalcMode"]]||"thickness";
+            const usage =parseFloat(v[idx["UsagePerM2"]])||0;
+            const covS  =parseFloat(v[idx["CoverSqmPerPack"]])||0;
+            const covL  =parseInt(v[idx["CoverLayersPerPack"]])||1;
             if(i===start){
               importedSettings.vatIncluded = /^(true|1)$/i.test(v[idx["VATIncluded"]]||"");
               importedSettings.vatRate     = parseFloat(v[idx["VATRate"]]) || state.project.settings.vatRate;
@@ -1116,8 +1189,8 @@
             if(!area){ area={id:state.nextAreaId++,name:aName,modifier:sMod,size:aSize,products:[]}; map[aName]=area; importedAreas.push(area); }
             if(pName || price>0 || thick>0){
               area.products.push({
-                id:state.nextProductId++, name:pName, layers, thickness:thick, density:dens, packSize:pSize, packUnit:pUnit, price,
-                calcMode:"thickness", usagePerM2:0, coverSqmPerPack:0, coverLayersPerPack:1
+                id:state.nextProductId++, name:pName, color, layers, thickness:thick, density:dens, packSize:pSize, packUnit:pUnit, price,
+                calcMode:mode, usagePerM2:usage, coverSqmPerPack:covS, coverLayersPerPack:covL
               });
             }
           }
@@ -1137,14 +1210,14 @@
     }
     function exportJSON(){ const blob=new Blob([JSON.stringify(state.project,null,2)],{type:"application/json"}); downloadBlob(blob,"project_export.json"); log("Exported JSON"); }
     function exportCSV(){
-      const headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
+      const headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
       const lines=[headers.join(",")]; const S=state.project.settings;
       state.project.areas.forEach(a=>{
         if(!a.products.length){
-          lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,"","","","","","","",S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent].map(formatCSVValue).join(","));
+          lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,"","", "", "", "", "", "", "", S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent,"","","",""].map(formatCSVValue).join(","));
         }else{
           a.products.forEach(p=>{
-            lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size, p.name||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price, S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent].map(formatCSVValue).join(","));
+            lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size, p.name||"", p.color||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price, S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent, p.calcMode, p.usagePerM2, p.coverSqmPerPack, p.coverLayersPerPack].map(formatCSVValue).join(","));
           });
         }
       });
@@ -1157,10 +1230,10 @@
       xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+nl;
       xml+='<Styles>'+nl+'<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>'+nl+'<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>'+nl+'<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>'+nl+'</Styles>'+nl;
       xml+='<Worksheet ss:Name="Estimate">'+nl;
-      const COLS=16; let rows=1; state.project.areas.forEach(a=>{rows+=a.products.length; rows+=1;}); rows+=1;
+      const COLS=18; let rows=1; state.project.areas.forEach(a=>{rows+=a.products.length; rows+=1;}); rows+=1;
       xml+=`<Table ss:ExpandedColumnCount="${COLS}" ss:ExpandedRowCount="${rows}">`+nl;
       for(let j=0;j<COLS;j++){xml+='<Column ss:AutoFitWidth="1"/>'+nl;}
-      const headers=["Area","Surface Mod","Area Size (m²)","Product","Mode","Usage/m²","Cover m²/pack","Cover layers/pack","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost"];
+      const headers=["Area","Surface Mod","Area Size (m²)","Product","Color","# Mode","Usage/m²","Cover m²/pack","Cover layers/pack","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost"];
       xml+='<Row ss:StyleID="Bold">'+nl; headers.forEach(h=>xml+=`<Cell><Data ss:Type="String">${h}</Data></Cell>`+nl); xml+='</Row>'+nl;
 
       let rowIndex=1, areaTotalRows=[];
@@ -1190,6 +1263,7 @@
           xml+=`<Cell><Data ss:Type="Number">${a.modifier}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${a.size}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="String">${escapeXML(p.name||"")}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="String">${escapeXML(p.color||"")}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="String">${p.calcMode}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${p.usagePerM2||0}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${p.coverSqmPerPack||0}</Data></Cell>`+nl;
@@ -1227,13 +1301,13 @@
           areaTotal += packages*price;
         });
         xml+='<Row ss:StyleID="Bold">'+nl;
-        xml+=`<Cell ss:MergeAcross="14"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
+        xml+=`<Cell ss:MergeAcross="16"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
         xml+=`<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotal.toFixed(2)}</Data></Cell>`+nl;
         xml+='</Row>'+nl;
       });
       rowIndex++;
       xml+='<Row ss:StyleID="Bold">'+nl;
-      xml+='<Cell ss:MergeAcross="14"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
+      xml+='<Cell ss:MergeAcross="16"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
       if(areaTotalRows.length){ const refs=areaTotalRows.map(r=>`R${r}C`); xml+=`<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${refs.join(",")})"><Data ss:Type="Number"></Data></Cell>`+nl; }
       else xml+='<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>'+nl;
       xml+='</Row>'+nl + '</Table>'+nl + '</Worksheet>'+nl + '</Workbook>';
@@ -1242,11 +1316,12 @@
     function exportExcel(){ downloadBlob(new Blob([generateExcelXML()],{type:"application/vnd.ms-excel"}),"project_estimate.xls"); log("Exported Excel"); }
 
     /* ================== EVENTS ================== */
-    btnAddAreaTop.addEventListener("click",()=>{
+    btnAddAreaDock.addEventListener("click",()=>{
       const id=state.nextAreaId++; const nm=(LANG==="sv"?"Område ":"Area ")+id;
       const a={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
       state.project.areas.push(a); const el=createAreaElement(a); areasContainer.appendChild(el);
       log(`Added area "${nm}"`); pushStateForUndo(`Added area ${nm}`); updateCalculations();
+      el.scrollIntoView({behavior:"smooth",block:"center"});
     });
     undoBtn.addEventListener("click",undo); redoBtn.addEventListener("click",redo);
 
@@ -1271,15 +1346,18 @@
     minimizeLogBtn.addEventListener("click",()=>{if(!logPanel.classList.contains("minimized")) logPanel.classList.add("minimized"); else {logPanel.classList.remove("minimized"); logPanel.classList.remove("maximized");}});
     maximizeLogBtn.addEventListener("click",()=>{if(logPanel.classList.contains("maximized")) logPanel.classList.remove("maximized"); else {logPanel.classList.remove("minimized"); logPanel.classList.add("maximized");}});
 
-    infoToast.addEventListener("click",()=>{document.getElementById("infoSummary").scrollIntoView({behavior:"smooth"}); infoToast.style.display="none";});
+    btnScrollSummary.addEventListener("click",()=>{document.getElementById("infoSummary").scrollIntoView({behavior:"smooth"});});
 
     // Language toggles
     langSV.addEventListener("click",()=>{LANG="sv"; langSV.classList.add("active"); langEN.classList.remove("active"); applyI18n(); renderAll();});
     langEN.addEventListener("click",()=>{LANG="en"; langEN.classList.add("active"); langSV.classList.remove("active"); applyI18n(); renderAll();});
 
-    // Templates buttons (ensure works & at bottom)
+    // Templates buttons (ensure "Lägg till mall" works and visible immediately)
     addTemplateBtn.addEventListener("click",()=>{
       const tmpl=newTemplate(); const L=getTemplates(); L.push(tmpl); saveTemplates(); renderTemplates(); log(t("tmplAdded"));
+      document.getElementById("globalProducts").scrollIntoView({behavior:"smooth"});
+      // focus new template name
+      setTimeout(()=>{const inputs=templatesBody.querySelectorAll("input"); if(inputs.length) inputs[0].focus();},200);
     });
     applyAllTemplatesBtn.addEventListener("click",()=>{
       const L=getTemplates(); if(!L.length) return;
@@ -1292,8 +1370,8 @@
 
     /* ================== INIT ================== */
     loadTemplates();
-    log("App started");
     applyI18n();
+    log("App started");
     renderAll();
 
   })();
