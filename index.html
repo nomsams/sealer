@@ -1,180 +1,221 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Concrete Surface Cost Estimator — Pro</title>
+  <title>Betongytor — Material- & Kostnadsestimator PRO</title>
   <style>
-    /* ===== Base Styling (kept) ===== */
+    /* ============ THEME (brighter, less gray) ============ */
     :root{
-      --bg:#f9f9f9;--fg:#212121;--muted:#6b7280;--panel:#ffffff;--line:#ddd;
-      --accent:#0ea5e9;--accent-2:#22c55e;--danger:#ef4444;--warn:#f59e0b;
-      --panel-2:#f0f0f0;--chip:#e5e7eb;--shadow:0 4px 14px rgba(0,0,0,.08);
+      --bg:#f7fbff;
+      --fg:#0f172a;
+      --muted:#64748b;
+      --panel:#ffffff;
+      --line:#e2e8f0;
+      --accent:#2563eb;         /* blue */
+      --accent-2:#10b981;       /* green */
+      --accent-3:#f59e0b;       /* amber */
+      --danger:#ef4444;
+      --shadow:0 10px 24px rgba(2,32,71,.08);
+      --chip:#e9f4ff;
+      --chip2:#e8fff6;
+      --grad:linear-gradient(135deg,#e8f0ff 0%,#f3fff8 100%);
     }
-    body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--fg);margin:0}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;background:var(--grad);color:var(--fg);margin:0}
+
+    /* ============ TOPBAR ============ */
     .toolbar{
-      position:sticky;top:0;z-index:5;background:#e0e0e0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
-      padding:10px;border-bottom:1px solid #cfcfcf
+      position:sticky;top:0;z-index:20;
+      background:linear-gradient(90deg,#fff 0%,#f8fbff 100%);
+      padding:10px 12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+      border-bottom:1px solid var(--line); box-shadow:0 6px 14px rgba(15,23,42,.03);
     }
-    .toolbar label{font-weight:bold}
-    .toolbar input[type="number"]{width:70px}
-    .toolbar button,.toolbar input[type="checkbox"],.toolbar select{margin-right:12px}
-    .toolbar .split{flex:1}
-    .toolbar .chip{background:var(--chip);border-radius:999px;padding:3px 9px;font-size:.9em}
+    .toolbar .group{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:6px 8px;border-radius:12px}
+    .toolbar label{font-weight:600;color:#0b1220}
+    .toolbar input[type="number"]{width:74px}
+    .toolbar .grow{flex:1}
+    .btn{
+      appearance:none;border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700;letter-spacing:.2px;
+      box-shadow:var(--shadow);transition:transform .04s ease,filter .14s ease;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--accent-2);color:#fff}
+    .btn-blue{background:var(--accent);color:#fff}
+    .btn-ghost{background:#fff;color:#0f172a;border:1px solid var(--line);box-shadow:none}
+    .flag-btn{font-size:18px;line-height:1;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer}
+    .flag-btn.active{outline:2px solid var(--accent);}
 
-    /* ===== Areas ===== */
-    #areasContainer{padding:10px 10px 70px}
-    .area{background:var(--panel);box-shadow:var(--shadow);border:1px solid #ccc;border-radius:10px;margin:14px;padding:12px}
-    .area-header{display:grid;grid-template-columns: 180px 170px 120px 120px 1fr auto;gap:8px;align-items:center;margin-bottom:10px}
-    .area-header input[type="text"]{font-weight:bold}
-    .area-header .remove-area{justify-self:end;background:#ff5555;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer}
-    .area-header .remove-area:hover{opacity:.9}
+    /* ============ LAYOUT ============ */
+    #areasContainer{padding:14px 12px 96px}
+    .area{
+      background:var(--panel);border:1px solid var(--line);border-radius:16px;margin:16px 6px;padding:12px 12px 10px;
+      box-shadow:var(--shadow);
+    }
+    .area-header{
+      display:grid;grid-template-columns: 220px 190px 140px 210px 1fr auto;gap:10px;align-items:center;margin-bottom:12px
+    }
+    .area-header .pill{background:var(--chip2);color:#065f46;border:1px solid #c1fde5;border-radius:999px;padding:5px 10px;font-weight:700}
+    .del-area{background:#fff;color:#991b1b;border:1px solid #fecaca;border-radius:10px;padding:8px 10px;cursor:pointer}
+    .del-area:hover{background:#fff5f5}
 
-    table.area-table{width:100%;border-collapse:collapse;margin-bottom:6px}
-    table.area-table th,table.area-table td{border:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:middle}
-    table.area-table th{background:var(--panel-2)}
-    table.area-table td input,table.area-table td select{width:100%;box-sizing:border-box;padding:4px;border:1px solid #ccc;border-radius:6px;font:inherit}
-    .row-actions{display:flex;gap:6px;flex-wrap:wrap}
-    .mini{font-size:.85em;padding:4px 6px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer}
-    .mini.primary{border-color:var(--accent);color:#0369a1}
-    .mini.warn{border-color:var(--warn);color:#92400e;background:#fff7ed}
-    .mini.ghost{border-color:#ddd;color:#374151}
-    .mini.danger{border-color:#ef4444;color:#991b1b;background:#fee2e2}
-    .remove-product{background:#ff7777;color:#fff;border:none;padding:4px 8px;border-radius:6px;cursor:pointer}
+    .unit-wrap{display:flex;align-items:center;gap:6px}
+    .unit-wrap input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+    .unit-wrap .unit{font-weight:700;color:var(--muted)}
 
-    .area-grid{display:grid;grid-template-columns: minmax(0,1fr) 320px;gap:12px}
+    /* ============ TABLE ============ */
+    .area-grid{display:grid;grid-template-columns: minmax(0,1.6fr) 260px;gap:12px}
+    table.area-table{width:100%;border-collapse:separate;border-spacing:0 6px;margin-bottom:6px}
+    thead tr th{font-size:.92em;text-transform:uppercase;letter-spacing:.04em;color:#334155}
+    table.area-table th,table.area-table td{padding:8px 10px;background:#fff;border:1px solid var(--line)}
+    table.area-table th:first-child,table.area-table td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
+    table.area-table th:last-child,table.area-table td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
+    table.area-table input,table.area-table select{width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid var(--line);border-radius:10px;font:inherit}
+
+    /* header groups */
+    .th-group{background:#f8fafc;font-weight:800;text-align:center;border:1px solid var(--line);padding:6px 4px}
+    .grp-row th{background:#f8fafc}
+
+    .drag-handle{cursor:grab;font-size:18px;user-select:none}
+    .product-row{position:relative}
+    .product-row.dragging{opacity:.6}
+    .row-actions{display:none;gap:6px;flex-wrap:wrap;margin-top:6px}
+    .product-row:hover .row-actions, .product-row.active .row-actions{display:flex}
+    .mini{font-size:.85em;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+    .mini.green{border-color:#86efac;background:#f0fdf4;color:#14532d}
+    .mini.warn{border-color:#fde68a;background:#fffbeb;color:#92400e}
+    .mini.ghost{border-color:var(--line);color:#334155}
+    .mini.danger{border-color:#fecaca;background:#fff1f2;color:#9f1239}
+
+    .remove-product{background:#fff;color:#9a1b1b;border:1px solid #fecaca;padding:6px 8px;border-radius:8px;cursor:pointer}
+
+    /* ============ SIDEBAR (Illustration + Info) ============ */
     .area-side{display:flex;flex-direction:column;gap:10px}
-    .infobox{border:1px dashed #cbd5e1;background:#f8fafc;padding:10px;border-radius:8px;font-size:.92em}
-    .infobox h4{margin:0 0 6px 0}
-    .infobox .note{color:#334155}
-    .canvas-wrap{border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:8px}
+    .canvas-wrap{border:1px solid var(--line);background:#fff;border-radius:14px;padding:8px}
     .canvas-wrap header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
     .canvas-wrap small{color:var(--muted)}
-    .canvas-wrap canvas{width:100%;height:140px;border-radius:6px;background:#fff}
+    .canvas-wrap canvas{width:100%;height:120px;border-radius:10px;background:#fff}
+    .infobox{border:1px dashed #bfdbfe;background:#f0f9ff;padding:10px;border-radius:10px;font-size:.95em}
+    .infobox h4{margin:0 0 6px 0}
+    .infobox .note{color:#1e3a8a}
 
-    .breakdown{display:none;font-family:ui-monospace,Consolas,monospace;background:#f6f6f6;border:1px solid #e5e7eb;border-radius:8px;padding:8px;margin:6px 0}
-    .step-on .breakdown{display:block}
+    /* ============ SUMMARY BOX ============ */
+    .project-summary{margin:16px;font-size:1.2em;font-weight:800}
+    #infoSummary{margin:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+    #infoSummary header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:10px 12px}
+    #infoSummary .body{padding:10px 12px}
+    .product-total{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:#fcfffd}
+    .product-total h5{margin:0 0 4px 0}
+    .product-total .dim{color:var(--muted)}
 
-    .project-summary{margin:16px;font-size:1.1em;font-weight:bold}
-
-    /* ===== Global products & info ===== */
-    #globalProducts, #infoSummary{margin:14px;background:var(--panel);border:1px solid #d4d4d4;border-radius:10px;box-shadow:var(--shadow)}
-    #globalProducts header, #infoSummary header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;padding:10px 12px}
-    #globalProducts .body, #infoSummary .body{padding:10px 12px}
-    .template-row{display:grid;grid-template-columns: 180px 115px 110px 110px 80px 80px 110px auto;gap:8px;align-items:center;margin:6px 0}
-    .template-row input, .template-row select{padding:6px;border:1px solid #ccc;border-radius:6px}
-    .template-actions{display:flex;gap:6px;flex-wrap:wrap}
-
-    /* ===== Floating Info Toast ===== */
+    /* ============ FLOAT INFO TOAST ============ */
     #infoToast{
-      position:fixed;right:16px;bottom:68px;background:#111827;color:#fff;padding:10px 12px;border-radius:999px;
-      cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:6
+      position:fixed;right:16px;bottom:74px;background:#111827;color:#fff;padding:10px 12px;border-radius:999px;
+      cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:30
     }
     #infoToast .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
 
-    /* ===== Logs Panel (kept and improved) ===== */
-    #logPanel{position:fixed;bottom:0;left:0;right:0;background:#333;color:#eee;font-family:monospace;font-size:.9em;max-height:220px;display:flex;flex-direction:column;border-top:2px solid #555}
-    #logHeader{background:#444;padding:4px 8px;font-weight:bold;display:flex;align-items:center;gap:8px}
+    /* ============ LOGS ============ */
+    #logPanel{position:fixed;bottom:0;left:0;right:0;background:#0b1220;color:#e5e7eb;font-family:ui-monospace,Consolas,monospace;font-size:.9em;max-height:230px;display:flex;flex-direction:column;border-top:2px solid #1f2937}
+    #logHeader{background:#0f172a;padding:6px 8px;font-weight:800;display:flex;align-items:center;gap:8px}
     #logHeader .sp{flex:1}
-    #logHeader button{background:#555;color:#fff;border:none;padding:2px 6px;margin-left:5px;cursor:pointer;font-weight:bold;border-radius:6px}
-    #logHeader button:hover{background:#666}
+    #logHeader button{background:#1f2937;color:#fff;border:none;padding:4px 8px;margin-left:5px;cursor:pointer;font-weight:bold;border-radius:8px}
     #logContent{overflow-y:auto;padding:6px}
     #logPanel.minimized{max-height:none;height:auto}
     #logPanel.minimized #logContent{display:none}
-    #logPanel.maximized{max-height:60vh}
+    #logPanel.maximized{max-height:65vh}
 
-    /* ===== Dark Mode (kept) ===== */
-    body.dark-mode{--bg:#111827;--fg:#e5e7eb;--panel:#1f2937;--panel-2:#374151;--line:#2c3340;--chip:#374151}
-    body.dark-mode .area-header .remove-area{background:#c62828}
-    body.dark-mode .remove-product{background:#e53935}
-    body.dark-mode .template-row input, body.dark-mode .template-row select,
-    body.dark-mode table.area-table td input, body.dark-mode table.area-table td select{background:#111827;color:#e5e7eb;border-color:#374151}
-    body.dark-mode .infobox{background:#111827;border-color:#374151}
-    body.dark-mode .canvas-wrap{background:#111827;border-color:#374151}
+    /* ============ DARK MODE ============ */
+    body.dark-mode{--bg:#0b1220;--fg:#f8fafc;--panel:#0f172a;--line:#172033;--chip:#10213a;--chip2:#062a23}
+    body.dark-mode .infobox{background:#071a2a;border-color:#0b4763}
+    body.dark-mode .canvas-wrap{background:#0b1220}
 
-    /* ===== Print (kept) ===== */
+    /* ============ PRINT ============ */
     @media print{
-      .toolbar,#logPanel,#globalProducts,#infoToast{display:none!important}
-      .area, .project-summary{border:none;margin:0;page-break-inside:avoid}
-      .area-header .remove-area,.row-actions{display:none}
-      table.area-table{width:100%;border:1px solid #000}
-      table.area-table th,table.area-table td{border:1px solid #000}
-      table.area-table td input,table.area-table td select{border:none;background:transparent;pointer-events:none}
+      .toolbar,#logPanel,#infoToast{display:none!important}
+      .area,.project-summary{border:none;margin:0;page-break-inside:avoid}
+      .del-area,.row-actions,.drag-handle{display:none!important}
     }
   </style>
 </head>
 <body>
-  <!-- ===== Toolbar (kept + new controls) ===== -->
-  <div class="toolbar">
-    <button id="addArea">Add Area</button>
-    <button id="undo" disabled>Undo</button>
-    <button id="redo" disabled>Redo</button>
+  <!-- ============ TOP MENU ============ -->
+  <div class="toolbar" id="toolbar">
+    <button id="btnAddArea" class="btn btn-primary" data-i18n="addArea">+ Lägg till område</button>
+    <button id="undo" class="btn btn-ghost" disabled data-i18n="undo">Ångra</button>
+    <button id="redo" class="btn btn-ghost" disabled data-i18n="redo">Gör om</button>
 
-    <span class="chip">VAT</span>
-    <label for="vatToggle">Include:</label><input type="checkbox" id="vatToggle"/>
-    <input type="number" id="vatPercent" value="25" step="1"/>%
+    <div class="group">
+      <strong data-i18n="language">Språk</strong>
+      <button id="langSV" class="flag-btn active" title="Svenska">🇸🇪</button>
+      <button id="langEN" class="flag-btn" title="English">🇬🇧</button>
+    </div>
 
-    <span class="chip">Overage</span>
-    <label for="overageToggle">Include:</label><input type="checkbox" id="overageToggle"/>
-    <input type="number" id="overagePercent" value="10" step="1"/>%
+    <div class="group">
+      <span data-i18n="vat">Moms</span>
+      <label for="vatToggle" data-i18n="include">inkludera</label><input type="checkbox" id="vatToggle"/>
+      <input type="number" id="vatPercent" value="25" step="1"/>%
+    </div>
+    <div class="group">
+      <span data-i18n="overage">Spill</span>
+      <label for="overageToggle" data-i18n="apply">använd</label><input type="checkbox" id="overageToggle"/>
+      <input type="number" id="overagePercent" value="10" step="1"/>%
+    </div>
+    <div class="group">
+      <label for="exactToggle" data-i18n="exact">Exakt beräkning (ingen avrundning)</label>
+      <input type="checkbox" id="exactToggle"/>
+    </div>
+    <div class="group">
+      <label for="darkModeToggle" data-i18n="dark">Mörkt läge</label><input type="checkbox" id="darkModeToggle"/>
+      <label for="stepModeToggle" data-i18n="step">Steg-för-steg</label><input type="checkbox" id="stepModeToggle"/>
+    </div>
 
-    <span class="chip">View</span>
-    <label for="darkModeToggle">Dark:</label><input type="checkbox" id="darkModeToggle"/>
-    <label for="stepModeToggle">Step-by-step:</label><input type="checkbox" id="stepModeToggle"/>
+    <div class="grow"></div>
 
-    <span class="split"></span>
-
-    <button id="importData">Import</button>
-    <input type="file" id="fileInput" accept=".json,.csv,.xls,.xlsx" style="display:none;"/>
-    <button id="exportJSON">Export JSON</button>
-    <button id="exportCSV">Export CSV</button>
-    <button id="exportExcel">Export Excel</button>
-    <button id="printBtn">Print/PDF</button>
+    <div class="group">
+      <button id="importData" class="btn btn-ghost" data-i18n="import">Importera</button>
+      <input type="file" id="fileInput" accept=".json,.csv,.xls,.xlsx" style="display:none"/>
+      <button id="exportJSON" class="btn btn-ghost" data-i18n="exportJSON">Export JSON</button>
+      <button id="exportCSV" class="btn btn-ghost" data-i18n="exportCSV">Export CSV</button>
+      <button id="exportExcel" class="btn btn-blue" data-i18n="exportExcel">Export Excel</button>
+      <button id="printBtn" class="btn btn-ghost" data-i18n="print">Skriv ut / PDF</button>
+    </div>
   </div>
 
-  <!-- ===== Global Products (new) ===== -->
-  <section id="globalProducts">
-    <header>
-      <strong>Global Product Templates</strong>
-      <div class="template-actions">
-        <button id="addTemplate" class="mini primary">+ Add Template</button>
-        <button id="applyAllTemplates" class="mini">Apply ALL to ALL Areas</button>
+  <!-- ============ GLOBAL TEMPLATES ============ -->
+  <section id="globalProducts" style="margin:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)">
+    <header style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:10px 12px">
+      <strong data-i18n="templatesTitle">Globala Produktmallar</strong>
+      <div class="template-actions" style="display:flex;gap:8px">
+        <button id="addTemplate" class="btn btn-primary" data-i18n="addTemplate">+ Lägg till mall</button>
+        <button id="applyAllTemplates" class="btn btn-ghost" data-i18n="applyAllTemplates">Använd ALLA på ALLA områden</button>
       </div>
     </header>
-    <div class="body" id="templatesBody">
-      <!-- template rows inserted here -->
-      <div class="template-row" data-template-id="__starter" style="display:none"></div>
-    </div>
+    <div class="body" id="templatesBody" style="padding:10px 12px"></div>
   </section>
 
-  <!-- ===== Areas ===== -->
+  <!-- ============ AREAS ============ -->
   <div id="areasContainer"></div>
 
-  <!-- ===== Project Summary ===== -->
-  <div class="project-summary" id="projectSummary">Project Total (excl. VAT): 0</div>
+  <!-- ============ SUMMARY ============ -->
+  <div class="project-summary" id="projectSummary">Projektets totalsumma (exkl. moms): 0</div>
 
-  <!-- ===== Info + Summary (new) ===== -->
   <section id="infoSummary">
     <header>
-      <strong>Info Boxes & Summary</strong>
+      <strong data-i18n="infoTitle">Info & summeringar</strong>
       <small id="lastInfoTime" style="color:var(--muted)"></small>
     </header>
-    <div class="body" id="infoBody">
-      <em>No info yet. Change surface types or products to see guidance.</em>
-    </div>
+    <div class="body" id="infoBody"><em data-i18n="infoEmpty">Ingen info ännu. Lägg till produkter och ytor.</em></div>
   </section>
 
-  <!-- ===== Floating info toast ===== -->
-  <div id="infoToast" title="Click to scroll to Info Boxes">
-    <span class="dot"></span>
-    <span>Info updated — View</span>
+  <!-- ============ FLOAT TOAST ============ -->
+  <div id="infoToast" title="Visa info">
+    <span class="dot"></span><span data-i18n="toast">Info uppdaterad — Visa</span>
   </div>
 
-  <!-- ===== Logs (kept) ===== -->
+  <!-- ============ LOGS ============ -->
   <div id="logPanel" class="minimized">
-    <div id="logHeader">Logs <span class="sp"></span>
-      <button id="minimizeLog">_</button>
-      <button id="maximizeLog">&#9723;</button>
+    <div id="logHeader">LOGGAR<span class="sp"></span>
+      <button id="minimizeLog">_</button><button id="maximizeLog">&#9723;</button>
     </div>
     <div id="logContent"></div>
   </div>
@@ -182,262 +223,316 @@
   <script>
   (()=>{"use strict";
 
-    /* ===== State (kept + extended) ===== */
+    /* ================== I18N ================== */
+    const i18n = {
+      sv:{
+        addArea:"+ Lägg till område", undo:"Ångra", redo:"Gör om",
+        language:"Språk", vat:"Moms", include:"inkludera", overage:"Spill", apply:"använd",
+        exact:"Exakt beräkning (ingen avrundning)", dark:"Mörkt läge", step:"Steg-för-steg",
+        import:"Importera", exportJSON:"Export JSON", exportCSV:"Export CSV", exportExcel:"Export Excel", print:"Skriv ut / PDF",
+        templatesTitle:"Globala Produktmallar", addTemplate:"+ Lägg till mall", applyAllTemplates:"Använd ALLA på ALLA områden",
+        infoTitle:"Info & summeringar", infoEmpty:"Ingen info ännu. Lägg till produkter och ytor.", toast:"Info uppdaterad — Visa",
+        areaName:"Områdesnamn", surface:"Yttyp", factor:"Faktor", size:"Storlek", sq:"m²",
+        areaIllustration:"Illustration", layersLegend:"Lager, färgkodade",
+        product:"Produkt", calc:"Beräkning", usage:"Åtgång (per m²/lager)", layers:"Lager", thickness:"Tjocklek (mm)", density:"Densitet (kg/L)",
+        packSize:"Förp. storlek", unit:"Enhet", pricePack:"Pris/förp", needed:"Behov", packages:"Förp", cost:"Kostnad", actions:"Åtgärder",
+        addProduct:"+ Lägg till produktlager",
+        calcThickness:"Tjocklek", calcUsage:"Åtgång/m²", calcCoverage:"Täckning/förp",
+        coverSqm:"Täckning (m²/förp)", coverLayers:"Antal lager per förp",
+        prodInfo:"Produktdata", projectInfo:"Projekt/Områdesdata",
+        deleteArea:"Ta bort område"
+      },
+      en:{
+        addArea:"+ Add Area", undo:"Undo", redo:"Redo",
+        language:"Language", vat:"VAT", include:"include", overage:"Overage", apply:"apply",
+        exact:"Exact calc (no rounding)", dark:"Dark mode", step:"Step-by-step",
+        import:"Import", exportJSON:"Export JSON", exportCSV:"Export CSV", exportExcel:"Export Excel", print:"Print / PDF",
+        templatesTitle:"Global Product Templates", addTemplate:"+ Add Template", applyAllTemplates:"Apply ALL to ALL Areas",
+        infoTitle:"Info & summaries", infoEmpty:"No info yet. Add products and areas.", toast:"Info updated — View",
+        areaName:"Area name", surface:"Surface", factor:"Factor", size:"Size", sq:"m²",
+        areaIllustration:"Illustration", layersLegend:"Layers, color-coded",
+        product:"Product", calc:"Mode", usage:"Usage (per m²/layer)", layers:"Layers", thickness:"Thickness (mm)", density:"Density (kg/L)",
+        packSize:"Pack size", unit:"Unit", pricePack:"Price/Pack", needed:"Needed", packages:"Packages", cost:"Cost", actions:"Actions",
+        addProduct:"+ Add Product Layer",
+        calcThickness:"Thickness", calcUsage:"Usage/m²", calcCoverage:"Coverage/pack",
+        coverSqm:"Coverage (m²/pack)", coverLayers:"Layers per pack",
+        prodInfo:"Product info", projectInfo:"Project/Area info",
+        deleteArea:"Delete Area"
+      }
+    };
+    let LANG="sv";
+    function t(key){ return (i18n[LANG]&&i18n[LANG][key]) || key; }
+    function applyI18n(){
+      document.querySelectorAll("[data-i18n]").forEach(el=>{
+        const k=el.getAttribute("data-i18n"); el.textContent=t(k);
+      });
+      // update project summary label depending on VAT toggle
+      refreshSummaryLabel();
+    }
+
+    /* ================== STATE ================== */
     const state={
       project:{
         areas:[],
         settings:{
-          vatIncluded:false,vatRate:25,
-          overageIncluded:false,overagePercent:10,
-          stepMode:false,darkMode:false,
+          vatIncluded:false, vatRate:25,
+          overageIncluded:false, overagePercent:10,
+          exactMode:false,
+          stepMode:false, darkMode:false,
           surfaceTypes:{
             "Smooth":1.00,"Light Grind":1.05,"Medium Grind":1.10,"Rough":1.15,"Porous/Cracked":1.25
           },
           surfaceInfo:{
-            "Smooth":{title:"Smooth troweled / polished",desc:"Closed pores; low absorption. Baseline consumption.",hint:"≈ baseline use"},
-            "Light Grind":{title:"Lightly ground",desc:"Faint scratches / micro texture. Slightly higher uptake.",hint:"+5% vs smooth"},
-            "Medium Grind":{title:"Medium ground",desc:"Noticeable open texture; hairline cracks possible.",hint:"+10% vs smooth"},
-            "Rough":{title:"Rough / broomed",desc:"Coarse profile, higher absorption.",hint:"+15% vs smooth"},
-            "Porous/Cracked":{title:"Highly porous or cracked",desc:"Significant voids and capillaries; will drink material.",hint:"+25% vs smooth"},
-            "Custom":{title:"Custom factor",desc:"User-defined surface factor.",hint:"depends on factor"}
+            "Smooth":{title:"Smooth / polished",desc:"Closed pores; low absorption.",hint:"≈ baseline use"},
+            "Light Grind":{title:"Lightly ground",desc:"Micro texture, slightly higher uptake.",hint:"+5% vs smooth"},
+            "Medium Grind":{title:"Medium ground",desc:"Open texture, hairline cracks possible.",hint:"+10% vs smooth"},
+            "Rough":{title:"Rough / broomed",desc:"Coarse profile, high absorption.",hint:"+15% vs smooth"},
+            "Porous/Cracked":{title:"Highly porous or cracked",desc:"Significant voids/capillaries.",hint:"+25% vs smooth"},
+            "Custom":{title:"Custom",desc:"User-defined surface factor.",hint:"depends on factor"}
           }
         }
       },
-      undoStack:[],redoStack:[],
-      nextAreaId:1,nextProductId:1,nextTemplateId:1,
+      undoStack:[], redoStack:[],
+      nextAreaId:1, nextProductId:1, nextTemplateId:1,
       lastAddedProductTemplate:null
     };
 
-    /* ===== DOM ===== */
+    /* ================== DOM ================== */
     const areasContainer=document.getElementById("areasContainer");
     const projectSummaryEl=document.getElementById("projectSummary");
-    const addAreaBtn=document.getElementById("addArea");
-    const undoBtn=document.getElementById("undo");
-    const redoBtn=document.getElementById("redo");
-    const vatToggle=document.getElementById("vatToggle");
-    const vatPercentInput=document.getElementById("vatPercent");
-    const overageToggle=document.getElementById("overageToggle");
-    const overagePercentInput=document.getElementById("overagePercent");
+
+    const btnAddArea=document.getElementById("btnAddArea");
+    const undoBtn=document.getElementById("undo"), redoBtn=document.getElementById("redo");
+    const vatToggle=document.getElementById("vatToggle"), vatPercentInput=document.getElementById("vatPercent");
+    const overageToggle=document.getElementById("overageToggle"), overagePercentInput=document.getElementById("overagePercent");
+    const exactToggle=document.getElementById("exactToggle");
     const darkModeToggle=document.getElementById("darkModeToggle");
     const stepModeToggle=document.getElementById("stepModeToggle");
-    const importBtn=document.getElementById("importData");
-    const fileInput=document.getElementById("fileInput");
-    const exportJSONBtn=document.getElementById("exportJSON");
-    const exportCSVBtn=document.getElementById("exportCSV");
-    const exportExcelBtn=document.getElementById("exportExcel");
+
+    const importBtn=document.getElementById("importData"), fileInput=document.getElementById("fileInput");
+    const exportJSONBtn=document.getElementById("exportJSON"), exportCSVBtn=document.getElementById("exportCSV"), exportExcelBtn=document.getElementById("exportExcel");
     const printBtn=document.getElementById("printBtn");
-    const logPanel=document.getElementById("logPanel");
-    const logContent=document.getElementById("logContent");
-    const minimizeLogBtn=document.getElementById("minimizeLog");
-    const maximizeLogBtn=document.getElementById("maximizeLog");
-    const infoToast=document.getElementById("infoToast");
-    const infoBody=document.getElementById("infoBody");
-    const lastInfoTime=document.getElementById("lastInfoTime");
 
     const templatesBody=document.getElementById("templatesBody");
     const addTemplateBtn=document.getElementById("addTemplate");
     const applyAllTemplatesBtn=document.getElementById("applyAllTemplates");
 
-    /* ===== Utils & Logging (kept) ===== */
+    const infoToast=document.getElementById("infoToast");
+    const infoBody=document.getElementById("infoBody");
+    const lastInfoTime=document.getElementById("lastInfoTime");
+
+    const logPanel=document.getElementById("logPanel");
+    const logContent=document.getElementById("logContent");
+    const minimizeLogBtn=document.getElementById("minimizeLog");
+    const maximizeLogBtn=document.getElementById("maximizeLog");
+
+    const langSV=document.getElementById("langSV");
+    const langEN=document.getElementById("langEN");
+
+    /* ================== UTIL & LOG ================== */
     function log(msg){
       const t=new Date().toLocaleTimeString();
-      const p=document.createElement("p");
-      p.textContent=`[${t}] ${msg}`;
-      logContent.appendChild(p);
+      const p=document.createElement("p"); p.textContent=`[${t}] ${msg}`; logContent.appendChild(p);
       if(logContent.scrollHeight-logContent.clientHeight-logContent.scrollTop<5){logContent.scrollTop=logContent.scrollHeight;}
     }
     function pushStateForUndo(desc){
       const snap=JSON.parse(JSON.stringify(state.project));
-      state.undoStack.push({data:snap,desc});
-      state.redoStack.length=0;
+      state.undoStack.push({data:snap,desc}); state.redoStack.length=0;
       undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=true;
     }
     function undo(){
       if(!state.undoStack.length) return;
-      const last=state.undoStack.pop(); const snap=last.data; const desc=last.desc;
+      const last=state.undoStack.pop(); const desc=last.desc;
       state.redoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
-      state.project=snap; renderAll(); log(`Undo: ${desc}`);
+      state.project=last.data; renderAll(); log(`Undo: ${desc}`);
       undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
     }
     function redo(){
       if(!state.redoStack.length) return;
-      const last=state.redoStack.pop(); const snap=last.data; const desc=last.desc;
+      const last=state.redoStack.pop(); const desc=last.desc;
       state.undoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
-      state.project=snap; renderAll(); log(`Redo: ${desc}`);
+      state.project=last.data; renderAll(); log(`Redo: ${desc}`);
       undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
     }
-    function downloadBlob(blob,filename){
-      const url=URL.createObjectURL(blob); const a=document.createElement("a");
-      a.href=url; a.download=filename; document.body.appendChild(a); a.click();
-      document.body.removeChild(a); URL.revokeObjectURL(url);
-    }
+    function toPosFloat(v,def){const n=parseFloat(v); return (isNaN(n)||n<0)? def : n;}
+    function fmt(n){ if(!isFinite(n)) return "0"; if(Math.abs(n)>=1000) return n.toFixed(0); if(Math.abs(n)>=10) return n.toFixed(1); return n.toFixed(2); }
+    function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
     function formatCSVValue(v){const s=String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
     function escapeXML(s){if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-    const showInfoToast=(()=>{
-      let hideTimer=null;
-      return ()=>{
-        infoToast.style.display="flex";
-        if(hideTimer) clearTimeout(hideTimer);
-        hideTimer=setTimeout(()=>{infoToast.style.display="none";},3500);
-      };
-    })();
+    const showInfoToast=(()=>{let hide=null;return()=>{infoToast.style.display="flex"; if(hide) clearTimeout(hide); hide=setTimeout(()=>infoToast.style.display="none",3500);};})();
 
-    /* ===== Surface help text ===== */
-    function surfaceExpl(area){
-      const t = reverseFindTypeByFactor(area.modifier) || "Custom";
-      const meta = state.project.settings.surfaceInfo[t] || state.project.settings.surfaceInfo["Custom"];
-      const factor = area.modifier.toFixed(2);
-      return {type:t, title:meta.title, desc:meta.desc, hint:meta.hint, factor};
-    }
+    /* ================== SURFACE INFO ================== */
     function reverseFindTypeByFactor(f){
-      // exact match -> name; otherwise null
-      const m=Object.entries(state.project.settings.surfaceTypes).find(([k,v])=>Math.abs(v-f)<1e-6);
+      const m=Object.entries(state.project.settings.surfaceTypes).find(([_,v])=>Math.abs(v-f)<1e-6);
       return m?m[0]:null;
     }
-
-    /* ===== Illustration ===== */
-    function colorFromName(name){
-      // hash string -> HSL
-      let h=0; for(let i=0;i<name.length;i++){h=(h*31 + name.charCodeAt(i))>>>0;}
-      return `hsl(${h%360} 65% 55%)`;
+    function surfaceExpl(area){
+      const k = reverseFindTypeByFactor(area.modifier)||"Custom";
+      const meta=state.project.settings.surfaceInfo[k] || state.project.settings.surfaceInfo["Custom"];
+      return {type:k,title:meta.title,desc:meta.desc,hint:meta.hint,factor:area.modifier.toFixed(2)};
     }
-    function drawAreaIllustration(canvas, area){
-      const ctx=canvas.getContext("2d"); const W=canvas.width=canvas.clientWidth; const H=canvas.height=canvas.clientHeight;
-      // background texture by surface type
-      ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,W,H);
-      const t=reverseFindTypeByFactor(area.modifier) || "Custom";
-      if(t==="Smooth"){ /* no texture */ }
-      else if(t==="Light Grind"||t==="Medium Grind"){
-        ctx.strokeStyle="rgba(0,0,0,.08)";
-        const step=t==="Light Grind"?12:8;
-        for(let y=8;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y-6);ctx.stroke();}
-      }else if(t==="Rough"||t==="Porous/Cracked"){
-        const dots=t==="Rough"?500:900;
-        ctx.fillStyle="rgba(0,0,0,.06)";
-        for(let i=0;i<dots;i++){const x=Math.random()*W; const y=Math.random()*H; const r=Math.random()*(t==="Rough"?1.5:2.2);
-          ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();}
-        if(t==="Porous/Cracked"){
-          // few cracks
-          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.lineWidth=1;
-          for(let c=0;c<3;c++){ctx.beginPath(); let x= Math.random()*W; let y= Math.random()*H; ctx.moveTo(x,y);
-            for(let k=0;k<8;k++){x+= (Math.random()*40-20); y+= (Math.random()*20-10); ctx.lineTo(Math.max(0,Math.min(W,x)),Math.max(0,Math.min(H,y)));}
-            ctx.stroke();}
-        }
-      }
-      // Layers stack by products (sum layers)
-      const totalLayers=area.products.reduce((a,p)=>a+Number(p.layers||0),0) || 1;
-      let y=H-8, margin=6, unitH=(H-16 - (totalLayers-1)*3)/totalLayers;
+
+    /* ================== CANVAS ILLUSTRATION ================== */
+    function colorFromName(name){let h=0;for(let i=0;i<name.length;i++){h=(h*31+name.charCodeAt(i))>>>0;}return `hsl(${h%360} 70% 55%)`;}
+    function baseConcreteColor(area){
+      // darker for more porous
+      const f=area.modifier; const l = 88 - Math.min(25,(f-1)*60);
+      return `hsl(215 14% ${l}%)`;
+    }
+    function drawAreaIllustration(canvas, area, hoverLayerIndex=-1){
+      const ctx=canvas.getContext("2d");
+      const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
+
+      // background
+      ctx.clearRect(0,0,W,H);
+      // concrete slab at bottom
+      ctx.fillStyle=baseConcreteColor(area);
+      const slabH=26; ctx.fillRect(0,H-slabH,W,slabH);
+      ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.beginPath(); for(let x=0;x<W;x+=12){ctx.moveTo(x,H-slabH);ctx.lineTo(x+6,H-slabH+6);} ctx.stroke();
+
+      // layer rectangles (for hover)
+      const totalLayers = area.products.reduce((a,p)=>a+Math.max(1,Number(p.layers||1)),0)||1;
+      const space = H-slabH-12;
+      const gap=2, unitH=(space - gap*(totalLayers-1))/Math.max(1,totalLayers);
+      const rects=[]; let y=H-slabH-gap;
+
       area.products.forEach(p=>{
-        const layers=Math.max(1,Number(p.layers||1));
-        for(let i=0;i<layers;i++){
-          ctx.fillStyle=colorFromName(p.name||"Layer");
-          ctx.fillRect(8,y-unitH, W-16, unitH);
-          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.strokeRect(8,y-unitH, W-16, unitH);
-          y= y - unitH - 3;
+        const L=Math.max(1,Number(p.layers||1));
+        for(let i=0;i<L;i++){
+          const h=unitH;
+          const top = y - h;
+          const col=colorFromName(p.name||"Layer");
+          ctx.fillStyle=col;
+          if(rects.length===hoverLayerIndex){ ctx.filter="brightness(1.2)"; }
+          else ctx.filter="none";
+          ctx.fillRect(8,top,W-16,h);
+          ctx.filter="none";
+          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.strokeRect(8,top,W-16,h);
+          rects.push({x:8,y:top,w:W-16,h, product:p});
+          y = top - gap;
         }
       });
-      // Legend
-      const legendY=8; let lx=10;
-      area.products.slice(0,4).forEach(p=>{
-        ctx.fillStyle=colorFromName(p.name||"Layer"); ctx.fillRect(lx,legendY,14,14);
-        ctx.fillStyle="#111"; ctx.font="12px sans-serif"; ctx.fillText((p.name||"Product"), lx+18, legendY+12);
-        lx+= (W/2>220? W/2:180);
+      canvas._layerRects = rects;
+    }
+    function attachCanvasInteractions(canvas, area){
+      canvas.addEventListener("mousemove",(e)=>{
+        const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
+        const rects=canvas._layerRects||[]; let idx=-1;
+        for(let i=0;i<rects.length;i++){const L=rects[i]; if(x>=L.x&&x<=L.x+L.w&&y>=L.y&&y<=L.y+L.h){idx=i; break;}}
+        drawAreaIllustration(canvas,area,idx);
+        if(idx>-1){
+          canvas.title = `${t("product")}: ${rects[idx].product.name||"-"} • ${t("layers")}: ${rects[idx].product.layers||1}`;
+        }else canvas.title="";
       });
+      canvas.addEventListener("mouseleave",()=>drawAreaIllustration(canvas,area,-1));
     }
 
-    /* ===== Clone helpers ===== */
+    /* ================== CLONE HELPERS ================== */
     function cloneProductData(prod){
       return JSON.parse(JSON.stringify({
         name:prod.name||"", layers:prod.layers||1, thickness:prod.thickness||0,
         density:(prod.density===null?null:prod.density||0), packSize:prod.packSize||1,
         packUnit:prod.packUnit||"kg", price:prod.price||0,
         calcMode: prod.calcMode || "thickness",
-        usagePerM2: prod.usagePerM2 || 0
+        usagePerM2: prod.usagePerM2 || 0,
+        coverSqmPerPack: prod.coverSqmPerPack || 0,
+        coverLayersPerPack: prod.coverLayersPerPack || 1
       }));
     }
 
-    /* ===== Build Area ===== */
-    function createAreaElement(area){
-      const wrap=document.createElement("div"); wrap.className="area"; wrap.dataset.areaId=area.id;
+    /* ================== BUILD AREA ================== */
+    function el(tag,attrs={},txt){const e=document.createElement(tag);Object.entries(attrs).forEach(([k,v])=>{if(k==="class")e.className=v;else if(k==="style")e.setAttribute("style",v);else e.setAttribute(k,v);});if(txt!=null)e.textContent=txt;return e;}
 
-      // Header
-      const header=document.createElement("div"); header.className="area-header";
-      const nameI=el("input",{type:"text",value:area.name,placeholder:"Area name"});
+    function createAreaElement(area){
+      const wrap=el("div",{class:"area","data-area-id":area.id});
+
+      // header
+      const header=el("div",{class:"area-header"});
+
+      const nameI=el("input",{type:"text",value:area.name,placeholder:t("areaName")});
       nameI.addEventListener("change",()=>{const old=area.name; area.name=nameI.value; log(`Renamed area "${old}" → "${area.name}"`);});
       header.appendChild(nameI);
 
-      const surfaceSel=el("select"); // options
+      const surfaceSel=el("select");
       Object.keys(state.project.settings.surfaceTypes).concat(["Custom"]).forEach(n=>{
         const o=el("option",{value:n}); o.textContent=n; surfaceSel.appendChild(o);
       });
-      const matched=reverseFindTypeByFactor(area.modifier) || "Custom"; surfaceSel.value=matched; header.appendChild(surfaceSel);
+      const matched=reverseFindTypeByFactor(area.modifier)||"Custom"; surfaceSel.value=matched;
+      header.appendChild(surfaceSel);
 
-      const modI=el("input",{type:"number",step:"0.01",value:area.modifier}); modI.disabled=(matched!=="Custom"); header.appendChild(modI);
+      const modI=el("input",{type:"number",step:"0.01",value:area.modifier}); modI.disabled=(matched!=="Custom");
+      header.appendChild(modI);
 
-      const sizeI=el("input",{type:"number",placeholder:"Size (m²)",min:"0",step:"0.1",value:area.size||0});
-      sizeI.addEventListener("change",()=>{const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Updated size for "${area.name}" → ${v} m²`); updateCalculations(true);});
-      header.appendChild(sizeI);
+      const sizeWrap=el("div",{class:"unit-wrap"});
+      const sizeI=el("input",{type:"number",min:"0",step:"0.1",value:area.size||0,placeholder:t("size")});
+      const unit=el("div",{class:"unit"},t("sq"));
+      sizeWrap.appendChild(sizeI); sizeWrap.appendChild(unit); header.appendChild(sizeWrap);
 
-      const cloneInfo=el("div",{style:"justify-self:start;color:var(--muted);font-size:.9em"}, "Tip: Use row actions to clone to other areas");
-      header.appendChild(cloneInfo);
+      const tip=el("div",{class:"pill"}, t("prodInfo")+" / "+t("projectInfo"));
+      header.appendChild(tip);
 
-      const delBtn=el("button",{class:"remove-area"},"Delete Area");
-      delBtn.addEventListener("click",()=>removeArea(wrap));
-      header.appendChild(delBtn);
+      const del=el("button",{class:"del-area"}, t("deleteArea"));
+      del.addEventListener("click",()=>removeArea(wrap));
+      header.appendChild(del);
 
       wrap.appendChild(header);
 
-      // Grid: table + right side (illustration + infobox)
+      // grid
       const grid=el("div",{class:"area-grid"});
-      // Table
-      const table=el("table",{class:"area-table"});
+
+      // table with header groups
+      const table=el("table",{class:"area-table", "data-area-id":area.id});
       const thead=el("thead");
-      const headRow=el("tr");
-      [
-        "Product","Calc","Usage (per m²/layer)","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost","Actions"
-      ].forEach(h=>headRow.appendChild(el("th",{},h)));
-      thead.appendChild(headRow); table.appendChild(thead);
+
+      const grp=el("tr",{class:"grp-row"});
+      grp.appendChild(el("th",{class:"th-group",colspan:"6"},t("prodInfo")));
+      grp.appendChild(el("th",{class:"th-group",colspan:"6"},t("projectInfo")));
+      thead.appendChild(grp);
+
+      const head=el("tr");
+      ["",t("product"),t("calc"),t("usage"),t("coverSqm"),t("coverLayers"),t("layers"),t("thickness"),t("density"),t("packSize"),t("unit"),t("pricePack"),t("needed"),t("packages"),t("cost"),t("actions")]
+        .forEach(h=>head.appendChild(el("th",{},h)));
+      thead.appendChild(head);
+      table.appendChild(thead);
+
       const tbody=el("tbody");
+      tbody.setAttribute("data-area-id", area.id);
 
-      // existing rows
-      area.products.forEach(p=>tbody.appendChild(createProductRowElement(area,p)));
-
+      area.products.forEach((p,idx)=>tbody.appendChild(buildProductRow(area,p,idx)));
       table.appendChild(tbody);
 
-      // Add product button (with smart clone on first add)
-      const addPBtn=el("button",{class:"mini primary",style:"margin:8px 0"},"+ Add Product Layer");
-      addPBtn.addEventListener("click",()=>{
+      const addProdBtn=el("button",{class:"btn btn-primary",style:"margin:8px 0"}, t("addProduct"));
+      addProdBtn.addEventListener("click",()=>{
         const firstAdd = area.products.length===0 && state.lastAddedProductTemplate;
-        const row = addProduct(area,tbody);
+        const frag = addProduct(area,tbody);
         if(firstAdd){
           if(confirm(`Clone last product "${state.lastAddedProductTemplate.name}" to this area?`)){
-            applyProductDataToRow(area,row,state.lastAddedProductTemplate);
+            applyProductDataToRow(area,frag,state.lastAddedProductTemplate);
             log(`Cloned last product template to "${area.name}"`);
             updateCalculations(true);
           }
         }
       });
 
-      // Side: Canvas + Infobox
+      // illustration + infobox
       const side=el("div",{class:"area-side"});
       const canvBox=el("div",{class:"canvas-wrap"});
-      const canvHeader=el("header");
-      canvHeader.appendChild(el("strong",{},"Area Illustration"));
-      canvHeader.appendChild(el("small",{}, "Layers, color-coded by product"));
-      canvBox.appendChild(canvHeader);
-      const canvas=document.createElement("canvas");
-      canvBox.appendChild(canvas);
+      const canvHdr=el("header");
+      canvHdr.appendChild(el("strong",{},t("areaIllustration")));
+      canvHdr.appendChild(el("small",{},t("layersLegend")));
+      canvBox.appendChild(canvHdr);
+      const canvas=document.createElement("canvas"); canvBox.appendChild(canvas);
       side.appendChild(canvBox);
 
       const info=el("div",{class:"infobox"});
-      info.appendChild(el("h4",{},"Surface Info"));
+      info.appendChild(el("h4",{},"Surface / Åtgång"));
       info.appendChild(el("div",{class:"note","data-bind":"infotext"}));
       side.appendChild(info);
 
       grid.appendChild(table);
       grid.appendChild(side);
       wrap.appendChild(grid);
-      wrap.appendChild(addPBtn);
+      wrap.appendChild(addProdBtn);
 
       // listeners
       surfaceSel.addEventListener("change",()=>{
@@ -445,7 +540,7 @@
         else{
           area.modifier=state.project.settings.surfaceTypes[surfaceSel.value];
           modI.value=area.modifier; modI.disabled=true;
-          log(`Set surface of "${area.name}" → ${surfaceSel.value} (x${area.modifier})`);
+          log(`Surface "${area.name}" → ${surfaceSel.value} (x${area.modifier})`);
           updateCalculations(true);
         }
         updateAreaInfoboxAndCanvas();
@@ -454,316 +549,320 @@
         const v=toPosFloat(modI.value,1.0); modI.value=v; area.modifier=v;
         surfaceSel.value = reverseFindTypeByFactor(v) || "Custom";
         if(surfaceSel.value!=="Custom"){ modI.disabled=true; }
-        log(`Updated surface factor for "${area.name}" → ${v}`);
-        updateCalculations(true);
-        updateAreaInfoboxAndCanvas();
+        log(`Surface factor "${area.name}" → ${v}`);
+        updateCalculations(true); updateAreaInfoboxAndCanvas();
+      });
+      sizeI.addEventListener("change",()=>{
+        const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Area size "${area.name}" → ${v} m²`);
+        updateCalculations();
       });
 
       function updateAreaInfoboxAndCanvas(){
         const meta=surfaceExpl(area);
         const note=wrap.querySelector('[data-bind="infotext"]');
         if(note){
-          note.innerHTML=`
+          note.innerHTML = `
             <div><strong>Type:</strong> ${meta.title} <span style="color:var(--muted)">(${meta.type})</span></div>
             <div><strong>Factor:</strong> ×${meta.factor} &nbsp; <em>${meta.hint}</em></div>
             <div style="margin-top:4px">${meta.desc}</div>
-            <div style="margin-top:6px"><small>Tip: higher factor ⇒ higher material consumption.</small></div>
+            <div style="margin-top:6px"><small>Högre faktor ⇒ högre materialåtgång.</small></div>
           `;
         }
         drawAreaIllustration(canvas,area);
+        attachCanvasInteractions(canvas,area);
       }
       updateAreaInfoboxAndCanvas();
+
+      // drag & drop sorting (tbody level)
+      enableDragSort(tbody, area);
 
       return wrap;
     }
 
-    function createProductRowElement(area,product){
+    function buildProductRow(area,product,idx){
       // defaults
       if(!product.calcMode) product.calcMode="thickness";
-      if(typeof product.usagePerM2!=="number") product.usagePerM2=0;
+      if(product.usagePerM2==null) product.usagePerM2=0;
+      if(product.coverSqmPerPack==null) product.coverSqmPerPack=0;
+      if(product.coverLayersPerPack==null||product.coverLayersPerPack<=0) product.coverLayersPerPack=1;
 
-      const tr=document.createElement("tr"); tr.className="product-row"; tr.dataset.productId=product.id;
+      const tr=el("tr",{class:"product-row","data-product-id":product.id, draggable:"true"});
+      tr.addEventListener("click",()=>{tr.classList.add("active"); tr.parentElement.querySelectorAll(".product-row").forEach(r=>{if(r!==tr) r.classList.remove("active");});});
 
-      // helper
       const td=(child)=>{const c=document.createElement("td"); c.appendChild(child); return c;};
 
-      // product name
-      const nameI=el("input",{type:"text",value:product.name,placeholder:"Product name"});
+      const drag=el("span",{class:"drag-handle",title:"Drag to reorder"}, "☰");
+      tr.appendChild(td(drag));
+
+      const nameI=el("input",{type:"text",value:product.name,placeholder:t("product")});
       nameI.addEventListener("change",()=>{product.name=nameI.value; state.lastAddedProductTemplate=cloneProductData(product); log(`Renamed product ${product.id} in "${area.name}" → "${product.name}"`);});
       tr.appendChild(td(nameI));
 
-      // calc mode
-      const modeSel=el("select");
-      [["thickness","Thickness"],["usage","Usage/m²"]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;modeSel.appendChild(o);});
-      modeSel.value=product.calcMode;
-      tr.appendChild(td(modeSel));
+      const mode=el("select");
+      [["thickness",t("calcThickness")],["usage",t("calcUsage")],["coverage",t("calcCoverage")]]
+        .forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);});
+      mode.value=product.calcMode;
+      tr.appendChild(td(mode));
 
-      // usage per m² per layer
-      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:(product.usagePerM2||0)});
-      tr.appendChild(td(usageI));
+      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0}); tr.appendChild(td(usageI));
+      const coverSqmI=el("input",{type:"number",min:"0",step:"0.01",value:product.coverSqmPerPack||0}); tr.appendChild(td(coverSqmI));
+      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1}); tr.appendChild(td(coverLayersI));
 
-      // layers
       const layersI=el("input",{type:"number",min:"1",step:"1",value:product.layers||1});
       layersI.addEventListener("change",()=>{product.layers=Math.max(1,parseInt(layersI.value)||1); layersI.value=product.layers; log(`Layers "${product.name}" in "${area.name}" → ${product.layers}`); updateCalculations();});
       tr.appendChild(td(layersI));
 
-      // thickness
       const thickI=el("input",{type:"number",min:"0",step:"0.1",value:product.thickness||0});
       thickI.addEventListener("change",()=>{product.thickness=toPosFloat(thickI.value,0); thickI.value=product.thickness; log(`Thickness "${product.name}" in "${area.name}" → ${product.thickness} mm`); updateCalculations();});
       tr.appendChild(td(thickI));
 
-      // density
-      const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); // allow ''
-      densI.placeholder="density";
+      const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); densI.placeholder=t("density");
       tr.appendChild(td(densI));
 
-      // pack size
       const packI=el("input",{type:"number",min:"0.0001",step:"0.1",value:product.packSize||1});
       packI.addEventListener("change",()=>{product.packSize=Math.max(0.0001,parseFloat(packI.value)||1); packI.value=product.packSize; log(`Pack size "${product.name}" → ${product.packSize} ${product.packUnit}`); updateCalculations();});
       tr.appendChild(td(packI));
 
-      // unit
-      const unitSel=el("select");
-      ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; unitSel.appendChild(o);});
-      unitSel.value=product.packUnit||"kg";
+      const unitSel=el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; unitSel.appendChild(o);}); unitSel.value=product.packUnit||"kg";
       tr.appendChild(td(unitSel));
 
-      // price/pack
       const priceI=el("input",{type:"number",min:"0",step:"0.01",value:product.price||0});
       priceI.addEventListener("change",()=>{product.price=toPosFloat(priceI.value,0); priceI.value=product.price.toFixed(2); log(`Price/pack "${product.name}" → ${product.price}`); updateCalculations();});
       tr.appendChild(td(priceI));
 
-      // outputs
-      const needSpan=el("span",{class:"neededQty"},"0");
-      tr.appendChild(td(needSpan));
-      const pkgSpan=el("span",{class:"packageCount"},"0");
-      tr.appendChild(td(pkgSpan));
-      const costSpan=el("span",{class:"cost"},"0");
-      tr.appendChild(td(costSpan));
+      const needSpan=el("span",{class:"neededQty"},"0"); tr.appendChild(td(needSpan));
+      const pkgSpan=el("span",{class:"packageCount"},"0"); tr.appendChild(td(pkgSpan));
+      const costSpan=el("span",{class:"cost"},"0"); tr.appendChild(td(costSpan));
 
-      // actions
+      // actions — show on hover/click
       const acts=el("div",{class:"row-actions"});
       const cloneAll=el("button",{class:"mini ghost"},"Clone → All");
       const cloneBelow=el("button",{class:"mini ghost"},"Clone ↓ Below");
       const infoBtn=el("button",{class:"mini warn"},"ℹ Breakdown");
-      const delBtn=el("button",{class:"remove-product"},"Remove");
-
-      acts.appendChild(cloneAll); acts.appendChild(cloneBelow); acts.appendChild(infoBtn); acts.appendChild(delBtn);
+      const delBtn=el("button",{class:"mini danger"},"Remove");
+      acts.appendChild(cloneAll);acts.appendChild(cloneBelow);acts.appendChild(infoBtn);acts.appendChild(delBtn);
       tr.appendChild(td(acts));
 
-      // breakdown row (expands when step mode)
+      // breakdown inline (toggle by step-mode)
       const br=document.createElement("tr"); br.className="breakdown";
-      const brtd=document.createElement("td"); brtd.colSpan=13; br.appendChild(brtd);
+      const brtd=document.createElement("td"); brtd.colSpan=16; br.appendChild(brtd);
       const brbox=el("div",{class:"breakdown"}); brtd.appendChild(brbox);
 
-      // Listeners + mode bindings
+      // mode binding
       function bindModeUI(){
-        const isUsage=(product.calcMode==="usage");
+        const M=product.calcMode;
+        const isUsage=(M==="usage"), isThick=(M==="thickness"), isCover=(M==="coverage");
         usageI.disabled=!isUsage;
-        thickI.disabled=isUsage;
-        densI.disabled=isUsage || unitSel.value==="L"; // density only for kg && thickness mode
+        thickI.disabled=!isThick;
+        densI.disabled= (M!=="thickness") || (unitSel.value==="L");
+        coverSqmI.disabled=!isCover; coverLayersI.disabled=!isCover;
       }
       bindModeUI();
 
-      modeSel.addEventListener("change",()=>{
-        product.calcMode=modeSel.value;
-        bindModeUI();
-        log(`Calc mode "${product.name}" in "${area.name}" → ${product.calcMode}`);
-        updateCalculations(true);
-      });
-      usageI.addEventListener("change",()=>{
-        product.usagePerM2=toPosFloat(usageI.value,0); usageI.value=product.usagePerM2;
-        state.lastAddedProductTemplate=cloneProductData(product);
-        updateCalculations();
-      });
-      densI.addEventListener("change",()=>{
-        const v=toPosFloat(densI.value,0); product.density=v; densI.value=(v||""); updateCalculations();
-      });
-      unitSel.addEventListener("change",()=>{
-        product.packUnit=unitSel.value;
-        // enable/disable density depending on unit and mode
-        bindModeUI();
-        log(`Unit "${product.name}" → ${product.packUnit}`);
-        updateCalculations();
-      });
+      mode.addEventListener("change",()=>{product.calcMode=mode.value; bindModeUI(); log(`Mode "${product.name}" → ${product.calcMode}`); updateCalculations(true);});
+      usageI.addEventListener("change",()=>{product.usagePerM2=toPosFloat(usageI.value,0); usageI.value=product.usagePerM2; state.lastAddedProductTemplate=cloneProductData(product); updateCalculations();});
+      densI.addEventListener("change",()=>{const v=toPosFloat(densI.value,0); product.density=(densI.value===""?null:v); updateCalculations();});
+      unitSel.addEventListener("change",()=>{product.packUnit=unitSel.value; bindModeUI(); log(`Unit "${product.name}" → ${product.packUnit}`); updateCalculations();});
+      coverSqmI.addEventListener("change",()=>{product.coverSqmPerPack=toPosFloat(coverSqmI.value,0); updateCalculations();});
+      coverLayersI.addEventListener("change",()=>{product.coverLayersPerPack=Math.max(1,parseInt(coverLayersI.value)||1); coverLayersI.value=product.coverLayersPerPack; updateCalculations();});
 
       delBtn.addEventListener("click",()=>removeProduct(area,product.id));
-
       cloneAll.addEventListener("click",()=>{
-        pushStateForUndo(`Clone product "${product.name}" to all areas`);
-        state.project.areas.forEach(a=>{
-          if(a.id===area.id) return;
-          const clone=cloneProductData(product); clone.id=state.nextProductId++;
-          a.products.push(clone);
-        });
-        log(`Cloned "${product.name}" to all areas`);
-        renderAll();
+        pushStateForUndo(`Clone "${product.name}" to all areas`);
+        state.project.areas.forEach(a=>{ if(a.id!==area.id){const c=cloneProductData(product); c.id=state.nextProductId++; a.products.push(c);} });
+        log(`Cloned "${product.name}" to all areas`); renderAll();
       });
       cloneBelow.addEventListener("click",()=>{
-        pushStateForUndo(`Clone product "${product.name}" to areas below`);
-        const idx = state.project.areas.findIndex(a=>a.id===area.id);
-        state.project.areas.slice(idx+1).forEach(a=>{
-          const clone=cloneProductData(product); clone.id=state.nextProductId++;
-          a.products.push(clone);
-        });
-        log(`Cloned "${product.name}" to areas below`);
-        renderAll();
+        pushStateForUndo(`Clone "${product.name}" to areas below`);
+        const idxA=state.project.areas.findIndex(a=>a.id===area.id);
+        state.project.areas.slice(idxA+1).forEach(a=>{const c=cloneProductData(product); c.id=state.nextProductId++; a.products.push(c);});
+        log(`Cloned "${product.name}" to areas below`); renderAll();
       });
-
       infoBtn.addEventListener("click",()=>{
         state.project.settings.stepMode=!state.project.settings.stepMode;
         stepModeToggle.checked=state.project.settings.stepMode;
-        document.body.classList.toggle("step-on", state.project.settings.stepMode);
-        updateCalculations(true);
+        document.body.classList.toggle("step-on",state.project.settings.stepMode); updateCalculations(true);
       });
 
-      // attach rows
       const frag=document.createDocumentFragment();
       frag.appendChild(tr); frag.appendChild(br);
       return frag;
     }
 
     function addProduct(area,tbody){
-      const p={
-        id:state.nextProductId++,name:"",layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,
-        calcMode:"thickness", usagePerM2:0
-      };
+      const p={id:state.nextProductId++,name:"",layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,
+        calcMode:"thickness",usagePerM2:0,coverSqmPerPack:0,coverLayersPerPack:1};
       area.products.push(p);
-      const frag=createProductRowElement(area,p);
+      const frag=buildProductRow(area,p,area.products.length-1);
       tbody.appendChild(frag);
       log(`Added product in "${area.name}" (ID ${p.id})`);
       pushStateForUndo(`Added product in area ${area.name}`);
       updateCalculations();
-      return frag; // tr + breakdown tr
+      return frag;
     }
-
     function applyProductDataToRow(area,frag,data){
-      // find product by last child dataset? simpler: update last product in area
       const prod=area.products[area.products.length-1];
       Object.assign(prod, cloneProductData(data));
-      // re-render area to refresh inputs
-      const areaEl = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+      const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
       if(areaEl){ areaEl.replaceWith(createAreaElement(area)); }
     }
-
     function removeArea(areaElem){
       const id=parseInt(areaElem.dataset.areaId);
-      const idx=state.project.areas.findIndex(a=>a.id===id);
-      if(idx===-1) return;
+      const idx=state.project.areas.findIndex(a=>a.id===id); if(idx===-1) return;
       const nm=state.project.areas[idx].name||`Area ${id}`;
-      pushStateForUndo(`Removed area ${nm}`);
-      state.project.areas.splice(idx,1);
-      areaElem.remove();
-      log(`Removed area "${nm}"`);
-      updateCalculations(true);
+      pushStateForUndo(`Removed area ${nm}`); state.project.areas.splice(idx,1);
+      areaElem.remove(); log(`Removed area "${nm}"`); updateCalculations(true);
     }
-
-    function addArea(){
-      const id=state.nextAreaId++; const nm=`Area ${id}`;
-      const area={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
-      state.project.areas.push(area);
-      const el=createAreaElement(area);
-      areasContainer.appendChild(el);
-      log(`Added area "${nm}"`);
-      pushStateForUndo(`Added area ${nm}`);
-      updateCalculations();
-    }
-
     function removeProduct(area,prodId){
       const i=area.products.findIndex(p=>p.id===prodId); if(i===-1) return;
       const nm=area.products[i].name||"(unnamed)";
       area.products.splice(i,1);
       const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
-      if(areaEl){ // remove row
-        const rows=areaEl.querySelectorAll(`tr.product-row[data-product-id="${prodId}"], tr.breakdown`);
-        rows.forEach(r=>r.remove());
-      }
-      log(`Removed product "${nm}" from "${area.name}"`);
-      pushStateForUndo(`Removed product from area ${area.name}`);
-      updateCalculations(true);
+      if(areaEl){ areaEl.querySelectorAll(`tr.product-row[data-product-id="${prodId}"], tr.breakdown`).forEach(r=>r.remove()); }
+      log(`Removed product "${nm}" from "${area.name}"`); pushStateForUndo(`Removed product from area ${area.name}`); updateCalculations(true);
     }
 
-    /* ===== Calculations (kept + extended) ===== */
-    function updateCalculations(fromSurfaceChange=false){
+    /* ================== DRAG SORT ================== */
+    function enableDragSort(tbody, area){
+      let dragId=null;
+      tbody.addEventListener("dragstart",(e)=>{
+        const row=e.target.closest(".product-row"); if(!row) return;
+        dragId = parseInt(row.getAttribute("data-product-id"));
+        row.classList.add("dragging");
+        e.dataTransfer.effectAllowed="move";
+      });
+      tbody.addEventListener("dragend",(e)=>{
+        const row=e.target.closest(".product-row"); if(row) row.classList.remove("dragging");
+      });
+      tbody.addEventListener("dragover",(e)=>{
+        e.preventDefault();
+        const after = getDragAfterElement(tbody,e.clientY);
+        const dragging=tbody.querySelector(".product-row.dragging");
+        if(!dragging) return;
+        if(after==null) tbody.appendChild(dragging);
+        else tbody.insertBefore(dragging,after);
+      });
+      tbody.addEventListener("drop",()=>{
+        if(dragId==null) return;
+        // compute new order
+        const order=[...tbody.querySelectorAll(".product-row")].map(r=>parseInt(r.getAttribute("data-product-id")));
+        const newProducts = order.map(id=> area.products.find(p=>p.id===id) );
+        if(newProducts.every(Boolean)){
+          pushStateForUndo(`Reorder products in ${area.name}`);
+          area.products = newProducts;
+          renderAll();
+          log(`Reordered products in "${area.name}"`);
+        }
+        dragId=null;
+      });
+    }
+    function getDragAfterElement(container, y){
+      const els=[...container.querySelectorAll(".product-row:not(.dragging)")];
+      return els.reduce((closest,child)=>{
+        const box=child.getBoundingClientRect();
+        const offset=y - box.top - box.height/2;
+        if(offset<0 && offset>closest.offset){ return {offset,element:child}; } else { return closest; }
+      },{offset:Number.NEGATIVE_INFINITY}).element;
+    }
+
+    /* ================== CALCULATIONS ================== */
+    function refreshSummaryLabel(){
+      const S=state.project.settings;
+      projectSummaryEl.textContent = S.vatIncluded
+        ? (LANG==="sv" ? "Projektets totalsumma (inkl. moms): " : "Project total (incl. VAT): ")
+        : (LANG==="sv" ? "Projektets totalsumma (exkl. moms): " : "Project total (excl. VAT): ");
+    }
+
+    function updateCalculations(fromSurface=false){
       const S=state.project.settings;
       let totalCostExVAT=0;
 
-      const infoLines=[];
+      // aggregated per product (name+unit)
+      const totalsMap=new Map(); // key: name||"(unnamed)" + "|" + unit
 
       state.project.areas.forEach(area=>{
         let areaCost=0;
-
         const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
-        const rows = areaEl? areaEl.querySelectorAll("tbody tr.product-row"): [];
+        const rows = areaEl ? areaEl.querySelectorAll("tbody tr.product-row"): [];
 
-        area.products.forEach((product,idx)=>{
-          // gather inputs
-          const areaSize = Number(area.size)||0;
-          const layers   = Math.max(1, Number(product.layers)||1);
-          const unit     = product.packUnit||"kg";
-          const price    = Number(product.price)||0;
-          const packSize = Number(product.packSize)||0;
+        area.products.forEach((p,idx)=>{
+          const areaSize=Number(area.size)||0;
+          const layers = Math.max(1, Number(p.layers)||1);
+          const unit   = p.packUnit||"kg";
+          const price  = Number(p.price)||0;
+          const pack   = Math.max(0.0001, Number(p.packSize)||0);
 
-          let needed=0;
+          let neededUnits=0;  // in kg or L (or pack*size for coverage)
+          let packages=0;
           let breakdown=[];
 
-          if(product.calcMode==="usage"){
-            const use = Number(product.usagePerM2)||0; // kg or L per m² per layer
-            const base = areaSize * layers * use;
+          if(p.calcMode==="usage"){
+            const use=Number(p.usagePerM2)||0; // kg/L per m² per layer
+            let base= areaSize * layers * use;
             breakdown.push(`Base = Area(${areaSize}) × Layers(${layers}) × Usage(${use}/${unit}·m²) = ${fmt(base)}`);
-            let withSurf = base * area.modifier;
-            breakdown.push(`Surface factor ×${area.modifier} ⇒ ${fmt(withSurf)}`);
-            if(S.overageIncluded){withSurf*= (1+S.overagePercent/100); breakdown.push(`Overage +${S.overagePercent}% ⇒ ${fmt(withSurf)}`);}
-            needed=withSurf;
-          }else{
-            // thickness-based
-            const th = Number(product.thickness)||0; // mm
-            const volL_base = areaSize * th * layers; // liters if we treat 1 mm over 1 m² = 1 L
-            breakdown.push(`Volume L = Area(${areaSize}) × Thickness(${th}mm) × Layers(${layers}) = ${fmt(volL_base)} L`);
-            let volL = volL_base * area.modifier;
-            breakdown.push(`Surface factor ×${area.modifier} ⇒ ${fmt(volL)} L`);
-            if(S.overageIncluded){volL*= (1+S.overagePercent/100); breakdown.push(`Overage +${S.overagePercent}% ⇒ ${fmt(volL)} L`);}
+            base *= area.modifier; breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(base)}`);
+            if(S.overageIncluded){base*= (1+S.overagePercent/100); breakdown.push(`+ Overage ${S.overagePercent}% ⇒ ${fmt(base)}`);}
+            neededUnits = base;
+            packages = S.exactMode ? (neededUnits/pack) : Math.ceil(neededUnits/pack);
+
+          }else if(p.calcMode==="thickness"){
+            const th=Number(p.thickness)||0; let volL = areaSize * th * layers; // L
+            breakdown.push(`Volume L = Area(${areaSize}) × Thickness(${th}) × Layers(${layers}) = ${fmt(volL)} L`);
+            volL *= area.modifier; breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(volL)} L`);
+            if(S.overageIncluded){volL*= (1+S.overagePercent/100); breakdown.push(`+ Overage ${S.overagePercent}% ⇒ ${fmt(volL)} L`);}
             if(unit==="kg"){
-              const dens = Number(product.density)||0;
-              if(dens>0){ needed = volL * dens; breakdown.push(`Needed kg = Volume(${fmt(volL)}L) × Density(${dens}kg/L) = ${fmt(needed)} kg`);}
-              else { needed=0; breakdown.push(`Density missing ⇒ needed set to 0 kg`); }
-            }else{ needed = volL; breakdown.push(`Needed L = ${fmt(needed)} L`); }
+              const dens = Number(p.density)||0;
+              if(dens>0){ neededUnits = volL * dens; breakdown.push(`Needed kg = ${fmt(volL)} × ${dens} = ${fmt(neededUnits)} kg`); }
+              else { neededUnits=0; breakdown.push(`Density missing ⇒ 0 kg`); }
+            }else{ neededUnits = volL; breakdown.push(`Needed L = ${fmt(neededUnits)} L`); }
+            packages = S.exactMode ? (neededUnits/pack) : Math.ceil(neededUnits/pack);
+
+          }else{ // coverage mode
+            const cov=Number(p.coverSqmPerPack)||0; const covLayers=Math.max(1,Number(p.coverLayersPerPack)||1);
+            // packs needed = A * (layers / covLayers) / cov
+            const packsNeeded = cov>0 ? (areaSize * (layers/covLayers) / cov) : 0;
+            packages = S.exactMode ? packsNeeded : Math.ceil(packsNeeded);
+            neededUnits = packages * pack; // total units consumed (kg/L)
+            breakdown.push(`Packs = Area(${areaSize}) × (Layers ${layers}/${covLayers}) ÷ ${cov} = ${fmt(packsNeeded)} ${S.exactMode?"(exact)":""}`);
+            breakdown.push(`Units = Packs × PackSize = ${fmt(packages)} × ${pack} = ${fmt(neededUnits)} ${unit}`);
           }
 
-          let packages=0; if(packSize>0 && needed>0){ packages = Math.ceil(needed/packSize); }
-          const cost = packages * price; areaCost+=cost;
+          const cost = (packages * price); areaCost += cost;
 
-          // update UI
+          // update UI row
           const prodRow = rows[idx];
           if(prodRow){
             const needSpan=prodRow.querySelector(".neededQty");
             const pkgSpan =prodRow.querySelector(".packageCount");
             const costSpan=prodRow.querySelector(".cost");
-            if(needSpan) needSpan.textContent = needed? `${fmt(needed)} ${unit}` : "0";
-            if(pkgSpan)  pkgSpan.textContent  = String(packages||0);
-            if(costSpan) costSpan.textContent = (cost||0).toFixed(2);
+            if(needSpan) needSpan.textContent = neededUnits ? `${fmt(neededUnits)} ${unit}` : "0";
+            if(pkgSpan)  pkgSpan.textContent  = S.exactMode ? fmt(packages) : String(packages||0);
+            if(costSpan) costSpan.textContent = cost.toFixed(2);
 
-            // update breakdown
-            const brRow=prodRow.nextElementSibling; // our companion breakdown row
+            // breakdown box
+            const brRow=prodRow.nextElementSibling;
             if(brRow && brRow.querySelector(".breakdown")){
               const box=brRow.querySelector(".breakdown");
               box.innerHTML = `
-                <div><strong>${product.name||"Product"} — ${product.calcMode==="usage"?"Usage/m²":"Thickness"} mode</strong></div>
+                <div><strong>${p.name||"Product"} — ${p.calcMode}</strong></div>
                 <div>${breakdown.join("<br/>")}</div>
-                <div><strong>Packages</strong> = CEIL(Needed / PackSize) = CEIL(${fmt(needed)} / ${packSize}) = ${packages}</div>
-                <div><strong>Cost</strong> = Packages × Price = ${packages} × ${price} = <strong>${cost.toFixed(2)}</strong></div>
+                <div><strong>Cost</strong> = Packages × Price = ${S.exactMode?fmt(packages):packages} × ${price} = <strong>${cost.toFixed(2)}</strong></div>
               `;
-              brRow.style.display = state.project.settings.stepMode ? "" : "none";
+              brRow.style.display = S.stepMode ? "" : "none";
             }
           }
 
-          // collect info lines
-          infoLines.push(`<li><strong>${area.name}</strong> • ${product.name||"Product"} — Needed: ${fmt(needed)} ${unit}, Packages: ${packages}, Cost: ${cost.toFixed(2)}</li>`);
+          // aggregate totals per product name+unit
+          const key=(p.name||"(unnamed)")+"|"+unit;
+          const rec= totalsMap.get(key) || {name:(p.name||"(unnamed)"),unit,needed:0,pack:pack,price:price,exactPackages:0};
+          rec.needed += neededUnits;
+          rec.exactPackages += (neededUnits/pack);
+          totalsMap.set(key,rec);
         });
 
         totalCostExVAT += areaCost;
 
-        // refresh area canvas (already redrawn on surface change; redraw always is fine)
+        // canvas refresh
         const canv=areasContainer.querySelector(`.area[data-area-id="${area.id}"] canvas`);
         if(canv) drawAreaIllustration(canv,area);
       });
@@ -771,60 +870,78 @@
       // project totals
       const vatIncluded=S.vatIncluded, vatRate=S.vatRate;
       const displayCost = vatIncluded ? (totalCostExVAT*(1+vatRate/100)).toFixed(2) : totalCostExVAT.toFixed(2);
-      projectSummaryEl.textContent = `Project Total (${vatIncluded?"incl.":"excl."} VAT): ${displayCost}`;
+      refreshSummaryLabel();
+      projectSummaryEl.textContent += displayCost;
 
-      // info summary
-      if(infoLines.length){
-        infoBody.innerHTML = `<ul style="margin:0 0 6px 16px;padding:0">${infoLines.join("")}</ul>`;
-        lastInfoTime.textContent = "Updated " + new Date().toLocaleTimeString();
-        if(fromSurfaceChange) showInfoToast();
-      }else{
-        infoBody.innerHTML = `<em>No items yet.</em>`;
-      }
+      // info summary — totals per product
+      renderTotalsInfo(totalsMap, S);
+
+      if(fromSurface) { lastInfoTime.textContent = (LANG==="sv"?"Uppdaterad ":"Updated ")+new Date().toLocaleTimeString(); showInfoToast(); }
     }
 
-    /* ===== Render all (kept) ===== */
+    function renderTotalsInfo(totalsMap, S){
+      const arr=[...totalsMap.values()];
+      if(!arr.length){ infoBody.innerHTML = `<em>${t("infoEmpty")}</em>`; return; }
+
+      const parts=[];
+      arr.forEach(rec=>{
+        // recommended take +1 package
+        const exactPk = rec.exactPackages;
+        const roundedPk = Math.ceil(exactPk);
+        const recommendedPk = roundedPk + (S.exactMode?1:1); // always recommend +1
+        const exactCost = exactPk * rec.price;
+        const roundedCost = roundedPk * rec.price;
+        const recommendedCost = recommendedPk * rec.price;
+
+        // coverage hints if any row defines them? We can't know here; we will show generic advice.
+
+        parts.push(`
+          <div class="product-total">
+            <h5>${rec.name} <span class="dim">[${rec.unit}]</span></h5>
+            <div>Totalt behov: <strong>${fmt(rec.needed)} ${rec.unit}</strong></div>
+            <div>Förpackningar: exakt ${fmt(exactPk)}, avrundat ${roundedPk}, <em>rekommenderat</em> ${recommendedPk} (ta lite extra för säkerhets skull)</div>
+            <div>Täckning (exempel): 1 lager = ${fmt(rec.pack)} ${rec.unit} / förp • 2 lager ≈ ${fmt(rec.pack/2)} ${rec.unit} / förp • 3 lager ≈ ${fmt(rec.pack/3)} ${rec.unit} / förp</div>
+            <div>Kostnad: exakt ${exactCost.toFixed(2)}, avrundat ${roundedCost.toFixed(2)}, rekommenderat ${recommendedCost.toFixed(2)}</div>
+          </div>
+        `);
+      });
+      infoBody.innerHTML = parts.join("");
+    }
+
+    /* ================== RENDER ALL ================== */
     function renderAll(){
       areasContainer.innerHTML="";
       state.project.areas.forEach(a=>areasContainer.appendChild(createAreaElement(a)));
-      // globals
+      // toolbar state
       vatToggle.checked=state.project.settings.vatIncluded;
       vatPercentInput.value=state.project.settings.vatRate;
       overageToggle.checked=state.project.settings.overageIncluded;
       overagePercentInput.value=state.project.settings.overagePercent;
+      exactToggle.checked=state.project.settings.exactMode||false;
       stepModeToggle.checked=state.project.settings.stepMode||false;
-      document.body.classList.toggle("step-on", state.project.settings.stepMode);
-      document.body.classList.toggle('dark-mode', state.project.settings.darkMode);
       darkModeToggle.checked=state.project.settings.darkMode||false;
-      // templates
+      document.body.classList.toggle("step-on", state.project.settings.stepMode);
+      document.body.classList.toggle("dark-mode", state.project.settings.darkMode);
+
       renderTemplates();
-      // recalc
+      applyI18n();
       updateCalculations(true);
     }
 
-    /* ===== Templates (new) ===== */
+    /* ================== TEMPLATES ================== */
     const TKEY="__TEMPLATES__";
-    function newTemplate(){
-      return {
-        id: state.nextTemplateId++,
-        name:"",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0
-      };
-    }
-    function getTemplates(){
-      if(!state._templates) state._templates=[];
-      return state._templates;
-    }
+    function newTemplate(){ return {id:state.nextTemplateId++,name:"",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,coverSqmPerPack:0,coverLayersPerPack:1}; }
+    function getTemplates(){ if(!state._templates) state._templates=[]; return state._templates; }
+    function saveTemplates(){ localStorage.setItem(TKEY, JSON.stringify(getTemplates())); }
+    function loadTemplates(){ try{ const raw=localStorage.getItem(TKEY); if(raw){const arr=JSON.parse(raw)||[]; state._templates=arr; state.nextTemplateId=(Math.max(0,...arr.map(x=>x.id||0))+1)||1;}}catch{state._templates=[];} }
     function renderTemplates(){
       templatesBody.innerHTML="";
       const list=getTemplates();
-      if(!list.length){
-        templatesBody.innerHTML=`<div style="color:var(--muted)">No templates. Click “+ Add Template”.</div>`;
-        return;
-      }
+      if(!list.length){ templatesBody.innerHTML=`<div style="color:var(--muted)">${LANG==="sv"?"Inga mallar ännu.":"No templates yet."}</div>`; return; }
       list.forEach(t=>{
-        const row=el("div",{class:"template-row","data-template-id":t.id});
-        const n=el("input",{value:t.name,placeholder:"Template name"}); row.appendChild(n);
-        const mode=el("select"); [["thickness","Thickness"],["usage","Usage/m²"]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);}); mode.value=t.calcMode; row.appendChild(mode);
+        const row=el("div",{style:"display:grid;grid-template-columns: 200px 140px 150px 110px 110px 110px 110px 90px 120px auto;gap:8px;align-items:center;margin:6px 0"});
+        const n=el("input",{value:t.name,placeholder:t("product")}); row.appendChild(n);
+        const mode=el("select"); [["thickness",t("calcThickness")],["usage",t("calcUsage")],["coverage",t("calcCoverage")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);}); mode.value=t.calcMode; row.appendChild(mode);
         const use=el("input",{type:"number",min:"0",step:"0.001",value:t.usagePerM2||0}); row.appendChild(use);
         const lay=el("input",{type:"number",min:"1",step:"1",value:t.layers||1}); row.appendChild(lay);
         const th =el("input",{type:"number",min:"0",step:"0.1",value:t.thickness||0}); row.appendChild(th);
@@ -833,48 +950,37 @@
         const pu =el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; pu.appendChild(o);}); pu.value=t.packUnit||"kg"; row.appendChild(pu);
         const pr =el("input",{type:"number",min:"0",step:"0.01",value:t.price||0}); row.appendChild(pr);
 
-        const actions=el("div",{class:"template-actions"});
-        const applyAll=el("button",{class:"mini primary"},"Apply to ALL Areas");
-        const del=el("button",{class:"mini danger"},"Delete");
+        const coverS =el("input",{type:"number",min:"0",step:"0.1",value:t.coverSqmPerPack||0,placeholder:t("coverSqm")}); row.appendChild(coverS);
+        const coverL =el("input",{type:"number",min:"1",step:"1",value:t.coverLayersPerPack||1,placeholder:t("coverLayers")}); row.appendChild(coverL);
+
+        const actions=el("div",{style:"display:flex;gap:8px;justify-content:flex-end"});
+        const applyAll=el("button",{class:"btn btn-ghost"} , t("applyAllTemplates"));
+        const del=el("button",{class:"btn btn-ghost",style:"border:1px solid var(--line)"},"Delete");
         actions.appendChild(applyAll); actions.appendChild(del);
         row.appendChild(actions);
 
-        const bind=()=>{
-          t.name=n.value; t.calcMode=mode.value; t.usagePerM2=toPosFloat(use.value,0);
-          t.layers=Math.max(1,parseInt(lay.value)||1); t.thickness=toPosFloat(th.value,0);
-          t.density= (de.value===""?null:toPosFloat(de.value,0));
-          t.packSize=Math.max(0.0001,parseFloat(ps.value)||1);
-          t.packUnit=pu.value; t.price=toPosFloat(pr.value,0);
+        const bind=()=>{ t.name=n.value; t.calcMode=mode.value; t.usagePerM2=toPosFloat(use.value,0); t.layers=Math.max(1,parseInt(lay.value)||1); t.thickness=toPosFloat(th.value,0);
+          t.density=(de.value===""?null:toPosFloat(de.value,0)); t.packSize=Math.max(0.0001,parseFloat(ps.value)||1); t.packUnit=pu.value; t.price=toPosFloat(pr.value,0);
+          t.coverSqmPerPack=toPosFloat(coverS.value,0); t.coverLayersPerPack=Math.max(1,parseInt(coverL.value)||1);
         };
-        [n,mode,use,lay,th,de,ps,pu,pr].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
+        [n,mode,use,lay,th,de,ps,pu,pr,coverS,coverL].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
 
         applyAll.addEventListener("click",()=>{
           bind(); saveTemplates();
           pushStateForUndo(`Apply template "${t.name}" to all areas`);
-          state.project.areas.forEach(a=>{
-            const np=cloneProductData(t); np.id=state.nextProductId++; // reuse same fields
-            a.products.push(np);
-          });
-          log(`Applied template "${t.name}" to all areas`);
-          renderAll();
+          state.project.areas.forEach(a=>{const np=cloneProductData(t); np.id=state.nextProductId++; a.products.push(np);});
+          log(`Applied template "${t.name}" to all areas`); renderAll();
         });
         del.addEventListener("click",()=>{
-          if(!confirm("Delete this template?")) return;
-          const idx=list.findIndex(x=>x.id===t.id); if(idx>-1){list.splice(idx,1); saveTemplates(); renderTemplates();}
+          if(!confirm(LANG==="sv"?"Ta bort mallen?":"Delete this template?")) return;
+          const L=getTemplates(); const idx=L.findIndex(x=>x.id===t.id); if(idx>-1){L.splice(idx,1); saveTemplates(); renderTemplates();}
         });
 
         templatesBody.appendChild(row);
       });
     }
-    function saveTemplates(){ localStorage.setItem(TKEY, JSON.stringify(getTemplates())); }
-    function loadTemplates(){
-      try{
-        const raw=localStorage.getItem(TKEY);
-        if(raw){ const arr=JSON.parse(raw)||[]; state._templates=arr; state.nextTemplateId = (Math.max(0,...arr.map(x=>x.id||0))+1) || 1; }
-      }catch(e){ state._templates=[]; }
-    }
 
-    /* ===== Import/Export (kept) ===== */
+    /* ================== IMPORT / EXPORT ================== */
     function importData(file,content){
       const name=file.name;
       if(name.endsWith(".json")){
@@ -883,17 +989,13 @@
           if(!parsed.areas||!parsed.settings) throw new Error("Invalid JSON format");
           pushStateForUndo(`Imported JSON (${name})`);
           state.project.areas=parsed.areas; state.project.settings={...state.project.settings,...parsed.settings};
-          state.nextAreaId=1; state.nextProductId=1;
-          state.project.areas.forEach(a=>{ if(a.id>=state.nextAreaId) state.nextAreaId=a.id+1; a.products.forEach(p=>{ if(p.id>=state.nextProductId) state.nextProductId=p.id+1;});});
+          state.nextAreaId=1; state.nextProductId=1; state.project.areas.forEach(a=>{if(a.id>=state.nextAreaId)state.nextAreaId=a.id+1;a.products.forEach(p=>{if(p.id>=state.nextProductId)state.nextProductId=p.id+1;});});
           renderAll(); log(`Imported JSON "${name}"`);
         }catch(err){ alert("Failed to import JSON: "+err.message); log("Error importing JSON: "+err.message); }
       }else if(name.endsWith(".csv")){
         try{
-          const lines=content.split(/\r?\n/).filter(l=>l.trim().length>0);
-          if(!lines.length) throw new Error("Empty CSV");
-          let start=0, headers=[];
-          if(/area\s*name|areaname/i.test(lines[0])){ headers=parseCSVLine(lines[0]); start=1; }
-          else { headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"]; }
+          const lines=content.split(/\r?\n/).filter(l=>l.trim().length>0); if(!lines.length) throw new Error("Empty CSV");
+          let start=0, headers=[]; if(/area\s*name|areaname/i.test(lines[0])){headers=parseCSVLine(lines[0]);start=1;} else headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
           const idx={}; headers.forEach((c,i)=>idx[c]=i);
           const importedAreas=[]; const map={}; let importedSettings={};
           for(let i=start;i<lines.length;i++){
@@ -909,32 +1011,23 @@
             const pSize =parseFloat(v[idx["PackSize"]])||1;
             const pUnit =v[idx["PackUnit"]]||"kg";
             const price =parseFloat(v[idx["Price"]])||0;
-
             if(i===start){
               importedSettings.vatIncluded = /^(true|1)$/i.test(v[idx["VATIncluded"]]||"");
               importedSettings.vatRate     = parseFloat(v[idx["VATRate"]]) || state.project.settings.vatRate;
               importedSettings.overageIncluded = /^(true|1)$/i.test(v[idx["OverageIncluded"]]||"");
               importedSettings.overagePercent  = parseFloat(v[idx["OveragePercent"]]) || state.project.settings.overagePercent;
             }
-
             let area = map[aName];
-            if(!area){
-              area={id:state.nextAreaId++,name:aName,modifier:sMod,size:aSize,products:[]};
-              map[aName]=area; importedAreas.push(area);
-            }
+            if(!area){ area={id:state.nextAreaId++,name:aName,modifier:sMod,size:aSize,products:[]}; map[aName]=area; importedAreas.push(area); }
             if(pName || price>0 || thick>0){
               area.products.push({
-                id:state.nextProductId++, name:pName, layers, thickness:thick, density:dens,
-                packSize:pSize, packUnit:pUnit, price,
-                calcMode:"thickness", usagePerM2:0
+                id:state.nextProductId++, name:pName, layers, thickness:thick, density:dens, packSize:pSize, packUnit:pUnit, price,
+                calcMode:"thickness", usagePerM2:0, coverSqmPerPack:0, coverLayersPerPack:1
               });
             }
           }
           pushStateForUndo(`Imported CSV (${name})`);
-          state.project.areas=importedAreas;
-          state.project.settings={...state.project.settings,...importedSettings};
-          renderAll();
-          log(`Imported CSV "${name}"`);
+          state.project.areas=importedAreas; state.project.settings={...state.project.settings,...importedSettings}; renderAll(); log(`Imported CSV "${name}"`);
         }catch(err){ alert("Failed to import CSV: "+err.message); log("Error importing CSV: "+err.message); }
       }else{ alert("Unsupported file format."); log("Import failed: unsupported file"); }
     }
@@ -942,46 +1035,25 @@
       const out=[]; let cur=""; let q=false;
       for(let i=0;i<line.length;i++){
         const ch=line[i];
-        if(!q){
-          if(ch===','){ out.push(cur.trim()); cur=""; }
-          else if(ch==='"'){ q=true; }
-          else cur+=ch;
-        }else{
-          if(ch==='"'){
-            if(i+1<line.length && line[i+1]==='"'){ cur+='"'; i++; }
-            else q=false;
-          }else cur+=ch;
-        }
+        if(!q){ if(ch===','){out.push(cur.trim());cur="";} else if(ch==='"'){q=true;} else cur+=ch; }
+        else{ if(ch==='"'){ if(i+1<line.length && line[i+1]==='"'){cur+='"'; i++;} else q=false; } else cur+=ch; }
       }
       out.push(cur.trim()); return out;
     }
-    function exportJSON(){
-      const blob=new Blob([JSON.stringify(state.project,null,2)],{type:"application/json"});
-      downloadBlob(blob,"project_export.json"); log("Exported JSON");
-    }
+    function exportJSON(){ const blob=new Blob([JSON.stringify(state.project,null,2)],{type:"application/json"}); downloadBlob(blob,"project_export.json"); log("Exported JSON"); }
     function exportCSV(){
       const headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Layers","Thickness","Density","PackSize","PackUnit","Price","VATIncluded","VATRate","OverageIncluded","OveragePercent"];
-      const lines=[headers.join(",")];
-      const S=state.project.settings;
+      const lines=[headers.join(",")]; const S=state.project.settings;
       state.project.areas.forEach(a=>{
         if(!a.products.length){
-          lines.push([
-            a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,
-            "", "", "", "", "", "", "",
-            S.vatIncluded, S.vatRate, S.overageIncluded, S.overagePercent
-          ].map(formatCSVValue).join(","));
+          lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,"","","","","","","",S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent].map(formatCSVValue).join(","));
         }else{
           a.products.forEach(p=>{
-            lines.push([
-              a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,
-              p.name||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price,
-              S.vatIncluded, S.vatRate, S.overageIncluded, S.overagePercent
-            ].map(formatCSVValue).join(","));
+            lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size, p.name||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price, S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent].map(formatCSVValue).join(","));
           });
         }
       });
-      const blob=new Blob([lines.join("\n")],{type:"text/csv"});
-      downloadBlob(blob,"project_export.csv"); log("Exported CSV");
+      downloadBlob(new Blob([lines.join("\n")],{type:"text/csv"}),"project_export.csv"); log("Exported CSV");
     }
     function generateExcelXML(){
       const nl="\r\n";
@@ -990,42 +1062,43 @@
       xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+nl;
       xml+='<Styles>'+nl+'<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>'+nl+'<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>'+nl+'<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>'+nl+'</Styles>'+nl;
       xml+='<Worksheet ss:Name="Estimate">'+nl;
-      const COLS=13; let rows=1;
-      state.project.areas.forEach(a=>{ rows+=a.products.length; rows+=1;}); rows+=1;
+      const COLS=16; let rows=1; state.project.areas.forEach(a=>{rows+=a.products.length; rows+=1;}); rows+=1;
       xml+=`<Table ss:ExpandedColumnCount="${COLS}" ss:ExpandedRowCount="${rows}">`+nl;
       for(let j=0;j<COLS;j++){xml+='<Column ss:AutoFitWidth="1"/>'+nl;}
-      const headers=["Area","Surface Mod","Area Size (m²)","Product","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost"];
-      xml+='<Row ss:StyleID="Bold">'+nl; headers.forEach(t=>xml+=`<Cell><Data ss:Type="String">${t}</Data></Cell>`+nl); xml+='</Row>'+nl;
+      const headers=["Area","Surface Mod","Area Size (m²)","Product","Mode","Usage/m²","Cover m²/pack","Cover layers/pack","Layers","Thickness (mm)","Density (kg/L)","Pack size","Unit","Price/Pack","Needed","Packages","Cost"];
+      xml+='<Row ss:StyleID="Bold">'+nl; headers.forEach(h=>xml+=`<Cell><Data ss:Type="String">${h}</Data></Cell>`+nl); xml+='</Row>'+nl;
 
-      let rowIndex=1; const areaTotalRows=[];
+      let rowIndex=1, areaTotalRows=[];
       state.project.areas.forEach(a=>{
         a.products.forEach(p=>{
           rowIndex++;
-          // compute again for export
           const S=state.project.settings;
-          const areaSize=Number(a.size)||0;
-          const layers=Math.max(1,Number(p.layers)||1);
-          const unit = p.packUnit||"kg";
-          const price=Number(p.price)||0;
-          const packSize=Number(p.packSize)||0;
-          let needed=0;
+          const areaSize=Number(a.size)||0, layers=Math.max(1,Number(p.layers)||1);
+          const unit=p.packUnit||"kg", price=Number(p.price)||0, packSize=Math.max(0.0001,Number(p.packSize)||0);
+          let needed=0, packages=0;
           if((p.calcMode||"thickness")==="usage"){
-            let val= areaSize*layers*(Number(p.usagePerM2)||0);
-            val*=a.modifier; if(S.overageIncluded) val*= (1+S.overagePercent/100);
-            needed=val;
+            let base= areaSize*layers*(Number(p.usagePerM2)||0); base*=a.modifier; if(S.overageIncluded) base*=(1+S.overagePercent/100);
+            needed=base; packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
+          }else if(p.calcMode==="thickness"){
+            let volL= areaSize*(Number(p.thickness)||0)*layers; volL*=a.modifier; if(S.overageIncluded) volL*=(1+S.overagePercent/100);
+            needed = (unit==="kg") ? ((Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0) : volL;
+            packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
           }else{
-            let volL= areaSize*(Number(p.thickness)||0)*layers;
-            volL*=a.modifier; if(S.overageIncluded) volL*= (1+S.overagePercent/100);
-            needed = (unit==="kg") ? ( (Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0 ) : volL;
+            const cov=Number(p.coverSqmPerPack)||0; const covL=Math.max(1,Number(p.coverLayersPerPack)||1);
+            const packNeed = cov>0 ? (areaSize * (layers/covL) / cov) : 0;
+            packages = S.exactMode ? packNeed : Math.ceil(packNeed);
+            needed = packages * packSize;
           }
-          const packages=(packSize>0 && needed>0)? Math.ceil(needed/packSize):0;
           const cost=packages*price;
-
           xml+='<Row>'+nl;
           xml+=`<Cell><Data ss:Type="String">${escapeXML(a.name)}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${a.modifier}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${a.size}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="String">${escapeXML(p.name||"")}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="String">${p.calcMode}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${p.usagePerM2||0}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${p.coverSqmPerPack||0}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${p.coverLayersPerPack||1}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${layers}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${p.thickness||0}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${(p.density!=null?p.density:"")}</Data></Cell>`+nl;
@@ -1033,129 +1106,87 @@
           xml+=`<Cell><Data ss:Type="String">${unit}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${price}</Data></Cell>`+nl;
           xml+=`<Cell><Data ss:Type="Number">${needed.toFixed(1)}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${packages}</Data></Cell>`+nl;
+          xml+=`<Cell><Data ss:Type="Number">${S.exactMode?fmt(packages):packages}</Data></Cell>`+nl;
           xml+=`<Cell ss:StyleID="TwoDec"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>`+nl;
           xml+='</Row>'+nl;
         });
         rowIndex++; areaTotalRows.push(rowIndex);
-        // recompute area total
         let areaTotal=0;
         a.products.forEach(p=>{
           const S=state.project.settings; const areaSize=Number(a.size)||0; const layers=Math.max(1,Number(p.layers)||1);
-          const unit=p.packUnit||"kg"; const price=Number(p.price)||0; const packSize=Number(p.packSize)||0;
-          let needed=0;
+          const unit=p.packUnit||"kg"; const price=Number(p.price)||0; const packSize=Math.max(0.0001,Number(p.packSize)||0);
+          let needed=0, packages=0;
           if((p.calcMode||"thickness")==="usage"){
-            let val= areaSize*layers*(Number(p.usagePerM2)||0);
-            val*=a.modifier; if(S.overageIncluded) val*= (1+S.overagePercent/100);
-            needed=val;
+            let base= areaSize*layers*(Number(p.usagePerM2)||0); base*=a.modifier; if(S.overageIncluded) base*=(1+S.overagePercent/100);
+            needed=base; packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
+          }else if(p.calcMode==="thickness"){
+            let volL= areaSize*(Number(p.thickness)||0)*layers; volL*=a.modifier; if(S.overageIncluded) volL*=(1+S.overagePercent/100);
+            needed = (unit==="kg") ? ((Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0) : volL;
+            packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
           }else{
-            let volL= areaSize*(Number(p.thickness)||0)*layers;
-            volL*=a.modifier; if(S.overageIncluded) volL*= (1+S.overagePercent/100);
-            needed = (unit==="kg") ? ( (Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0 ) : volL;
+            const cov=Number(p.coverSqmPerPack)||0; const covL=Math.max(1,Number(p.coverLayersPerPack)||1);
+            const packNeed = cov>0 ? (areaSize * (layers/covL) / cov) : 0;
+            packages = S.exactMode ? packNeed : Math.ceil(packNeed);
+            needed = packages * packSize;
           }
-          const packages=(packSize>0 && needed>0)? Math.ceil(needed/packSize):0;
-          areaTotal += packages * price;
+          areaTotal += packages*price;
         });
         xml+='<Row ss:StyleID="Bold">'+nl;
-        xml+=`<Cell ss:MergeAcross="11"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
+        xml+=`<Cell ss:MergeAcross="14"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
         xml+=`<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotal.toFixed(2)}</Data></Cell>`+nl;
         xml+='</Row>'+nl;
       });
       rowIndex++;
       xml+='<Row ss:StyleID="Bold">'+nl;
-      xml+='<Cell ss:MergeAcross="11"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
-      if(areaTotalRows.length){
-        const refs=areaTotalRows.map(r=>`R${r}C`);
-        xml+=`<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${refs.join(",")})"><Data ss:Type="Number"></Data></Cell>`+nl;
-      }else{
-        xml+='<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>'+nl;
-      }
+      xml+='<Cell ss:MergeAcross="14"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
+      if(areaTotalRows.length){ const refs=areaTotalRows.map(r=>`R${r}C`); xml+=`<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${refs.join(",")})"><Data ss:Type="Number"></Data></Cell>`+nl; }
+      else xml+='<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>'+nl;
       xml+='</Row>'+nl + '</Table>'+nl + '</Worksheet>'+nl + '</Workbook>';
       return xml;
     }
-    function exportExcel(){
-      const blob=new Blob([generateExcelXML()],{type:"application/vnd.ms-excel"});
-      downloadBlob(blob,"project_estimate.xls"); log("Exported Excel");
-    }
+    function exportExcel(){ downloadBlob(new Blob([generateExcelXML()],{type:"application/vnd.ms-excel"}),"project_estimate.xls"); log("Exported Excel"); }
 
-    /* ===== Helpers ===== */
-    function el(tag, attrs={}, text){
-      const e=document.createElement(tag);
-      Object.entries(attrs).forEach(([k,v])=>{
-        if(k==="class") e.className=v;
-        else if(k==="style") e.setAttribute("style",v);
-        else e.setAttribute(k,v);
-      });
-      if(text!=null) e.textContent=text;
-      return e;
-    }
-    function toPosFloat(v,def){const n=parseFloat(v); return (isNaN(n)||n<0)? def : n;}
-    function fmt(n){ if(!isFinite(n)) return "0"; if(Math.abs(n)>=1000) return n.toFixed(0); if(Math.abs(n)>=10) return n.toFixed(1); return n.toFixed(2); }
-
-    /* ===== Events (kept + new) ===== */
-    addAreaBtn.addEventListener("click", addArea);
-    undoBtn.addEventListener("click", undo);
-    redoBtn.addEventListener("click", redo);
+    /* ================== EVENTS ================== */
+    btnAddArea.addEventListener("click",()=>{
+      const id=state.nextAreaId++; const nm=(LANG==="sv"?"Område ":"Area ")+id;
+      const a={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
+      state.project.areas.push(a); const el=createAreaElement(a); areasContainer.appendChild(el);
+      log(`Added area "${nm}"`); pushStateForUndo(`Added area ${nm}`); updateCalculations();
+    });
+    undoBtn.addEventListener("click",undo); redoBtn.addEventListener("click",redo);
 
     vatToggle.addEventListener("change",()=>{state.project.settings.vatIncluded=vatToggle.checked; log(`VAT ${vatToggle.checked?"included":"excluded"}`); updateCalculations();});
-    vatPercentInput.addEventListener("change",()=>{state.project.settings.vatRate=toPosFloat(vatPercentInput.value,0); log(`VAT rate ${state.project.settings.vatRate}%`); updateCalculations();});
-    overageToggle.addEventListener("change",()=>{state.project.settings.overageIncluded=overageToggle.checked; log(`${overageToggle.checked?"Applied":"Removed"} overage`); updateCalculations();});
-    overagePercentInput.addEventListener("change",()=>{state.project.settings.overagePercent=toPosFloat(overagePercentInput.value,0); log(`Overage ${state.project.settings.overagePercent}%`); if(state.project.settings.overageIncluded) updateCalculations();});
-    darkModeToggle.addEventListener("change",()=>{state.project.settings.darkMode=darkModeToggle.checked; document.body.classList.toggle("dark-mode", state.project.settings.darkMode); log(`Theme → ${state.project.settings.darkMode?"Dark":"Light"}`);});
+    vatPercentInput.addEventListener("change",()=>{state.project.settings.vatRate=toPosFloat(vatPercentInput.value,0); log(`VAT ${state.project.settings.vatRate}%`); updateCalculations();});
+    overageToggle.addEventListener("change",()=>{state.project.settings.overageIncluded=overageToggle.checked; log(`${overageToggle.checked?"Apply":"Remove"} overage`); updateCalculations();});
+    overagePercentInput.addEventListener("change",()=>{state.project.settings.overagePercent=toPosFloat(overagePercentInput.value,0); if(state.project.settings.overageIncluded) updateCalculations();});
+    exactToggle.addEventListener("change",()=>{state.project.settings.exactMode=exactToggle.checked; log(`Exact mode ${state.project.settings.exactMode?"ON":"OFF"}`); updateCalculations();});
+    darkModeToggle.addEventListener("change",()=>{state.project.settings.darkMode=darkModeToggle.checked; document.body.classList.toggle("dark-mode", state.project.settings.darkMode);});
     stepModeToggle.addEventListener("change",()=>{state.project.settings.stepMode=stepModeToggle.checked; document.body.classList.toggle("step-on", state.project.settings.stepMode); updateCalculations();});
 
     importBtn.addEventListener("click",()=>fileInput.click());
     fileInput.addEventListener("change",(e)=>{
-      const file=e.target.files[0]; if(!file) return;
-      const r=new FileReader();
-      r.onload=()=>importData(file,r.result);
-      r.onerror=()=>{alert("Failed to read file"); log("Error reading file for import");};
-      // If reading binary Excel, we still just read as text for our simple CSV/JSON; xls/xlsx can't be parsed here.
-      r.readAsText(file);
-      fileInput.value="";
+      const file=e.target.files[0]; if(!file) return; const r=new FileReader();
+      r.onload=()=>importData(file,r.result); r.onerror=()=>{alert("Failed to read file"); log("Error reading file");}; r.readAsText(file); fileInput.value="";
     });
-
-    exportJSONBtn.addEventListener("click", exportJSON);
-    exportCSVBtn.addEventListener("click", exportCSV);
-    exportExcelBtn.addEventListener("click", exportExcel);
+    exportJSONBtn.addEventListener("click",exportJSON);
+    exportCSVBtn.addEventListener("click",exportCSV);
+    exportExcelBtn.addEventListener("click",exportExcel);
     printBtn.addEventListener("click",()=>{window.print(); log("Print/PDF");});
 
-    minimizeLogBtn.addEventListener("click",()=>{
-      if(!logPanel.classList.contains("minimized")) logPanel.classList.add("minimized");
-      else { logPanel.classList.remove("minimized"); logPanel.classList.remove("maximized"); }
-    });
-    maximizeLogBtn.addEventListener("click",()=>{
-      if(logPanel.classList.contains("maximized")) logPanel.classList.remove("maximized");
-      else { logPanel.classList.remove("minimized"); logPanel.classList.add("maximized"); }
-    });
+    minimizeLogBtn.addEventListener("click",()=>{if(!logPanel.classList.contains("minimized")) logPanel.classList.add("minimized"); else {logPanel.classList.remove("minimized"); logPanel.classList.remove("maximized");}});
+    maximizeLogBtn.addEventListener("click",()=>{if(logPanel.classList.contains("maximized")) logPanel.classList.remove("maximized"); else {logPanel.classList.remove("minimized"); logPanel.classList.add("maximized");}});
 
-    infoToast.addEventListener("click",()=>{
-      document.getElementById("infoSummary").scrollIntoView({behavior:"smooth",block:"start"});
-      infoToast.style.display="none";
-    });
+    infoToast.addEventListener("click",()=>{document.getElementById("infoSummary").scrollIntoView({behavior:"smooth"}); infoToast.style.display="none";});
 
-    // Templates
-    addTemplateBtn.addEventListener("click",()=>{
-      const t=newTemplate(); getTemplates().push(t); saveTemplates(); renderTemplates();
-    });
-    applyAllTemplatesBtn.addEventListener("click",()=>{
-      const list=getTemplates();
-      if(!list.length){ alert("No templates to apply."); return; }
-      pushStateForUndo("Apply ALL templates to ALL areas");
-      state.project.areas.forEach(a=>{
-        list.forEach(t=>{
-          const np=cloneProductData(t); np.id=state.nextProductId++;
-          a.products.push(np);
-        });
-      });
-      log("Applied ALL templates to ALL areas");
-      renderAll();
-    });
+    // Language toggles
+    langSV.addEventListener("click",()=>{LANG="sv"; langSV.classList.add("active"); langEN.classList.remove("active"); applyI18n(); renderAll();});
+    langEN.addEventListener("click",()=>{LANG="en"; langEN.classList.add("active"); langSV.classList.remove("active"); applyI18n(); renderAll();});
 
-    /* ===== Init ===== */
+    /* ================== INIT ================== */
     loadTemplates();
-    log("Application started");
-    renderAll(); // empty state initially
+    log("App started");
+    applyI18n();
+    renderAll();
 
   })();
   </script>
