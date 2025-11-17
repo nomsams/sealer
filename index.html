@@ -54,21 +54,28 @@
       position:sticky;top:0;z-index:30;
       background:linear-gradient(180deg,var(--panel) 0%,rgba(255,255,255,.65) 100%);
       backdrop-filter:saturate(1.15) blur(6px);
+      -webkit-backdrop-filter:saturate(1.15) blur(6px);
       padding:10px 12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;
       border-bottom:1px solid var(--line); box-shadow:0 6px 14px rgba(15,23,42,.06);
     }
     body.dark-mode .toolbar{
       background:linear-gradient(180deg,#0f172a 0%,#0b1220 100%);
+      backdrop-filter:saturate(1.15) blur(6px);
+      -webkit-backdrop-filter:saturate(1.15) blur(6px);
       box-shadow:0 6px 14px rgba(0,0,0,.45);
     }
     .subbar{
       position:sticky;top:60px;z-index:29;
       background:linear-gradient(180deg,var(--panel) 0%,rgba(255,255,255,.9) 100%);
+      backdrop-filter:saturate(1.15) blur(6px);
+      -webkit-backdrop-filter:saturate(1.15) blur(6px);
       padding:8px 12px; border-bottom:1px solid var(--line);
       display:flex; align-items:center;
     }
     body.dark-mode .subbar{
       background:linear-gradient(180deg,#0f172a 0%,#0b1220 100%);
+      backdrop-filter:saturate(1.15) blur(6px);
+      -webkit-backdrop-filter:saturate(1.15) blur(6px);
     }
     .subbar .left{flex:1; display:flex; gap:8px; align-items:center}
     .subbar .right{display:flex; gap:8px; align-items:center}
@@ -109,7 +116,7 @@
     .unit-wrap{display:flex;align-items:center;gap:6px}
     .unit-wrap input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg)}
     .unit-wrap .unit{font-weight:700;color:var(--muted)}
-    .del-area{background:var(--panel);color:#991b1b;border:1px solid #fecaca55;border-radius:10px;padding:8px 10px;cursor:pointer}
+    .del-area{background:var(--panel);color:#991b1b;border:1px solid #fecaca55;border-radius:10px;padding:8px 10px;cursor:pointer; align-self:start}
     .del-area:hover{background:#ffeff157}
 
     /* Small illustration top-right (50% smaller) */
@@ -125,6 +132,11 @@
     table.area-table input,table.area-table select{
       width:100%;box-sizing:border-box;padding:3px 6px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--panel);color:var(--fg);
       height:26px; line-height:24px
+    }
+    table.area-table input:disabled, table.area-table select:disabled {
+      background: var(--line);
+      color: var(--muted);
+      cursor: not-allowed;
     }
     .th-group{background:var(--rowAlt);font-weight:800;text-align:center;border:1px solid var(--line);padding:3px 4px}
     .td-prod{background:var(--rowProd)}
@@ -146,8 +158,8 @@
     .surface-inline.show{display:block}
 
     /* Footer buttons in area (stacked, same vertical line & size; smaller buttons) */
-    .footer-buttons{display:flex; flex-direction:column; gap:6px; margin-top:6px}
-    .btn-slim{padding:7px 10px; border-radius:10px; width:100%}
+    .footer-buttons{display:flex; flex-direction:column; gap:6px; margin-top:6px; align-items:flex-start}
+    .btn-slim{padding:5px 8px; border-radius:8px; width:auto}
 
     /* ================== SUMMARY & INFO ================== */
     #infoSummary{margin:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
@@ -229,6 +241,11 @@
     <div class="group">
       <label for="exactToggle" data-i18n="exact">Exakt beräkning (ingen avrundning)</label>
       <input type="checkbox" id="exactToggle"/>
+    </div>
+
+    <div class="group">
+      <label for="hideDecimalsToggle" data-i18n="hideDecimals">Dölj decimaler</label>
+      <input type="checkbox" id="hideDecimalsToggle" checked/>
     </div>
 
     <div class="grow"></div>
@@ -342,7 +359,8 @@
         hoverSurface:"Yta", hoverProduct:"Produkt",
         tmplAdded:"Mall tillagd", tmplApplyAll:"Mall applicerad på alla områden",
         errUnsupported:"Filformatet stöds inte.",
-        updated:"Uppdaterad ", color:"Färg"
+        updated:"Uppdaterad ", color:"Färg",
+        hideDecimals:"Dölj decimaler"
       },
       en:{ addArea:"+ Add Area", addAreaBelow:"+ Add Area Below",
         undoText:"Undo", redoText:"Redo",
@@ -367,7 +385,8 @@
         hoverSurface:"Surface", hoverProduct:"Product",
         tmplAdded:"Template added", tmplApplyAll:"Template applied to all areas",
         errUnsupported:"Unsupported file format.",
-        updated:"Updated ", color:"Color"
+        updated:"Updated ", color:"Color",
+        hideDecimals:"Hide decimals"
       }
     };
     let LANG="sv";
@@ -375,22 +394,33 @@
     function applyI18n(){document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));}); refreshSummaryLabels();}
 
     /* ================== STATE ================== */
+    const SURFACE_INFO = {
+      sv:{
+        "Smooth":   {title:"Slät / Polerad", desc:"Stängda porer; tät, glättad yta.", hint:"+0%", prep:"Enkel rengöring; dammfri", typical:"Glättad/polerad betongplatta"},
+        "Light Grind": {title:"Lätt slipad", desc:"Mikrostruktur öppnas; något högre absorption.", hint:"+5%", prep:"Avfettning + lätt slipning", typical:"Polerad med lätt slipning"},
+        "Medium Grind":{title:"Medium slipad", desc:"Synlig sand; mikrosprickor möjliga.", hint:"+10%", prep:"Slipning P80–P120", typical:"Trafikslitet inomhusgolv"},
+        "Rough":    {title:"Grov / sopad", desc:"Grov profil; hög absorption.", hint:"+15%", prep:"Slipning + dammsugning; laga flagor", typical:"Utvändig sopad yta"},
+        "Porous/Cracked": {title:"Mycket porös / sprucken", desc:"Kapillärer och håligheter; mycket hög absorption med sprickor.", hint:"+25%", prep:"Sprickinjektering + primer", typical:"Gammal platta, frostskador"},
+        "Custom":   {title:"Anpassad", desc:"Användardefinierad ytfaktor.", hint:"beroende", prep:"—", typical:"—"}
+      },
+      en:{
+        "Smooth":   {title:"Smooth / polished", desc:"Closed pores; dense, burnished surface.", hint:"+0%", prep:"Light cleaning; dust-free", typical:"Troweled/Polished slab"},
+        "Light Grind": {title:"Lightly ground", desc:"Micro texture opens; slightly higher uptake.", hint:"+5%", prep:"Degrease + light grind", typical:"Polished with light hone"},
+        "Medium Grind":{title:"Medium ground", desc:"Visible sand; micro-cracks possible.", hint:"+10%", prep:"Grinding P80–P120", typical:"Traffic-worn interior"},
+        "Rough":    {title:"Rough / broomed", desc:"Coarse profile; high absorption.", hint:"+15%", prep:"Grinding + vacuum; repair spalls", typical:"Exterior broom finish"},
+        "Porous/Cracked": {title:"Highly porous / cracked", desc:"Capillaries & voids; very high absorption with cracks.", hint:"+25%", prep:"Crack injection + primer", typical:"Old slab, freeze-thaw damage"},
+        "Custom":   {title:"Custom", desc:"User-defined surface factor.", hint:"depends", prep:"—", typical:"—"}
+      }
+    };
     const state={
       project:{
         areas:[],
         settings:{
           vatIncluded:false, vatRate:25,
           overageIncluded:false, overagePercent:10,
-          exactMode:false, stepMode:false, darkMode:false,
+          exactMode:false, stepMode:false, darkMode:false, hideDecimals:true,
           surfaceTypes:{"Smooth":1.00,"Light Grind":1.05,"Medium Grind":1.10,"Rough":1.15,"Porous/Cracked":1.25},
-          surfaceInfo:{
-            "Smooth":{title:"Smooth / polished",desc:"Closed pores; dense, burnished surface.",hint:"+0%", prep:"Light cleaning; dust-free", typical:"Troweled/Polished slab"},
-            "Light Grind":{title:"Lightly ground",desc:"Micro texture opens; slightly higher uptake.",hint:"+5%", prep:"Degrease + light grind", typical:"Polished with light hone"},
-            "Medium Grind":{title:"Medium ground",desc:"Visible sand; micro-cracks possible.",hint:"+10%", prep:"Grinding P80–P120", typical:"Traffic-worn interior"},
-            "Rough":{title:"Rough / broomed",desc:"Coarse profile; high absorption.",hint:"+15%", prep:"Grinding + vacuum; repair spalls", typical:"Exterior broom finish"},
-            "Porous/Cracked":{title:"Highly porous / cracked",desc:"Capillaries & voids; very high absorption with cracks.",hint:"+25%", prep:"Crack injection + primer", typical:"Old slab, freeze-thaw damage"},
-            "Custom":{title:"Custom",desc:"User-defined surface factor.",hint:"depends", prep:"—", typical:"—"}
-          }
+          surfaceInfo: SURFACE_INFO[LANG]
         }
       },
       undoStack:[], redoStack:[],
@@ -409,6 +439,7 @@
     const exactToggle=document.getElementById("exactToggle");
     const darkModeToggle=document.getElementById("darkModeToggle");
     const stepModeToggle=document.getElementById("stepModeToggle");
+    const hideDecimalsToggle=document.getElementById("hideDecimalsToggle");
     const importBtn=document.getElementById("importData"), fileInput=document.getElementById("fileInput");
     const exportJSONBtn=document.getElementById("exportJSON"), exportCSVBtn=document.getElementById("exportCSV"), exportExcelBtn=document.getElementById("exportExcel");
     const printBtn=document.getElementById("printBtn");
@@ -450,7 +481,8 @@
       undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
     }
     function toPosFloat(v,def){const n=parseFloat(v); return (isNaN(n)||n<0)? def : n;}
-    function fmt(n){ if(!isFinite(n)) return "0"; if(Math.abs(n)>=1000) return n.toFixed(0); if(Math.abs(n)>=10) return n.toFixed(1); return n.toFixed(2); }
+    function fmt(n){ if(!isFinite(n)) return "0"; if(state.project.settings.hideDecimals) return n.toFixed(0);
+      if(Math.abs(n)>=1000) return n.toFixed(0); if(Math.abs(n)>=10) return n.toFixed(1); return n.toFixed(2); }
     function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
     function formatCSVValue(v){const s=String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
     function escapeXML(s){if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
@@ -536,77 +568,230 @@
     function layerColor(p){
       return p.color || (()=>{let h=0;const s=(p.name||"Layer");for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0; return `hsl(${h%360} 70% 55%)`;})();
     }
-    function drawAreaIllustration(canvas, area, hoverIdx=-1, hoverSlab=false){
+    function drawAreaIllustration(canvas, area, highlightId=-1){
       const ctx=canvas.getContext("2d");
       const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
       ctx.clearRect(0,0,W,H);
 
-      const prng=PRNG(area.id*10007 + Math.floor(area.modifier*1000));
+      // Define base geometry parameters for isometric projection
+      const baseX = W * 0.6;
+      const depthX = W * 0.3;
+      const depthY = W * 0.15;
+      const slabHeightPx = 10;
+      const layerHeightPx = 4;
+      const marginLeft = 10, marginBottom = 3;
+      const slabBottomY = H - marginBottom;
+      const originX = depthX + marginLeft;
+      const originY = slabBottomY - slabHeightPx;
 
-      // slab
-      const slabH=22; const slabY=H-slabH; ctx.fillStyle=baseConcreteColor(area);
-      ctx.fillRect(0,slabY,W,slabH);
-      ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.beginPath(); for(let x=0;x<W;x+=10){ctx.moveTo(x,slabY);ctx.lineTo(x+5,slabY+5);} ctx.stroke();
+      // Slab top corners
+      const slabFrontLeft = {x:originX, y:originY};
+      const slabFrontRight = {x:originX + baseX, y:originY};
+      const slabBackLeft = {x:originX - depthX, y:originY - depthY};
+      const slabBackRight = {x:originX + baseX - depthX, y:originY - depthY};
+      // Slab bottom right edge (for side face)
+      const slabBottomFrontRight = {x: slabFrontRight.x, y: slabFrontRight.y + slabHeightPx};
+      const slabBottomBackRight = {x: slabBackRight.x, y: slabBackRight.y + slabHeightPx};
 
-      const st=reverseFindTypeByFactor(area.modifier)||"Custom";
-      const slabRect={x:0,y:slabY,w:W,h:slabH};
-      if(st==="Smooth"){ drawSpeckles(ctx,slabRect,prng,60); drawMicroScratches(ctx,slabRect,prng,60); }
-      else if(st==="Light Grind"){ drawSpeckles(ctx,slabRect,prng,100); drawMicroScratches(ctx,slabRect,prng,80); }
-      else if(st==="Medium Grind"){ drawSpeckles(ctx,slabRect,prng,150); drawRugged(ctx,slabRect,prng); }
-      else if(st==="Rough"){ drawRugged(ctx,slabRect,prng); drawSpeckles(ctx,slabRect,prng,80); }
-      else if(st==="Porous/Cracked"){ drawRugged(ctx,slabRect,prng); drawCracks(ctx,slabRect,prng,7); }
+      // Prepare polygon data structures
+      const sidePolys = [];
+      let topPoly = null;
 
-      // layers
-      const totalLayers = area.products.reduce((a,p)=>a+Math.max(1,Number(p.layers||1)),0)||1;
-      const space = H-slabH-10, gap=1.5, unitH=(space-gap*(totalLayers-1))/Math.max(1,totalLayers);
-      const rects=[]; let y=H-slabH-gap;
+      // Add slab side polygon (right face of slab)
+      sidePolys.push({
+        id: 0,
+        points: [ {...slabBackRight}, {...slabFrontRight}, {...slabBottomFrontRight}, {...slabBottomBackRight} ],
+        color: baseConcreteColor(area)
+      });
+
+      // Current top-of-stack corners
+      let curFrontLeft = slabFrontLeft;
+      let curFrontRight = slabFrontRight;
+      let curBackLeft = slabBackLeft;
+      let curBackRight = slabBackRight;
+
+      // Build product layers
       area.products.forEach(p=>{
-        const L=Math.max(1,Number(p.layers||1));
-        for(let i=0;i<L;i++){
-          const h=unitH, top=y-h, col = layerColor(p);
-          ctx.save(); ctx.globalAlpha = (hoverSlab?0.9:1);
-          if(rects.length===hoverIdx) ctx.filter="brightness(1.24)";
-          ctx.fillStyle=col;
-          ctx.fillRect(6,top,W-12,h);
+        const heightPx = (p.layers? parseInt(p.layers) : 1) * layerHeightPx;
+        // bottom of new layer = current top
+        const bottomFR = curFrontRight;
+        const bottomBR = curBackRight;
+        // compute new top (shift up)
+        const newFrontLeft = {x: curFrontLeft.x, y: curFrontLeft.y - heightPx};
+        const newFrontRight = {x: curFrontRight.x, y: curFrontRight.y - heightPx};
+        const newBackLeft = {x: curBackLeft.x, y: curBackLeft.y - heightPx};
+        const newBackRight = {x: curBackRight.x, y: curBackRight.y - heightPx};
+        // add side polygon for this layer
+        sidePolys.push({
+          id: p.id,
+          points: [ {...newBackRight}, {...newFrontRight}, {...bottomFR}, {...bottomBR} ],
+          color: layerColor(p)
+        });
+        // update current top to this new top
+        curFrontLeft = newFrontLeft;
+        curFrontRight = newFrontRight;
+        curBackLeft = newBackLeft;
+        curBackRight = newBackRight;
+      });
+
+      // Determine top face polygon and its color
+      if(area.products.length > 0){
+        // Top face belongs to last product
+        const topProduct = area.products[area.products.length - 1];
+        topPoly = {
+          id: topProduct.id,
+          points: [ {...curFrontLeft}, {...curFrontRight}, {...curBackRight}, {...curBackLeft} ],
+          color: layerColor(topProduct)
+        };
+      } else {
+        // No products: top face is slab top
+        topPoly = {
+          id: 0,
+          points: [ {...curFrontLeft}, {...curFrontRight}, {...curBackRight}, {...curBackLeft} ],
+          color: baseConcreteColor(area)
+        };
+      }
+
+      // Save polygons for interaction
+      canvas._sidePolys = sidePolys;
+      canvas._topPoly = topPoly;
+
+      // Draw side faces (bottom to top)
+      sidePolys.forEach(poly=>{
+        ctx.beginPath();
+        const pts = poly.points;
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for(let i=1;i<pts.length;i++){ ctx.lineTo(pts[i].x, pts[i].y); }
+        ctx.closePath();
+        if(highlightId!==-1 && ((poly.id===0 && highlightId===0) || (poly.id>0 && poly.id===highlightId)) ){
+          ctx.save();
+          ctx.fillStyle = poly.color;
+          ctx.filter = "brightness(1.25)";
+          ctx.fill();
           ctx.restore();
-          ctx.strokeStyle="rgba(0,0,0,.15)"; ctx.strokeRect(6,top,W-12,h);
-          rects.push({x:6,y:top,w:W-12,h, product:p});
-          y = top - gap;
+        } else {
+          ctx.fillStyle = poly.color;
+          ctx.fill();
         }
       });
 
-      canvas._layerRects=rects;
-      canvas._slabRect=slabRect;
+      // Draw top face
+      ctx.beginPath();
+      const tp = topPoly.points;
+      ctx.moveTo(tp[0].x, tp[0].y);
+      for(let i=1;i<tp.length;i++){ ctx.lineTo(tp[i].x, tp[i].y); }
+      ctx.closePath();
+      if(highlightId!==-1 && ((topPoly.id===0 && highlightId===0) || (topPoly.id>0 && topPoly.id===highlightId)) ){
+        ctx.save();
+        ctx.fillStyle = topPoly.color;
+        ctx.filter = "brightness(1.25)";
+        ctx.fill();
+        ctx.restore();
+      } else {
+        ctx.fillStyle = topPoly.color;
+        ctx.fill();
+      }
+
+      // Draw boundary lines (horizontal lines between segments)
+      ctx.strokeStyle = "rgba(0,0,0,0.3)";
+      ctx.lineWidth = 1;
+      for(let i=0;i<sidePolys.length-1;i++){
+        const pts = sidePolys[i].points;
+        // top edge of this polygon: points[0]->points[1]
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        ctx.lineTo(pts[1].x, pts[1].y);
+        ctx.stroke();
+      }
+
+      // Draw outline for top face
+      ctx.beginPath();
+      ctx.moveTo(tp[0].x, tp[0].y);
+      for(let i=1;i<tp.length;i++){ ctx.lineTo(tp[i].x, tp[i].y); }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Draw outer vertical edges (front and back edges of side face)
+      // Front vertical edge: from slab bottom front-right to top of top face front-right
+      const frontRightBase = {x: slabBottomFrontRight.x, y: slabBottomFrontRight.y};
+      const frontRightTop = {x: curFrontRight.x, y: curFrontRight.y};
+      ctx.beginPath();
+      ctx.moveTo(frontRightBase.x, frontRightBase.y);
+      ctx.lineTo(frontRightTop.x, frontRightTop.y);
+      ctx.stroke();
+      // Back vertical edge: from slab bottom back-right to top of top face back-right
+      const backRightBase = {x: slabBottomBackRight.x, y: slabBottomBackRight.y};
+      const backRightTop = {x: curBackRight.x, y: curBackRight.y};
+      ctx.beginPath();
+      ctx.moveTo(backRightBase.x, backRightBase.y);
+      ctx.lineTo(backRightTop.x, backRightTop.y);
+      ctx.stroke();
     }
+
     function attachCanvasInteractions(canvas, area, inlineRow){
       const tip=hoverTip;
-      const show=(html,x,y)=>{tip.innerHTML=html; tip.style.display="block"; const pad=10; tip.style.left=(x+pad)+"px"; tip.style.top=(y+pad)+"px";}
-      const hide=()=>{tip.style.display="none";}
-      const showInline=(html)=>{ inlineRow.innerHTML=html; inlineRow.classList.add("show"); }
-      const hideInline=()=>{ inlineRow.classList.remove("show"); inlineRow.innerHTML=""; }
+      const show=(html,x,y)=>{tip.innerHTML=html; tip.style.display="block"; const pad=10; tip.style.left=(x+pad)+"px"; tip.style.top=(y+pad)+"px";};
+      const hide=()=>{tip.style.display="none";};
+      const showInline=(html)=>{ inlineRow.innerHTML=html; inlineRow.classList.add("show"); };
+      const hideInline=()=>{ inlineRow.classList.remove("show"); inlineRow.innerHTML=""; };
 
       canvas.addEventListener("mousemove",(e)=>{
         const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
-        const rects=canvas._layerRects||[]; let idx=-1;
-        for(let i=0;i<rects.length;i++){const L=rects[i]; if(x>=L.x&&x<=L.x+L.w&&y>=L.y&&y<=L.y+L.h){idx=i; break;}}
-        const slab=canvas._slabRect; const onSlab = slab && x>=slab.x && x<=slab.x+slab.w && y>=slab.y && y<=slab.y+slab.h;
-        drawAreaIllustration(canvas,area,idx,onSlab);
-        if(idx>-1){
-          const p=rects[idx].product;
+        let highlightId=-1;
+        let hoverProduct=null;
+        let onSlab=false;
+        // Check top face first
+        const topPoly = canvas._topPoly;
+        const pointInPoly = (px,py,polyPts)=>{
+          let inside=false;
+          for(let i=0,j=polyPts.length-1;i<polyPts.length;j=i++){
+            const xi=polyPts[i].x, yi=polyPts[i].y;
+            const xj=polyPts[j].x, yj=polyPts[j].y;
+            const intersect = ((yi>py)!=(yj>py)) && (px <= (xj-xi)*(py-yi)/(yj-yi) + xi);
+            if(intersect) inside = !inside;
+          }
+          return inside;
+        };
+        if(topPoly && pointInPoly(x,y, topPoly.points)){
+          highlightId = topPoly.id;
+          if(highlightId === 0) { onSlab = true; }
+          else { hoverProduct = area.products.find(p=> p.id===highlightId) || null; }
+        } else {
+          // Check side polygons
+          const sidePolys = canvas._sidePolys || [];
+          for(let poly of sidePolys){
+            if(pointInPoly(x,y, poly.points)){
+              highlightId = poly.id;
+              if(highlightId === 0) { onSlab = true; }
+              else { hoverProduct = area.products.find(p=> p.id===highlightId) || null; }
+              break;
+            }
+          }
+        }
+        drawAreaIllustration(canvas, area, highlightId);
+        if(hoverProduct){
+          // Show product info
+          const p = hoverProduct;
           const html = `<div><strong>${t("hoverProduct")}:</strong> ${p.name||"-"}</div>
             <div>• ${t("layers")}: ${p.layers||1} • ${t("thickness")}: ${p.thickness||0} mm</div>
             <div>• ${t("unit")}: ${p.packUnit||"kg"} • ${t("packSize")}: ${p.packSize||0}</div>
             <div>• ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}: ${p.price||0}</div>`;
           show(html,e.clientX,e.clientY);
           hideInline();
-        }else if(onSlab){
+        } else if(onSlab){
           const meta=surfaceExpl(area);
           const html = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
           show(html,e.clientX,e.clientY);
           showInline(html);
-        }else{ hide(); hideInline(); }
+        } else {
+          hide(); hideInline();
+        }
       });
-      canvas.addEventListener("mouseleave",()=>{drawAreaIllustration(canvas,area,-1,false); hoverTip.style.display="none"; hideInline();});
+      canvas.addEventListener("mouseleave",()=>{
+        drawAreaIllustration(canvas,area,-1);
+        hoverTip.style.display="none";
+        hideInline();
+      });
     }
 
     /* ================== EL HELPER ================== */
@@ -637,7 +822,10 @@
 
       const surfaceSel=el("select",{title:t("surface")});
       Object.keys(state.project.settings.surfaceTypes).concat(["Custom"]).forEach(n=>{
-        const o=el("option",{value:n}); o.textContent=n; surfaceSel.appendChild(o);
+        const o=el("option",{value:n});
+        const surfInfo = state.project.settings.surfaceInfo[n];
+        o.textContent = surfInfo ? surfInfo.title : n;
+        surfaceSel.appendChild(o);
       });
       const matched=reverseFindTypeByFactor(area.modifier)||"Custom"; surfaceSel.value=matched;
       header.appendChild(surfaceSel);
@@ -665,7 +853,7 @@
 
       wrap.appendChild(header);
 
-      // table (re-ordered columns: move density/pack/price & priceMode to PRODUCTDATA)
+      // table
       const table=el("table",{class:"area-table","data-area-id":area.id});
       const thead=el("thead");
       const grp=el("tr");
@@ -688,7 +876,7 @@
       wrap.appendChild(table);
       wrap.appendChild(inlineInfo);
 
-      // footer buttons — stacked, same vertical line & size
+      // footer buttons
       const btnWrap=el("div",{class:"footer-buttons"});
       const addProdBtn=el("button",{class:"btn btn-primary btn-slim"}, t("addProduct"));
       addProdBtn.addEventListener("click",()=>{
@@ -704,7 +892,6 @@
       });
       btnWrap.appendChild(addProdBtn);
 
-      // "Lägg till område" (NOT "under") — aligned & same width as product button
       const addAreaAfter=el("button",{class:"btn btn-primary btn-slim"}, t("addArea"));
       addAreaAfter.addEventListener("click",()=>insertAreaAfter(area.id));
       btnWrap.appendChild(addAreaAfter);
@@ -745,7 +932,6 @@
       const sizeIChange=()=>{const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Area size "${area.name}" → ${v} m²`); updateCalculations();};
       sizeI.addEventListener("change",sizeIChange);
 
-      // enable sorting
       enableDragSort(tbody, area);
 
       return wrap;
@@ -778,7 +964,7 @@
       mode.value=product.calcMode;
       tr.appendChild(td(mode,"td-prod"));
 
-      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0, title:t("usageHint")}); 
+      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0, title:t("usageHint")});
       tr.appendChild(td(usageI,"td-prod"));
 
       const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); densI.placeholder=t("density");
@@ -799,10 +985,10 @@
       const priceI=el("input",{type:"number",min:"0",step:"0.01",value:product.price||0, placeholder:t("pricePack")});
       tr.appendChild(td(priceI,"td-prod"));
 
-      const coverSqmI=el("input",{type:"number",min:"0",step:"0.1",value:product.coverSqmPerPack||0}); 
+      const coverSqmI=el("input",{type:"number",min:"0",step:"0.1",value:product.coverSqmPerPack||0});
       tr.appendChild(td(coverSqmI,"td-prod"));
 
-      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1}); 
+      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1});
       tr.appendChild(td(coverLayersI,"td-prod"));
 
       const layersI=el("input",{type:"number",min:"1",step:"1",value:product.layers||1});
@@ -835,10 +1021,18 @@
       function bindModeUI(){
         const M=product.calcMode;
         const isUsage=(M==="usage"), isThick=(M==="thickness"), isCover=(M==="coverage");
-        usageI.disabled=!isUsage;
-        thickI.disabled=!isThick;
-        densI.disabled= (M!=="thickness") || (unitSel.value==="L");
-        coverSqmI.disabled=!isCover; coverLayersI.disabled=!isCover;
+        usageI.disabled=!isUsage; usageI.title = (!isUsage ? (LANG==="sv"?`Används ej i läge "${t(M==="thickness"?"calcThickness":"calcCoverage")}"`:`Not used in "${t(M==="thickness"?"calcThickness":"calcCoverage")}" mode`) : "");
+        thickI.disabled=!isThick; thickI.title = (!isThick ? (LANG==="sv"?`Används ej i läge "${t(M==="usage"?"calcUsage":"calcCoverage")}"`:`Not used in "${t(M==="usage"?"calcUsage":"calcCoverage")}" mode`) : "");
+        densI.disabled=(M!=="thickness") || (unitSel.value==="L");
+        if(densI.disabled){
+          if(M==="thickness" && unitSel.value==="L"){
+            densI.title = LANG==="sv"?"Ej tillämplig för volymbaserad beräkning":"Not used for volume-based calculation";
+          } else {
+            densI.title = (LANG==="sv"?`Används ej i läge "${t(M==="usage"?"calcUsage":"calcCoverage")}"`:`Not used in "${t(M==="usage"?"calcUsage":"calcCoverage")}" mode`);
+          }
+        } else densI.title="";
+        coverSqmI.disabled=!isCover; coverSqmI.title = (!isCover ? (LANG==="sv"?`Används ej i läge "${t(M==="thickness"?"calcThickness":"calcUsage")}"`:`Not used in "${t(M==="thickness"?"calcThickness":"calcUsage")}" mode`) : "");
+        coverLayersI.disabled=!isCover; coverLayersI.title = coverSqmI.title;
       }
       bindModeUI();
 
@@ -907,7 +1101,6 @@
       const nm=state.project.areas[idx].name||`Area ${id}`;
       pushStateForUndo(`Removed area ${nm}`); state.project.areas.splice(idx,1);
       areaElem.remove(); log(`Removed area "${nm}"`); updateCalculations(true);
-      // If no areas left, show top dock button again
       if(state.project.areas.length===0){ topAddDock.style.display="flex"; }
     }
     function removeProduct(area,prodId){
@@ -927,6 +1120,9 @@
         dragId = parseInt(row.getAttribute("data-product-id"));
         row.classList.add("dragging");
         e.dataTransfer.effectAllowed="move";
+        const areaElem=document.querySelector(`.area[data-area-id="${area.id}"]`);
+        const canv= areaElem ? areaElem.querySelector(".mini-illustration canvas") : null;
+        if(canv) drawAreaIllustration(canv, area);
       });
       tbody.addEventListener("dragend",(e)=>{
         const row=e.target.closest(".product-row"); if(row) row.classList.remove("dragging");
@@ -973,12 +1169,12 @@
     function updateCalculations(fromSurface=false){
       const S=state.project.settings;
       let totalCostExVAT=0;
-      const totalsMap=new Map(); // name|unit -> aggregate
+      const totalsMap=new Map();
 
       state.project.areas.forEach(area=>{
         let areaCost=0;
         const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
-        const rows = areaEl ? areaEl.querySelectorAll("tbody tr.product-row"): [];
+        const rows = areaEl ? areaEl.querySelectorAll("tbody tr.product-row") : [];
 
         area.products.forEach((p,idx)=>{
           const areaSize=Number(area.size)||0;
@@ -988,12 +1184,12 @@
           const pack   = Math.max(0.0001, Number(p.packSize)||0);
           const priceMode = p.priceMode || "perPack";
 
-          let neededUnits=0;  // kg or L
+          let neededUnits=0;
           let packages=0;
           let breakdown=[];
 
           if(p.calcMode==="usage"){
-            const use=Number(p.usagePerM2)||0; // kg/L per m² per layer
+            const use=Number(p.usagePerM2)||0;
             let base= areaSize * layers * use;
             breakdown.push(`Base = Area(${areaSize}) × Layers(${layers}) × Usage(${use}/${unit}·m²) = ${fmt(base)}`);
             base *= area.modifier; breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(base)}`);
@@ -1001,8 +1197,8 @@
             neededUnits = base;
             packages = S.exactMode ? (neededUnits/pack) : Math.ceil(neededUnits/pack);
 
-          }else if(p.calcMode==="thickness"){
-            const th=Number(p.thickness)||0; let volL = areaSize * th * layers; // L
+          } else if(p.calcMode==="thickness"){
+            const th=Number(p.thickness)||0; let volL = areaSize * th * layers;
             breakdown.push(`Volume L = Area(${areaSize}) × Thickness(${th}) × Layers(${layers}) = ${fmt(volL)} L`);
             volL *= area.modifier; breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(volL)} L`);
             if(S.overageIncluded){volL*= (1+S.overagePercent/100); breakdown.push(`+ Overage ${S.overagePercent}% ⇒ ${fmt(volL)} L`);}
@@ -1010,10 +1206,10 @@
               const dens = Number(p.density)||0;
               if(dens>0){ neededUnits = volL * dens; breakdown.push(`Needed kg = ${fmt(volL)} × ${dens} = ${fmt(neededUnits)} kg`); }
               else { neededUnits=0; breakdown.push(`Density missing ⇒ 0 kg`); }
-            }else{ neededUnits = volL; breakdown.push(`Needed L = ${fmt(neededUnits)} L`); }
+            } else { neededUnits = volL; breakdown.push(`Needed L = ${fmt(neededUnits)} L`); }
             packages = S.exactMode ? (neededUnits/pack) : Math.ceil(neededUnits/pack);
 
-          }else{ // coverage
+          } else { // coverage
             const cov=Number(p.coverSqmPerPack)||0; const covLayers=Math.max(1,Number(p.coverLayersPerPack)||1);
             const packsNeeded = cov>0 ? (areaSize * (layers/covLayers) / cov) : 0;
             packages = S.exactMode ? packsNeeded : Math.ceil(packsNeeded);
@@ -1022,11 +1218,9 @@
             breakdown.push(`Units = Packs × PackSize = ${fmt(packages)} × ${pack} = ${fmt(neededUnits)} ${unit}`);
           }
 
-          // COST by price mode
           const cost = (priceMode==='perKg') ? (neededUnits * price) : (packages * price);
           areaCost += cost;
 
-          // update UI row
           const prodRow = rows[idx];
           if(prodRow){
             const needSpan=prodRow.querySelector(".neededQty");
@@ -1034,22 +1228,20 @@
             const costSpan=prodRow.querySelector(".cost");
             if(needSpan) needSpan.textContent = neededUnits ? `${fmt(neededUnits)} ${unit}` : "0";
             if(pkgSpan)  pkgSpan.textContent  = S.exactMode ? fmt(packages) : String(packages||0);
-            if(costSpan) costSpan.textContent = cost.toFixed(2);
+            if(costSpan) costSpan.textContent = state.project.settings.hideDecimals ? cost.toFixed(0) : cost.toFixed(2);
 
-            // breakdown box
             const brRow=prodRow.nextElementSibling;
             if(brRow && brRow.querySelector(".breakdown")){
               const box=brRow.querySelector(".breakdown");
               box.innerHTML = `
                 <div><strong>${p.name||"Product"} — ${p.calcMode} — ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}</strong></div>
                 <div>${breakdown.join("<br/>")}</div>
-                <div><strong>Cost</strong> = ${(p.priceMode==='perKg')?'Needed × Price/kg':'Packages × Price/pack'} = ${(p.priceMode==='perKg')?fmt(neededUnits): (S.exactMode?fmt(packages):packages)} × ${price} = <strong>${cost.toFixed(2)}</strong></div>
+                <div><strong>Cost</strong> = ${(p.priceMode==='perKg')?'Needed × Price/kg':'Packages × Price/pack'} = ${(p.priceMode==='perKg')?fmt(neededUnits): (S.exactMode?fmt(packages):packages)} × ${price} = <strong>${state.project.settings.hideDecimals?cost.toFixed(0):cost.toFixed(2)}</strong></div>
               `;
               brRow.style.display = S.stepMode ? "" : "none";
             }
           }
 
-          // aggregate totals for info summary
           const key=(p.name||"(unnamed)")+"|"+unit;
           const rec= totalsMap.get(key) || {name:(p.name||"(unnamed)"),unit,needed:0,pack:pack,price:price,priceMode:priceMode,exactPackages:0};
           rec.needed += neededUnits;
@@ -1058,7 +1250,6 @@
         });
 
         totalCostExVAT += areaCost;
-
         const canv=areasContainer.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
         if(canv) drawAreaIllustration(canv,area);
       });
@@ -1067,8 +1258,8 @@
         ? (LANG==="sv"?"Projektets totalsumma (inkl. moms):":"Project total (incl. VAT):")
         : (LANG==="sv"?"Projektets totalsumma (exkl. moms):":"Project total (excl. VAT):");
       footerTotalLabel.textContent=label;
-      const displayCost = state.project.settings.vatIncluded ? (totalCostExVAT*(1+state.project.settings.vatRate/100)).toFixed(2) : totalCostExVAT.toFixed(2);
-      footerTotalValue.textContent = displayCost;
+      const totalDisplay = state.project.settings.vatIncluded ? totalCostExVAT*(1+state.project.settings.vatRate/100) : totalCostExVAT;
+      footerTotalValue.textContent = state.project.settings.hideDecimals ? totalDisplay.toFixed(0) : totalDisplay.toFixed(2);
 
       renderTotalsInfo(totalsMap, state.project.settings);
 
@@ -1082,8 +1273,7 @@
         <div class="info-card" id="moistureCard">
           <strong>Fukt & fuktighet</strong>
           <p style="margin:.4em 0 .2em 0; color:var(--muted)">
-            Hög fukthalt i underlag/luft kan öka åtgången (absorptionsförluster) och förlänga torktider. Rekommendation:
-            torr och dammfri yta, RF ≤ 75–80% när datablad kräver det, provyta vid tveksamhet.
+            Hög fukthalt i underlag/luft kan öka åtgången och förlänga torktider. Torka och dammsug ytan noga. Följ databladens klimatkrav.
             <em>(Informativt — påverkar inte beräkning automatiskt.)</em>
           </p>
         </div>
@@ -1107,13 +1297,17 @@
         const roundedCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (roundedPk*rec.price);
         const recommendedCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (recommendedPk*rec.price);
 
+        const exactCostDisplay = state.project.settings.hideDecimals ? exactCost.toFixed(0) : exactCost.toFixed(2);
+        const roundedCostDisplay = state.project.settings.hideDecimals ? roundedCost.toFixed(0) : roundedCost.toFixed(2);
+        const recommendedCostDisplay = state.project.settings.hideDecimals ? recommendedCost.toFixed(0) : recommendedCost.toFixed(2);
+
         parts.push(`
           <div class="product-total">
             <h5>${rec.name} <span class="dim">[${rec.unit}]</span></h5>
             <div>${LANG==="sv"?"Totalt behov":"Total need"}: <strong>${fmt(rec.needed)} ${rec.unit}</strong></div>
             <div>${LANG==="sv"?"Förpackningar":"Packages"}: ${LANG==="sv"?"exakt":"exact"} ${fmt(exactPk)}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedPk}, <em>${LANG==="sv"?"rekommenderat":"recommended"}</em> ${recommendedPk} (${LANG==="sv"?"ta lite extra för säkerhets skull":"take a little extra for safety"})</div>
             <div>${LANG==="sv"?"Kostnad":"Cost"} (${rec.priceMode==='perKg'?(LANG==="sv"?"pris/kg":"per kg"):(LANG==="sv"?"pris/förp":"per pack")}):
-               ${LANG==="sv"?"exakt":"exact"} ${exactCost.toFixed(2)}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedCost.toFixed(2)}, ${LANG==="sv"?"rekommenderat":"recommended"} ${recommendedCost.toFixed(2)}</div>
+               ${LANG==="sv"?"exakt":"exact"} ${exactCostDisplay}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedCostDisplay}, ${LANG==="sv"?"rekommenderat":"recommended"} ${recommendedCostDisplay}</div>
           </div>
         `);
       });
@@ -1132,6 +1326,7 @@
       exactToggle.checked=state.project.settings.exactMode||false;
       stepModeToggle.checked=state.project.settings.stepMode||false;
       darkModeToggle.checked=state.project.settings.darkMode||false;
+      hideDecimalsToggle.checked=state.project.settings.hideDecimals||false;
       document.body.classList.toggle("step-on", state.project.settings.stepMode);
       document.body.classList.toggle("dark-mode", state.project.settings.darkMode);
 
@@ -1139,7 +1334,6 @@
       applyI18n();
       updateCalculations(true);
 
-      // hide top add dock if at least one area exists
       topAddDock.style.display = state.project.areas.length ? "none" : "flex";
 
       const ud=state.undoStack.at(-1)?.desc || (LANG==="sv"?"Inget att ångra":"Nothing to undo");
@@ -1390,7 +1584,6 @@
     function exportExcel(){ downloadBlob(new Blob([generateExcelXML()],{type:"application/vnd.ms-excel"}),"project_estimate.xls"); log("Exported Excel"); }
 
     /* ================== EVENTS ================== */
-    // Top add area (hide after first area exists)
     btnAddAreaDock.addEventListener("click",()=>{
       const id=state.nextAreaId++; const nm=(LANG==="sv"?"Område ":"Area ")+id;
       const a={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
@@ -1408,6 +1601,7 @@
     exactToggle.addEventListener("change",()=>{state.project.settings.exactMode=exactToggle.checked; log(`Exact mode ${state.project.settings.exactMode?"ON":"OFF"}`); updateCalculations();});
     darkModeToggle.addEventListener("change",()=>{state.project.settings.darkMode=darkModeToggle.checked; document.body.classList.toggle("dark-mode", state.project.settings.darkMode);});
     stepModeToggle.addEventListener("change",()=>{state.project.settings.stepMode=stepModeToggle.checked; document.body.classList.toggle("step-on", state.project.settings.stepMode); updateCalculations();});
+    hideDecimalsToggle.addEventListener("change",()=>{state.project.settings.hideDecimals=hideDecimalsToggle.checked; log(`Hide decimals ${hideDecimalsToggle.checked?"ON":"OFF"}`); updateCalculations();});
 
     importBtn.addEventListener("click",()=>fileInput.click());
     fileInput.addEventListener("change",(e)=>{
@@ -1425,11 +1619,10 @@
     btnScrollSummary.addEventListener("click",()=>{document.getElementById("infoSummary").scrollIntoView({behavior:"smooth"});});
 
     // Language toggles
-    langSV.addEventListener("click",()=>{LANG="sv"; langSV.classList.add("active"); langEN.classList.remove("active"); applyI18n(); renderAll();});
-    langEN.addEventListener("click",()=>{LANG="en"; langEN.classList.add("active"); langSV.classList.remove("active"); applyI18n(); renderAll();});
+    langSV.addEventListener("click",()=>{LANG="sv"; state.project.settings.surfaceInfo = SURFACE_INFO.sv; langSV.classList.add("active"); langEN.classList.remove("active"); applyI18n(); renderAll();});
+    langEN.addEventListener("click",()=>{LANG="en"; state.project.settings.surfaceInfo = SURFACE_INFO.en; langEN.classList.add("active"); langSV.classList.remove("active"); applyI18n(); renderAll();});
 
     /* ================== INIT ================== */
-    function applyI18n(){document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));}); refreshSummaryLabels();}
     loadTemplates();
     applyI18n();
     log("App started");
