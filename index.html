@@ -268,6 +268,7 @@
       <button id="exportJSON" class="btn" data-i18n="exportJSON">Export JSON</button>
       <button id="exportCSV" class="btn" data-i18n="exportCSV">Export CSV</button>
       <button id="exportExcel" class="btn" data-i18n="exportExcel">Export Excel</button>
+      <button id="shareLink" class="btn btn-blue" data-i18n="shareLink">🔗 Share Link</button>
       <button id="printBtn" class="btn" data-i18n="print">Skriv ut / PDF</button>
     </div>
   </div>
@@ -331,339 +332,509 @@
     <div id="logContent"></div>
   </div>
 
+  <!-- ================== DATALIST FOR SUGGESTIONS ================== -->
+  <datalist id="productSuggestions"></datalist>
+
   <script>
-  (()=>{"use strict";
+  (() => {
+    "use strict";
+
+    /* ================== PRELOADED PRODUCTS ================== */
+    const PRELOADED_PRODUCTS = [
+      {
+        name: "Testproduct 1",
+        color: "#ff5733",
+        calcMode: "usage",
+        usagePerM2: 1.5,
+        packSize: 20,
+        packUnit: "kg",
+        price: 450,
+        priceMode: "perPack",
+        layers: 1
+      },
+      {
+        name: "Testproduct 2",
+        color: "#33ff57",
+        calcMode: "thickness",
+        thickness: 5,
+        density: 1.8,
+        packSize: 25,
+        packUnit: "kg",
+        price: 12,
+        priceMode: "perKg",
+        layers: 1
+      },
+      {
+        name: "Testproduct 3",
+        color: "#3357ff",
+        calcMode: "coverage",
+        coverSqmPerPack: 12,
+        coverLayersPerPack: 1,
+        packSize: 5,
+        packUnit: "L",
+        price: 800,
+        priceMode: "perPack",
+        layers: 2
+      }
+    ];
 
     /* ================== I18N ================== */
     const i18n = {
-      sv:{ addArea:"+ Lägg till område", addAreaBelow:"+ Lägg till område under",
-        undoText:"Ångra", redoText:"Gör om",
-        language:"Språk", vat:"Moms", include:"inkludera", overage:"Spill", apply:"använd",
-        exact:"Exakt beräkning (ingen avrundning)", dark:"Mörkt läge", step:"Steg-för-steg",
-        import:"Importera", exportJSON:"Export JSON", exportCSV:"Export CSV", exportExcel:"Export Excel", print:"Skriv ut / PDF",
-        templatesTitle:"Globala Produktmallar", addTemplate:"+ Lägg till mall", applyAllTemplates:"Använd ALLA på ALLA områden",
-        infoTitle:"Info & summeringar", infoEmpty:"Ingen info ännu. Lägg till produkter och ytor.", toast:"Info uppdaterad — Visa",
-        areaName:"Områdesnamn", surface:"Yttyp", factor:"Faktor", size:"Storlek", sq:"m²",
-        product:"Produkt", calc:"Läge", usage:"Åtgång (kg per m²)", usageHint:"Vanligen kg/m² per lager enligt datablad.",
-        layers:"Lager", thickness:"Tjocklek (mm)", density:"Densitet (kg/L)",
-        packSize:"Förp. storlek", unit:"Enhet",
-        priceMode:"Pris-läge", perPack:"Pris/förp", perKg:"Pris/kg",
-        pricePack:"Pris/förp", priceKg:"Pris/kg",
-        needed:"Behov", packages:"Förp", cost:"Kostnad",
-        addProduct:"+ Lägg till produktlager",
-        calcThickness:"Tjocklek", calcUsage:"Åtgång/m²", calcCoverage:"Täckning/förp",
-        coverSqm:"Täckning (m²/förp)", coverLayers:"Lager per förp",
-        prodInfo:"Produktdata", projectInfo:"Projekt/Områdesdata",
-        deleteArea:"Ta bort område",
-        cloneAll:"Klona → Alla", cloneBelow:"Klona ↓ Nedan", breakdown:"ℹ Breakdown", remove:"Ta bort",
-        hoverSurface:"Yta", hoverProduct:"Produkt",
-        tmplAdded:"Mall tillagd", tmplApplyAll:"Mall applicerad på alla områden",
-        errUnsupported:"Filformatet stöds inte.",
-        updated:"Uppdaterad ", color:"Färg",
-        hideDecimals:"Dölj decimaler"
+      sv: {
+        addArea: "+ Lägg till område",
+        addAreaBelow: "+ Lägg till område under",
+        undoText: "Ångra",
+        redoText: "Gör om",
+        language: "Språk",
+        vat: "Moms",
+        include: "inkludera",
+        overage: "Spill",
+        apply: "använd",
+        exact: "Exakt beräkning (ingen avrundning)",
+        dark: "Mörkt läge",
+        step: "Steg-för-steg",
+        import: "Importera",
+        exportJSON: "Export JSON",
+        exportCSV: "Export CSV",
+        exportExcel: "Export Excel",
+        print: "Skriv ut / PDF",
+        shareLink: "🔗 Dela Länk",
+        templatesTitle: "Globala Produktmallar",
+        addTemplate: "+ Lägg till mall",
+        applyAllTemplates: "Använd ALLA på ALLA områden",
+        infoTitle: "Info & summeringar",
+        infoEmpty: "Ingen info ännu. Lägg till produkter och ytor.",
+        toast: "Info uppdaterad — Visa",
+        areaName: "Områdesnamn",
+        surface: "Yttyp",
+        factor: "Faktor",
+        size: "Storlek",
+        sq: "m²",
+        product: "Produkt",
+        calc: "Läge",
+        usage: "Åtgång (kg per m²)",
+        usageHint: "Vanligen kg/m² per lager enligt datablad.",
+        layers: "Lager",
+        thickness: "Tjocklek (mm)",
+        density: "Densitet (kg/L)",
+        packSize: "Förp. storlek",
+        unit: "Enhet",
+        priceMode: "Pris-läge",
+        perPack: "Pris/förp",
+        perKg: "Pris/kg",
+        pricePack: "Pris/förp",
+        priceKg: "Pris/kg",
+        needed: "Behov",
+        packages: "Förp",
+        cost: "Kostnad",
+        addProduct: "+ Lägg till produktlager",
+        calcThickness: "Tjocklek",
+        calcUsage: "Åtgång/m²",
+        calcCoverage: "Täckning/förp",
+        coverSqm: "Täckning (m²/förp)",
+        coverLayers: "Lager per förp",
+        prodInfo: "Produktdata",
+        projectInfo: "Projekt/Områdesdata",
+        deleteArea: "Ta bort område",
+        cloneAll: "Klona → Alla",
+        cloneBelow: "Klona ↓ Nedan",
+        breakdown: "ℹ Breakdown",
+        remove: "Ta bort",
+        hoverSurface: "Yta",
+        hoverProduct: "Produkt",
+        tmplAdded: "Mall tillagd",
+        tmplApplyAll: "Mall applicerad på alla områden",
+        errUnsupported: "Filformatet stöds inte.",
+        updated: "Uppdaterad ",
+        color: "Färg",
+        hideDecimals: "Dölj decimaler",
+        linkCopied: "Länk kopierad till urklipp!"
       },
-      en:{ addArea:"+ Add Area", addAreaBelow:"+ Add Area Below",
-        undoText:"Undo", redoText:"Redo",
-        language:"Language", vat:"VAT", include:"include", overage:"Overage", apply:"apply",
-        exact:"Exact calc (no rounding)", dark:"Dark mode", step:"Step-by-step",
-        import:"Import", exportJSON:"Export JSON", exportCSV:"Export CSV", exportExcel:"Export Excel", print:"Print / PDF",
-        templatesTitle:"Global Product Templates", addTemplate:"+ Add Template", applyAllTemplates:"Apply ALL to ALL Areas",
-        infoTitle:"Info & summaries", infoEmpty:"No info yet. Add products and areas.", toast:"Info updated — View",
-        areaName:"Area name", surface:"Surface", factor:"Factor", size:"Size", sq:"m²",
-        product:"Product", calc:"Mode", usage:"Usage (kg per m²)", usageHint:"Usually kg/m² per layer per data sheet.",
-        layers:"Layers", thickness:"Thickness (mm)", density:"Density (kg/L)",
-        packSize:"Pack size", unit:"Unit",
-        priceMode:"Price Mode", perPack:"Price/pack", perKg:"Price/kg",
-        pricePack:"Price/pack", priceKg:"Price/kg",
-        needed:"Needed", packages:"Packages", cost:"Cost",
-        addProduct:"+ Add Product Layer",
-        calcThickness:"Thickness", calcUsage:"Usage/m²", calcCoverage:"Coverage/pack",
-        coverSqm:"Coverage (m²/pack)", coverLayers:"Layers per pack",
-        prodInfo:"Product info", projectInfo:"Project/Area info",
-        deleteArea:"Delete Area",
-        cloneAll:"Clone → All", cloneBelow:"Clone ↓ Below", breakdown:"ℹ Breakdown", remove:"Remove",
-        hoverSurface:"Surface", hoverProduct:"Product",
-        tmplAdded:"Template added", tmplApplyAll:"Template applied to all areas",
-        errUnsupported:"Unsupported file format.",
-        updated:"Updated ", color:"Color",
-        hideDecimals:"Hide decimals"
+      en: {
+        addArea: "+ Add Area",
+        addAreaBelow: "+ Add Area Below",
+        undoText: "Undo",
+        redoText: "Redo",
+        language: "Language",
+        vat: "VAT",
+        include: "include",
+        overage: "Overage",
+        apply: "apply",
+        exact: "Exact calc (no rounding)",
+        dark: "Dark mode",
+        step: "Step-by-step",
+        import: "Import",
+        exportJSON: "Export JSON",
+        exportCSV: "Export CSV",
+        exportExcel: "Export Excel",
+        print: "Print / PDF",
+        shareLink: "🔗 Share Link",
+        templatesTitle: "Global Product Templates",
+        addTemplate: "+ Add Template",
+        applyAllTemplates: "Apply ALL to ALL Areas",
+        infoTitle: "Info & summaries",
+        infoEmpty: "No info yet. Add products and areas.",
+        toast: "Info updated — View",
+        areaName: "Area name",
+        surface: "Surface",
+        factor: "Factor",
+        size: "Size",
+        sq: "m²",
+        product: "Product",
+        calc: "Mode",
+        usage: "Usage (kg per m²)",
+        usageHint: "Usually kg/m² per layer per data sheet.",
+        layers: "Layers",
+        thickness: "Thickness (mm)",
+        density: "Density (kg/L)",
+        packSize: "Pack size",
+        unit: "Unit",
+        priceMode: "Price Mode",
+        perPack: "Price/pack",
+        perKg: "Price/kg",
+        pricePack: "Price/pack",
+        priceKg: "Price/kg",
+        needed: "Needed",
+        packages: "Packages",
+        cost: "Cost",
+        addProduct: "+ Add Product Layer",
+        calcThickness: "Thickness",
+        calcUsage: "Usage/m²",
+        calcCoverage: "Coverage/pack",
+        coverSqm: "Coverage (m²/pack)",
+        coverLayers: "Layers per pack",
+        prodInfo: "Product info",
+        projectInfo: "Project/Area info",
+        deleteArea: "Delete Area",
+        cloneAll: "Clone → All",
+        cloneBelow: "Clone ↓ Below",
+        breakdown: "ℹ Breakdown",
+        remove: "Remove",
+        hoverSurface: "Surface",
+        hoverProduct: "Product",
+        tmplAdded: "Template added",
+        tmplApplyAll: "Template applied to all areas",
+        errUnsupported: "Unsupported file format.",
+        updated: "Updated ",
+        color: "Color",
+        hideDecimals: "Hide decimals",
+        linkCopied: "Link copied to clipboard!"
       }
     };
-    let LANG="sv";
-    function t(k){return (i18n[LANG]&&i18n[LANG][k])||k;}
-    function applyI18n(){document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));}); refreshSummaryLabels();}
+
+    let LANG = "sv";
+
+    function t(k) {
+      return (i18n[LANG] && i18n[LANG][k]) || k;
+    }
+
+    function applyI18n() {
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        el.textContent = t(el.getAttribute("data-i18n"));
+      });
+      refreshSummaryLabels();
+    }
 
     /* ================== STATE ================== */
     const SURFACE_INFO = {
-      sv:{
-        "Smooth":   {title:"Slät / Polerad", desc:"Stängda porer; tät, glättad yta.", hint:"+0%", prep:"Enkel rengöring; dammfri", typical:"Glättad/polerad betongplatta"},
-        "Light Grind": {title:"Lätt slipad", desc:"Mikrostruktur öppnas; något högre absorption.", hint:"+5%", prep:"Avfettning + lätt slipning", typical:"Polerad med lätt slipning"},
-        "Medium Grind":{title:"Medium slipad", desc:"Synlig sand; mikrosprickor möjliga.", hint:"+10%", prep:"Slipning P80–P120", typical:"Trafikslitet inomhusgolv"},
-        "Rough":    {title:"Grov / sopad", desc:"Grov profil; hög absorption.", hint:"+15%", prep:"Slipning + dammsugning; laga flagor", typical:"Utvändig sopad yta"},
-        "Porous/Cracked": {title:"Mycket porös / sprucken", desc:"Kapillärer och håligheter; mycket hög absorption med sprickor.", hint:"+25%", prep:"Sprickinjektering + primer", typical:"Gammal platta, frostskador"},
-        "Custom":   {title:"Anpassad", desc:"Användardefinierad ytfaktor.", hint:"beroende", prep:"—", typical:"—"}
+      sv: {
+        "Smooth": { title: "Slät / Polerad", desc: "Stängda porer; tät, glättad yta.", hint: "+0%", prep: "Enkel rengöring; dammfri", typical: "Glättad/polerad betongplatta" },
+        "Light Grind": { title: "Lätt slipad", desc: "Mikrostruktur öppnas; något högre absorption.", hint: "+5%", prep: "Avfettning + lätt slipning", typical: "Polerad med lätt slipning" },
+        "Medium Grind": { title: "Medium slipad", desc: "Synlig sand; mikrosprickor möjliga.", hint: "+10%", prep: "Slipning P80–P120", typical: "Trafikslitet inomhusgolv" },
+        "Rough": { title: "Grov / sopad", desc: "Grov profil; hög absorption.", hint: "+15%", prep: "Slipning + dammsugning; laga flagor", typical: "Utvändig sopad yta" },
+        "Porous/Cracked": { title: "Mycket porös / sprucken", desc: "Kapillärer och håligheter; mycket hög absorption med sprickor.", hint: "+25%", prep: "Sprickinjektering + primer", typical: "Gammal platta, frostskador" },
+        "Custom": { title: "Anpassad", desc: "Användardefinierad ytfaktor.", hint: "beroende", prep: "—", typical: "—" }
       },
-      en:{
-        "Smooth":   {title:"Smooth / polished", desc:"Closed pores; dense, burnished surface.", hint:"+0%", prep:"Light cleaning; dust-free", typical:"Troweled/Polished slab"},
-        "Light Grind": {title:"Lightly ground", desc:"Micro texture opens; slightly higher uptake.", hint:"+5%", prep:"Degrease + light grind", typical:"Polished with light hone"},
-        "Medium Grind":{title:"Medium ground", desc:"Visible sand; micro-cracks possible.", hint:"+10%", prep:"Grinding P80–P120", typical:"Traffic-worn interior"},
-        "Rough":    {title:"Rough / broomed", desc:"Coarse profile; high absorption.", hint:"+15%", prep:"Grinding + vacuum; repair spalls", typical:"Exterior broom finish"},
-        "Porous/Cracked": {title:"Highly porous / cracked", desc:"Capillaries & voids; very high absorption with cracks.", hint:"+25%", prep:"Crack injection + primer", typical:"Old slab, freeze-thaw damage"},
-        "Custom":   {title:"Custom", desc:"User-defined surface factor.", hint:"depends", prep:"—", typical:"—"}
+      en: {
+        "Smooth": { title: "Smooth / polished", desc: "Closed pores; dense, burnished surface.", hint: "+0%", prep: "Light cleaning; dust-free", typical: "Troweled/Polished slab" },
+        "Light Grind": { title: "Lightly ground", desc: "Micro texture opens; slightly higher uptake.", hint: "+5%", prep: "Degrease + light grind", typical: "Polished with light hone" },
+        "Medium Grind": { title: "Medium ground", desc: "Visible sand; micro-cracks possible.", hint: "+10%", prep: "Grinding P80–P120", typical: "Traffic-worn interior" },
+        "Rough": { title: "Rough / broomed", desc: "Coarse profile; high absorption.", hint: "+15%", prep: "Grinding + vacuum; repair spalls", typical: "Exterior broom finish" },
+        "Porous/Cracked": { title: "Highly porous / cracked", desc: "Capillaries & voids; very high absorption with cracks.", hint: "+25%", prep: "Crack injection + primer", typical: "Old slab, freeze-thaw damage" },
+        "Custom": { title: "Custom", desc: "User-defined surface factor.", hint: "depends", prep: "—", typical: "—" }
       }
     };
-    const state={
-      project:{
-        areas:[],
-        settings:{
-          vatIncluded:false, vatRate:25,
-          overageIncluded:false, overagePercent:10,
-          exactMode:false, stepMode:false, darkMode:false, hideDecimals:true,
-          surfaceTypes:{"Smooth":1.00,"Light Grind":1.05,"Medium Grind":1.10,"Rough":1.15,"Porous/Cracked":1.25},
+
+    const state = {
+      project: {
+        areas: [],
+        settings: {
+          vatIncluded: false,
+          vatRate: 25,
+          overageIncluded: false,
+          overagePercent: 10,
+          exactMode: false,
+          stepMode: false,
+          darkMode: false,
+          hideDecimals: true,
+          surfaceTypes: {
+            "Smooth": 1.00,
+            "Light Grind": 1.05,
+            "Medium Grind": 1.10,
+            "Rough": 1.15,
+            "Porous/Cracked": 1.25
+          },
           surfaceInfo: SURFACE_INFO[LANG]
         }
       },
-      undoStack:[], redoStack:[],
-      nextAreaId:1, nextProductId:1, nextTemplateId:1,
-      lastAddedProductTemplate:null
+      undoStack: [],
+      redoStack: [],
+      nextAreaId: 1,
+      nextProductId: 1,
+      nextTemplateId: 1,
+      lastAddedProductTemplate: null
     };
 
     /* ================== DOM REFS ================== */
-    const areasContainer=document.getElementById("areasContainer");
-    const footerTotalLabel=document.getElementById("footerTotalLabel");
-    const footerTotalValue=document.getElementById("footerTotalValue");
-    const btnAddAreaDock=document.getElementById("btnAddAreaDock");
-    const undoBtn=document.getElementById("undo"), redoBtn=document.getElementById("redo");
-    const vatToggle=document.getElementById("vatToggle"), vatPercentInput=document.getElementById("vatPercent");
-    const overageToggle=document.getElementById("overageToggle"), overagePercentInput=document.getElementById("overagePercent");
-    const exactToggle=document.getElementById("exactToggle");
-    const darkModeToggle=document.getElementById("darkModeToggle");
-    const stepModeToggle=document.getElementById("stepModeToggle");
-    const hideDecimalsToggle=document.getElementById("hideDecimalsToggle");
-    const importBtn=document.getElementById("importData"), fileInput=document.getElementById("fileInput");
-    const exportJSONBtn=document.getElementById("exportJSON"), exportCSVBtn=document.getElementById("exportCSV"), exportExcelBtn=document.getElementById("exportExcel");
-    const printBtn=document.getElementById("printBtn");
-    const infoBody=document.getElementById("infoBody"), infoToast=document.getElementById("infoToast");
-    const lastInfoTime=document.getElementById("lastInfoTime"), hoverTip=document.getElementById("hoverTip");
-    const btnScrollSummary=document.getElementById("btnScrollSummary");
-    const logPanel=document.getElementById("logPanel"), logContent=document.getElementById("logContent");
-    const minimizeLogBtn=document.getElementById("minimizeLog"), maximizeLogBtn=document.getElementById("maximizeLog");
-    const langSV=document.getElementById("langSV"), langEN=document.getElementById("langEN");
-    const topAddDock=document.getElementById("topAddDock");
+    const areasContainer = document.getElementById("areasContainer");
+    const footerTotalLabel = document.getElementById("footerTotalLabel");
+    const footerTotalValue = document.getElementById("footerTotalValue");
+    const btnAddAreaDock = document.getElementById("btnAddAreaDock");
+    const undoBtn = document.getElementById("undo");
+    const redoBtn = document.getElementById("redo");
+    const vatToggle = document.getElementById("vatToggle");
+    const vatPercentInput = document.getElementById("vatPercent");
+    const overageToggle = document.getElementById("overageToggle");
+    const overagePercentInput = document.getElementById("overagePercent");
+    const exactToggle = document.getElementById("exactToggle");
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    const stepModeToggle = document.getElementById("stepModeToggle");
+    const hideDecimalsToggle = document.getElementById("hideDecimalsToggle");
+    const importBtn = document.getElementById("importData");
+    const fileInput = document.getElementById("fileInput");
+    const exportJSONBtn = document.getElementById("exportJSON");
+    const exportCSVBtn = document.getElementById("exportCSV");
+    const exportExcelBtn = document.getElementById("exportExcel");
+    const shareLinkBtn = document.getElementById("shareLink");
+    const printBtn = document.getElementById("printBtn");
+    const infoBody = document.getElementById("infoBody");
+    const infoToast = document.getElementById("infoToast");
+    const lastInfoTime = document.getElementById("lastInfoTime");
+    const hoverTip = document.getElementById("hoverTip");
+    const btnScrollSummary = document.getElementById("btnScrollSummary");
+    const logPanel = document.getElementById("logPanel");
+    const logContent = document.getElementById("logContent");
+    const minimizeLogBtn = document.getElementById("minimizeLog");
+    const maximizeLogBtn = document.getElementById("maximizeLog");
+    const langSV = document.getElementById("langSV");
+    const langEN = document.getElementById("langEN");
+    const topAddDock = document.getElementById("topAddDock");
+    const productSuggestions = document.getElementById("productSuggestions");
 
     /* ================== UTIL & LOG ================== */
-    function log(msg){
-      const tms=new Date().toLocaleTimeString();
-      const p=document.createElement("p"); p.textContent=`[${tms}] ${msg}`; logContent.appendChild(p);
-      if(logContent.scrollHeight-logContent.clientHeight-logContent.scrollTop<5){logContent.scrollTop=logContent.scrollHeight;}
-      const ud=state.undoStack.at(-1)?.desc || (LANG==="sv"?"Inget att ångra":"Nothing to undo");
-      const rd=state.redoStack.at(-1)?.desc || (LANG==="sv"?"Inget att göra om":"Nothing to redo");
-      undoBtn.title = (LANG==="sv"?"Ångra: ":"Undo: ")+ud;
-      redoBtn.title = (LANG==="sv"?"Gör om: ":"Redo: ")+rd;
+    function log(msg) {
+      const tms = new Date().toLocaleTimeString();
+      const p = document.createElement("p");
+      p.textContent = `[${tms}] ${msg}`;
+      logContent.appendChild(p);
+      if (logContent.scrollHeight - logContent.clientHeight - logContent.scrollTop < 5) {
+        logContent.scrollTop = logContent.scrollHeight;
+      }
+      const ud = state.undoStack.at(-1)?.desc || (LANG === "sv" ? "Inget att ångra" : "Nothing to undo");
+      const rd = state.redoStack.at(-1)?.desc || (LANG === "sv" ? "Inget att göra om" : "Nothing to redo");
+      undoBtn.title = (LANG === "sv" ? "Ångra: " : "Undo: ") + ud;
+      redoBtn.title = (LANG === "sv" ? "Gör om: " : "Redo: ") + rd;
     }
-    function pushStateForUndo(desc){
-      const snap=JSON.parse(JSON.stringify(state.project));
-      state.undoStack.push({data:snap,desc}); state.redoStack.length=0;
-      undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=true;
-      undoBtn.title=(LANG==="sv"?"Ångra: ":"Undo: ")+desc;
-      redoBtn.title=(LANG==="sv"?"Gör om: ":"Redo: ");
+
+    function pushStateForUndo(desc) {
+      const snap = JSON.parse(JSON.stringify(state.project));
+      state.undoStack.push({ data: snap, desc });
+      state.redoStack.length = 0;
+      undoBtn.disabled = state.undoStack.length === 0;
+      redoBtn.disabled = true;
+      undoBtn.title = (LANG === "sv" ? "Ångra: " : "Undo: ") + desc;
+      redoBtn.title = (LANG === "sv" ? "Gör om: " : "Redo: ");
     }
-    function undo(){ if(!state.undoStack.length) return;
-      const last=state.undoStack.pop(); const desc=last.desc;
-      state.redoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
-      state.project=last.data; renderAll(); log(`Undo: ${desc}`);
-      undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
+
+    function undo() {
+      if (!state.undoStack.length) return;
+      const last = state.undoStack.pop();
+      const desc = last.desc;
+      state.redoStack.push({ data: JSON.parse(JSON.stringify(state.project)), desc });
+      state.project = last.data;
+      renderAll();
+      log(`Undo: ${desc}`);
+      undoBtn.disabled = state.undoStack.length === 0;
+      redoBtn.disabled = state.redoStack.length === 0;
     }
-    function redo(){ if(!state.redoStack.length) return;
-      const last=state.redoStack.pop(); const desc=last.desc;
-      state.undoStack.push({data:JSON.parse(JSON.stringify(state.project)),desc});
-      state.project=last.data; renderAll(); log(`Redo: ${desc}`);
-      undoBtn.disabled=state.undoStack.length===0; redoBtn.disabled=state.redoStack.length===0;
+
+    function redo() {
+      if (!state.redoStack.length) return;
+      const last = state.redoStack.pop();
+      const desc = last.desc;
+      state.undoStack.push({ data: JSON.parse(JSON.stringify(state.project)), desc });
+      state.project = last.data;
+      renderAll();
+      log(`Redo: ${desc}`);
+      undoBtn.disabled = state.undoStack.length === 0;
+      redoBtn.disabled = state.redoStack.length === 0;
     }
-    function toPosFloat(v,def){const n=parseFloat(v); return (isNaN(n)||n<0)? def : n;}
-    function fmt(n){ if(!isFinite(n)) return "0"; if(state.project.settings.hideDecimals) return n.toFixed(0);
-      if(Math.abs(n)>=1000) return n.toFixed(0); if(Math.abs(n)>=10) return n.toFixed(1); return n.toFixed(2); }
-    function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
-    function formatCSVValue(v){const s=String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
-    function escapeXML(s){if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-    const showInfoToast=(()=>{let hide=null;return()=>{infoToast.style.display="flex"; if(hide) clearTimeout(hide); hide=setTimeout(()=>infoToast.style.display="none",3500);};})();
+
+    function toPosFloat(v, def) {
+      const n = parseFloat(v);
+      return (isNaN(n) || n < 0) ? def : n;
+    }
+
+    function fmt(n) {
+      if (!isFinite(n)) return "0";
+      if (state.project.settings.hideDecimals) return n.toFixed(0);
+      if (Math.abs(n) >= 1000) return n.toFixed(0);
+      if (Math.abs(n) >= 10) return n.toFixed(1);
+      return n.toFixed(2);
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function formatCSVValue(v) {
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    function escapeXML(s) {
+      if (s == null) return "";
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    const showInfoToast = (() => {
+      let hide = null;
+      return () => {
+        infoToast.style.display = "flex";
+        if (hide) clearTimeout(hide);
+        hide = setTimeout(() => infoToast.style.display = "none", 3500);
+      };
+    })();
 
     /* ================== SURFACE HELPERS ================== */
-    function reverseFindTypeByFactor(f){
-      const m=Object.entries(state.project.settings.surfaceTypes).find(([_,v])=>Math.abs(v-f)<1e-6);
-      return m?m[0]:null;
-    }
-    function surfaceExpl(area){
-      const k = reverseFindTypeByFactor(area.modifier)||"Custom";
-      const meta=state.project.settings.surfaceInfo[k] || state.project.settings.surfaceInfo["Custom"];
-      return {type:k,title:meta.title,desc:meta.desc,hint:meta.hint,prep:meta.prep,typical:meta.typical,factor:area.modifier.toFixed(2)};
+    function reverseFindTypeByFactor(f) {
+      const m = Object.entries(state.project.settings.surfaceTypes).find(([_, v]) => Math.abs(v - f) < 1e-6);
+      return m ? m[0] : null;
     }
 
-    /* ================== SEEDED RNG FOR ILLUSTRATION (stable on hover) ================== */
-    function PRNG(seed){
-      let t = seed>>>0 || 88675123;
-      return function(){
-        t += 0x6D2B79F5;
-        let r = t ^ (t>>>15); r = Math.imul(r, 1 | r);
-        r ^= r + Math.imul(r ^ (r>>>7), 61 | r);
-        return ((r ^ (r>>>14))>>>0) / 4294967296;
+    function surfaceExpl(area) {
+      const k = reverseFindTypeByFactor(area.modifier) || "Custom";
+      const meta = state.project.settings.surfaceInfo[k] || state.project.settings.surfaceInfo["Custom"];
+      return {
+        type: k,
+        title: meta.title,
+        desc: meta.desc,
+        hint: meta.hint,
+        prep: meta.prep,
+        typical: meta.typical,
+        factor: area.modifier.toFixed(2)
       };
     }
 
     /* ================== CANVAS ILLUSTRATION ================== */
-    function drawCracks(ctx, rect, prng, density=6, color="rgba(0,0,0,.25)"){
-      ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=1;
-      for(let i=0;i<density;i++){
-        let x = rect.x + prng()*rect.w;
-        let y = rect.y + prng()*rect.h;
-        ctx.beginPath(); ctx.moveTo(x,y);
-        for(let j=0;j<6;j++){
-          x += (prng()*20-10);
-          y += (prng()*10-5);
-          ctx.lineTo(x,y);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    function drawRugged(ctx, rect, prng){
-      ctx.save();
-      for(let i=0;i<160;i++){
-        const x=rect.x + prng()*rect.w;
-        const y=rect.y + prng()*rect.h;
-        const r=prng()*2.2+0.6;
-        ctx.fillStyle=`rgba(0,0,0,${prng()*0.06+0.04})`;
-        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-      }
-      ctx.restore();
-    }
-    function drawSpeckles(ctx, rect, prng, amount=120){
-      ctx.save();
-      for(let i=0;i<amount;i++){
-        const x=rect.x + prng()*rect.w;
-        const y=rect.y + prng()*rect.h;
-        ctx.fillStyle=`rgba(0,0,0,${prng()*0.06})`;
-        ctx.fillRect(x,y,1,1);
-      }
-      ctx.restore();
-    }
-    function drawMicroScratches(ctx, rect, prng, amount=80){
-      ctx.save(); ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.lineWidth=.6;
-      for(let i=0;i<amount;i++){
-        const x = rect.x + prng()*rect.w;
-        const y = rect.y + prng()*rect.h;
-        const len = prng()*12+4;
-        const ang = prng()*Math.PI*2;
-        ctx.beginPath();
-        ctx.moveTo(x,y);
-        ctx.lineTo(x+Math.cos(ang)*len, y+Math.sin(ang)*len);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    function baseConcreteColor(area){
-      const f=area.modifier; const l = 90 - Math.min(28,(f-1)*65);
+    function baseConcreteColor(area) {
+      const f = area.modifier;
+      const l = 90 - Math.min(28, (f - 1) * 65);
       return `hsl(215 14% ${l}%)`;
     }
-    function layerColor(p){
-      return p.color || (()=>{let h=0;const s=(p.name||"Layer");for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0; return `hsl(${h%360} 70% 55%)`;})();
-    }
-    function drawAreaIllustration(canvas, area, highlightId=-1){
-      const ctx=canvas.getContext("2d");
-      const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
-      ctx.clearRect(0,0,W,H);
 
-      // Define base geometry parameters for isometric projection
+    function layerColor(p) {
+      return p.color || (() => {
+        let h = 0;
+        const s = (p.name || "Layer");
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+        return `hsl(${h % 360} 70% 55%)`;
+      })();
+    }
+
+    function drawAreaIllustration(canvas, area, highlightId = -1) {
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width = canvas.clientWidth;
+      const H = canvas.height = canvas.clientHeight;
+      ctx.clearRect(0, 0, W, H);
+
       const baseX = W * 0.6;
       const depthX = W * 0.3;
       const depthY = W * 0.15;
       const slabHeightPx = 10;
       const layerHeightPx = 4;
-      const marginLeft = 10, marginBottom = 3;
+      const marginLeft = 10;
+      const marginBottom = 3;
       const slabBottomY = H - marginBottom;
       const originX = depthX + marginLeft;
       const originY = slabBottomY - slabHeightPx;
 
-      // Slab top corners
-      const slabFrontLeft = {x:originX, y:originY};
-      const slabFrontRight = {x:originX + baseX, y:originY};
-      const slabBackLeft = {x:originX - depthX, y:originY - depthY};
-      const slabBackRight = {x:originX + baseX - depthX, y:originY - depthY};
-      // Slab bottom right edge (for side face)
-      const slabBottomFrontRight = {x: slabFrontRight.x, y: slabFrontRight.y + slabHeightPx};
-      const slabBottomBackRight = {x: slabBackRight.x, y: slabBackRight.y + slabHeightPx};
+      const slabFrontLeft = { x: originX, y: originY };
+      const slabFrontRight = { x: originX + baseX, y: originY };
+      const slabBackLeft = { x: originX - depthX, y: originY - depthY };
+      const slabBackRight = { x: originX + baseX - depthX, y: originY - depthY };
+      const slabBottomFrontRight = { x: slabFrontRight.x, y: slabFrontRight.y + slabHeightPx };
+      const slabBottomBackRight = { x: slabBackRight.x, y: slabBackRight.y + slabHeightPx };
 
-      // Prepare polygon data structures
       const sidePolys = [];
       let topPoly = null;
 
-      // Add slab side polygon (right face of slab)
       sidePolys.push({
         id: 0,
-        points: [ {...slabBackRight}, {...slabFrontRight}, {...slabBottomFrontRight}, {...slabBottomBackRight} ],
+        points: [{ ...slabBackRight }, { ...slabFrontRight }, { ...slabBottomFrontRight }, { ...slabBottomBackRight }],
         color: baseConcreteColor(area)
       });
 
-      // Current top-of-stack corners
       let curFrontLeft = slabFrontLeft;
       let curFrontRight = slabFrontRight;
       let curBackLeft = slabBackLeft;
       let curBackRight = slabBackRight;
 
-      // Build product layers
-      area.products.forEach(p=>{
-        const heightPx = (p.layers? parseInt(p.layers) : 1) * layerHeightPx;
-        // bottom of new layer = current top
+      area.products.forEach(p => {
+        const heightPx = (p.layers ? parseInt(p.layers) : 1) * layerHeightPx;
         const bottomFR = curFrontRight;
         const bottomBR = curBackRight;
-        // compute new top (shift up)
-        const newFrontLeft = {x: curFrontLeft.x, y: curFrontLeft.y - heightPx};
-        const newFrontRight = {x: curFrontRight.x, y: curFrontRight.y - heightPx};
-        const newBackLeft = {x: curBackLeft.x, y: curBackLeft.y - heightPx};
-        const newBackRight = {x: curBackRight.x, y: curBackRight.y - heightPx};
-        // add side polygon for this layer
+        const newFrontLeft = { x: curFrontLeft.x, y: curFrontLeft.y - heightPx };
+        const newFrontRight = { x: curFrontRight.x, y: curFrontRight.y - heightPx };
+        const newBackLeft = { x: curBackLeft.x, y: curBackLeft.y - heightPx };
+        const newBackRight = { x: curBackRight.x, y: curBackRight.y - heightPx };
+
         sidePolys.push({
           id: p.id,
-          points: [ {...newBackRight}, {...newFrontRight}, {...bottomFR}, {...bottomBR} ],
+          points: [{ ...newBackRight }, { ...newFrontRight }, { ...bottomFR }, { ...bottomBR }],
           color: layerColor(p)
         });
-        // update current top to this new top
+
         curFrontLeft = newFrontLeft;
         curFrontRight = newFrontRight;
         curBackLeft = newBackLeft;
         curBackRight = newBackRight;
       });
 
-      // Determine top face polygon and its color
-      if(area.products.length > 0){
-        // Top face belongs to last product
+      if (area.products.length > 0) {
         const topProduct = area.products[area.products.length - 1];
         topPoly = {
           id: topProduct.id,
-          points: [ {...curFrontLeft}, {...curFrontRight}, {...curBackRight}, {...curBackLeft} ],
+          points: [{ ...curFrontLeft }, { ...curFrontRight }, { ...curBackRight }, { ...curBackLeft }],
           color: layerColor(topProduct)
         };
       } else {
-        // No products: top face is slab top
         topPoly = {
           id: 0,
-          points: [ {...curFrontLeft}, {...curFrontRight}, {...curBackRight}, {...curBackLeft} ],
+          points: [{ ...curFrontLeft }, { ...curFrontRight }, { ...curBackRight }, { ...curBackLeft }],
           color: baseConcreteColor(area)
         };
       }
 
-      // Save polygons for interaction
       canvas._sidePolys = sidePolys;
       canvas._topPoly = topPoly;
 
-      // Draw side faces (bottom to top)
-      sidePolys.forEach(poly=>{
+      sidePolys.forEach(poly => {
         ctx.beginPath();
         const pts = poly.points;
         ctx.moveTo(pts[0].x, pts[0].y);
-        for(let i=1;i<pts.length;i++){ ctx.lineTo(pts[i].x, pts[i].y); }
+        for (let i = 1; i < pts.length; i++) {
+          ctx.lineTo(pts[i].x, pts[i].y);
+        }
         ctx.closePath();
-        if(highlightId!==-1 && ((poly.id===0 && highlightId===0) || (poly.id>0 && poly.id===highlightId)) ){
+        if (highlightId !== -1 && ((poly.id === 0 && highlightId === 0) || (poly.id > 0 && poly.id === highlightId))) {
           ctx.save();
           ctx.fillStyle = poly.color;
           ctx.filter = "brightness(1.25)";
@@ -675,13 +846,14 @@
         }
       });
 
-      // Draw top face
       ctx.beginPath();
       const tp = topPoly.points;
       ctx.moveTo(tp[0].x, tp[0].y);
-      for(let i=1;i<tp.length;i++){ ctx.lineTo(tp[i].x, tp[i].y); }
+      for (let i = 1; i < tp.length; i++) {
+        ctx.lineTo(tp[i].x, tp[i].y);
+      }
       ctx.closePath();
-      if(highlightId!==-1 && ((topPoly.id===0 && highlightId===0) || (topPoly.id>0 && topPoly.id===highlightId)) ){
+      if (highlightId !== -1 && ((topPoly.id === 0 && highlightId === 0) || (topPoly.id > 0 && topPoly.id === highlightId))) {
         ctx.save();
         ctx.fillStyle = topPoly.color;
         ctx.filter = "brightness(1.25)";
@@ -692,116 +864,150 @@
         ctx.fill();
       }
 
-      // Draw boundary lines (horizontal lines between segments)
       ctx.strokeStyle = "rgba(0,0,0,0.3)";
       ctx.lineWidth = 1;
-      for(let i=0;i<sidePolys.length-1;i++){
+      for (let i = 0; i < sidePolys.length - 1; i++) {
         const pts = sidePolys[i].points;
-        // top edge of this polygon: points[0]->points[1]
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
         ctx.lineTo(pts[1].x, pts[1].y);
         ctx.stroke();
       }
 
-      // Draw outline for top face
       ctx.beginPath();
       ctx.moveTo(tp[0].x, tp[0].y);
-      for(let i=1;i<tp.length;i++){ ctx.lineTo(tp[i].x, tp[i].y); }
+      for (let i = 1; i < tp.length; i++) {
+        ctx.lineTo(tp[i].x, tp[i].y);
+      }
       ctx.closePath();
       ctx.stroke();
 
-      // Draw outer vertical edges (front and back edges of side face)
-      // Front vertical edge: from slab bottom front-right to top of top face front-right
-      const frontRightBase = {x: slabBottomFrontRight.x, y: slabBottomFrontRight.y};
-      const frontRightTop = {x: curFrontRight.x, y: curFrontRight.y};
+      const frontRightBase = { x: slabBottomFrontRight.x, y: slabBottomFrontRight.y };
+      const frontRightTop = { x: curFrontRight.x, y: curFrontRight.y };
       ctx.beginPath();
       ctx.moveTo(frontRightBase.x, frontRightBase.y);
       ctx.lineTo(frontRightTop.x, frontRightTop.y);
       ctx.stroke();
-      // Back vertical edge: from slab bottom back-right to top of top face back-right
-      const backRightBase = {x: slabBottomBackRight.x, y: slabBottomBackRight.y};
-      const backRightTop = {x: curBackRight.x, y: curBackRight.y};
+
+      const backRightBase = { x: slabBottomBackRight.x, y: slabBottomBackRight.y };
+      const backRightTop = { x: curBackRight.x, y: curBackRight.y };
       ctx.beginPath();
       ctx.moveTo(backRightBase.x, backRightBase.y);
       ctx.lineTo(backRightTop.x, backRightTop.y);
       ctx.stroke();
     }
 
-    function attachCanvasInteractions(canvas, area, inlineRow){
-      const tip=hoverTip;
-      const show=(html,x,y)=>{tip.innerHTML=html; tip.style.display="block"; const pad=10; tip.style.left=(x+pad)+"px"; tip.style.top=(y+pad)+"px";};
-      const hide=()=>{tip.style.display="none";};
-      const showInline=(html)=>{ inlineRow.innerHTML=html; inlineRow.classList.add("show"); };
-      const hideInline=()=>{ inlineRow.classList.remove("show"); inlineRow.innerHTML=""; };
+    function attachCanvasInteractions(canvas, area, inlineRow) {
+      const tip = hoverTip;
+      const show = (html, x, y) => {
+        tip.innerHTML = html;
+        tip.style.display = "block";
+        const pad = 10;
+        tip.style.left = (x + pad) + "px";
+        tip.style.top = (y + pad) + "px";
+      };
+      const hide = () => {
+        tip.style.display = "none";
+      };
+      const showInline = (html) => {
+        inlineRow.innerHTML = html;
+        inlineRow.classList.add("show");
+      };
+      const hideInline = () => {
+        inlineRow.classList.remove("show");
+        inlineRow.innerHTML = "";
+      };
 
-      canvas.addEventListener("mousemove",(e)=>{
-        const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
-        let highlightId=-1;
-        let hoverProduct=null;
-        let onSlab=false;
-        // Check top face first
+      canvas.addEventListener("mousemove", (e) => {
+        const r = canvas.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        let highlightId = -1;
+        let hoverProduct = null;
+        let onSlab = false;
+
         const topPoly = canvas._topPoly;
-        const pointInPoly = (px,py,polyPts)=>{
-          let inside=false;
-          for(let i=0,j=polyPts.length-1;i<polyPts.length;j=i++){
-            const xi=polyPts[i].x, yi=polyPts[i].y;
-            const xj=polyPts[j].x, yj=polyPts[j].y;
-            const intersect = ((yi>py)!=(yj>py)) && (px <= (xj-xi)*(py-yi)/(yj-yi) + xi);
-            if(intersect) inside = !inside;
+        const pointInPoly = (px, py, polyPts) => {
+          let inside = false;
+          for (let i = 0, j = polyPts.length - 1; i < polyPts.length; j = i++) {
+            const xi = polyPts[i].x, yi = polyPts[i].y;
+            const xj = polyPts[j].x, yj = polyPts[j].y;
+            const intersect = ((yi > py) != (yj > py)) && (px <= (xj - xi) * (py - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
           }
           return inside;
         };
-        if(topPoly && pointInPoly(x,y, topPoly.points)){
+
+        if (topPoly && pointInPoly(x, y, topPoly.points)) {
           highlightId = topPoly.id;
-          if(highlightId === 0) { onSlab = true; }
-          else { hoverProduct = area.products.find(p=> p.id===highlightId) || null; }
+          if (highlightId === 0) {
+            onSlab = true;
+          } else {
+            hoverProduct = area.products.find(p => p.id === highlightId) || null;
+          }
         } else {
-          // Check side polygons
           const sidePolys = canvas._sidePolys || [];
-          for(let poly of sidePolys){
-            if(pointInPoly(x,y, poly.points)){
+          for (let poly of sidePolys) {
+            if (pointInPoly(x, y, poly.points)) {
               highlightId = poly.id;
-              if(highlightId === 0) { onSlab = true; }
-              else { hoverProduct = area.products.find(p=> p.id===highlightId) || null; }
+              if (highlightId === 0) {
+                onSlab = true;
+              } else {
+                hoverProduct = area.products.find(p => p.id === highlightId) || null;
+              }
               break;
             }
           }
         }
+
         drawAreaIllustration(canvas, area, highlightId);
-        if(hoverProduct){
-          // Show product info
+
+        if (hoverProduct) {
           const p = hoverProduct;
-          const html = `<div><strong>${t("hoverProduct")}:</strong> ${p.name||"-"}</div>
-            <div>• ${t("layers")}: ${p.layers||1} • ${t("thickness")}: ${p.thickness||0} mm</div>
-            <div>• ${t("unit")}: ${p.packUnit||"kg"} • ${t("packSize")}: ${p.packSize||0}</div>
-            <div>• ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}: ${p.price||0}</div>`;
-          show(html,e.clientX,e.clientY);
+          const html = `<div><strong>${t("hoverProduct")}:</strong> ${p.name||"-"}</div><div>• ${t("layers")}: ${p.layers||1} • ${t("thickness")}: ${p.thickness||0} mm</div><div>• ${t("unit")}: ${p.packUnit||"kg"} • ${t("packSize")}: ${p.packSize||0}</div><div>• ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}: ${p.price||0}</div>`;
+          show(html, e.clientX, e.clientY);
           hideInline();
-        } else if(onSlab){
-          const meta=surfaceExpl(area);
+        } else if (onSlab) {
+          const meta = surfaceExpl(area);
           const html = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
-          show(html,e.clientX,e.clientY);
+          show(html, e.clientX, e.clientY);
           showInline(html);
         } else {
-          hide(); hideInline();
+          hide();
+          hideInline();
         }
       });
-      canvas.addEventListener("mouseleave",()=>{
-        drawAreaIllustration(canvas,area,-1);
-        hoverTip.style.display="none";
+
+      canvas.addEventListener("mouseleave", () => {
+        drawAreaIllustration(canvas, area, -1);
+        hoverTip.style.display = "none";
         hideInline();
       });
     }
 
     /* ================== EL HELPER ================== */
-    function el(tag,attrs={},txt){const e=document.createElement(tag);Object.entries(attrs).forEach(([k,v])=>{if(k==="class")e.className=v;else if(k==="style")e.setAttribute("style",v);else e.setAttribute(k,v);});if(txt!=null)e.textContent=txt;return e;}
-    function cloneProductData(prod){
+    function el(tag, attrs = {}, txt) {
+      const e = document.createElement(tag);
+      Object.entries(attrs).forEach(([k, v]) => {
+        if (k === "class") e.className = v;
+        else if (k === "style") e.setAttribute("style", v);
+        else e.setAttribute(k, v);
+      });
+      if (txt != null) e.textContent = txt;
+      return e;
+    }
+
+    function cloneProductData(prod) {
       return JSON.parse(JSON.stringify({
-        name:prod.name||"", color:prod.color||null,
-        layers:prod.layers||1, thickness:prod.thickness||0, density:(prod.density===null?null:prod.density||0),
-        packSize:prod.packSize||1, packUnit:prod.packUnit||"kg",
-        price:prod.price||0, priceMode:prod.priceMode||"perPack",
+        name: prod.name || "",
+        color: prod.color || null,
+        layers: prod.layers || 1,
+        thickness: prod.thickness || 0,
+        density: (prod.density === null ? null : prod.density || 0),
+        packSize: prod.packSize || 1,
+        packUnit: prod.packUnit || "kg",
+        price: prod.price || 0,
+        priceMode: prod.priceMode || "perPack",
         calcMode: prod.calcMode || "thickness",
         usagePerM2: prod.usagePerM2 || 0,
         coverSqmPerPack: prod.coverSqmPerPack || 0,
@@ -810,81 +1016,85 @@
     }
 
     /* ================== AREA UI ================== */
-    function createAreaElement(area){
-      const wrap=el("div",{class:"area","data-area-id":area.id});
+    function createAreaElement(area) {
+      const wrap = el("div", { class: "area", "data-area-id": area.id });
+      const header = el("div", { class: "area-header" });
 
-      // header
-      const header=el("div",{class:"area-header"});
-
-      const nameI=el("input",{type:"text",value:area.name,placeholder:t("areaName")});
-      nameI.addEventListener("change",()=>{const old=area.name; area.name=nameI.value; log(`Renamed area "${old}" → "${area.name}"`);});
+      const nameI = el("input", { type: "text", value: area.name, placeholder: t("areaName") });
+      nameI.addEventListener("change", () => {
+        const old = area.name;
+        area.name = nameI.value;
+        log(`Renamed area "${old}" → "${area.name}"`);
+      });
       header.appendChild(nameI);
 
-      const surfaceSel=el("select",{title:t("surface")});
-      Object.keys(state.project.settings.surfaceTypes).concat(["Custom"]).forEach(n=>{
-        const o=el("option",{value:n});
+      const surfaceSel = el("select", { title: t("surface") });
+      Object.keys(state.project.settings.surfaceTypes).concat(["Custom"]).forEach(n => {
+        const o = el("option", { value: n });
         const surfInfo = state.project.settings.surfaceInfo[n];
         o.textContent = surfInfo ? surfInfo.title : n;
         surfaceSel.appendChild(o);
       });
-      const matched=reverseFindTypeByFactor(area.modifier)||"Custom"; surfaceSel.value=matched;
+      const matched = reverseFindTypeByFactor(area.modifier) || "Custom";
+      surfaceSel.value = matched;
       header.appendChild(surfaceSel);
 
-      const modI=el("input",{type:"number",step:"0.01",value:area.modifier}); modI.disabled=(matched!=="Custom");
+      const modI = el("input", { type: "number", step: "0.01", value: area.modifier });
+      modI.disabled = (matched !== "Custom");
       header.appendChild(modI);
 
-      const sizeWrap=el("div",{class:"unit-wrap"});
-      const sizeI=el("input",{type:"number",min:"0",step:"0.1",value:area.size||0,placeholder:t("size")});
-      const unit=el("div",{class:"unit"},t("sq"));
-      sizeWrap.appendChild(sizeI); sizeWrap.appendChild(unit); header.appendChild(sizeWrap);
+      const sizeWrap = el("div", { class: "unit-wrap" });
+      const sizeI = el("input", { type: "number", min: "0", step: "0.1", value: area.size || 0, placeholder: t("size") });
+      const unit = el("div", { class: "unit" }, t("sq"));
+      sizeWrap.appendChild(sizeI);
+      sizeWrap.appendChild(unit);
+      header.appendChild(sizeWrap);
 
-      // mini caption below title line
-      const miniCap=el("div",{class:"mini-caption"}, `${t("prodInfo")} / ${t("projectInfo")}`);
+      const miniCap = el("div", { class: "mini-caption" }, `${t("prodInfo")} / ${t("projectInfo")}`);
       header.appendChild(miniCap);
 
-      // small illustration top-right
-      const mini=el("div",{class:"mini-illustration"});
-      const canvas=document.createElement("canvas"); mini.appendChild(canvas);
+      const mini = el("div", { class: "mini-illustration" });
+      const canvas = document.createElement("canvas");
+      mini.appendChild(canvas);
       header.appendChild(mini);
 
-      const del=el("button",{class:"del-area",title:t("deleteArea")}, t("deleteArea"));
-      del.addEventListener("click",()=>removeArea(wrap));
+      const del = el("button", { class: "del-area", title: t("deleteArea") }, t("deleteArea"));
+      del.addEventListener("click", () => removeArea(wrap));
       header.appendChild(del);
 
       wrap.appendChild(header);
 
-      // table
-      const table=el("table",{class:"area-table","data-area-id":area.id});
-      const thead=el("thead");
-      const grp=el("tr");
-      grp.appendChild(el("th",{class:"th-group",colspan:"11"},t("prodInfo")));
-      grp.appendChild(el("th",{class:"th-group",colspan:"5"},t("projectInfo")));
+      const table = el("table", { class: "area-table", "data-area-id": area.id });
+      const thead = el("thead");
+      const grp = el("tr");
+      grp.appendChild(el("th", { class: "th-group", colspan: "11" }, t("prodInfo")));
+      grp.appendChild(el("th", { class: "th-group", colspan: "5" }, t("projectInfo")));
       thead.appendChild(grp);
 
-      const head=el("tr");
-      ["",t("product"),t("color"),t("calc"),t("usage"),t("density"),t("packSize"),t("unit"),t("priceMode"),t("pricePack"),t("coverSqm"),t("coverLayers"),
-       t("layers"),t("thickness"),t("needed"),t("packages"),t("cost")].forEach(h=>head.appendChild(el("th",{},h)));
+      const head = el("tr");
+      ["", t("product"), t("color"), t("calc"), t("usage"), t("density"), t("packSize"), t("unit"), t("priceMode"), t("pricePack"), t("coverSqm"), t("coverLayers"),
+        t("layers"), t("thickness"), t("needed"), t("packages"), t("cost")
+      ].forEach(h => head.appendChild(el("th", {}, h)));
       thead.appendChild(head);
       table.appendChild(thead);
 
-      const tbody=el("tbody"); tbody.setAttribute("data-area-id", area.id);
-      area.products.forEach((p)=>tbody.appendChild(buildProductRow(area,p)));
+      const tbody = el("tbody");
+      tbody.setAttribute("data-area-id", area.id);
+      area.products.forEach((p) => tbody.appendChild(buildProductRow(area, p)));
       table.appendChild(tbody);
 
-      // inline surface info
-      const inlineInfo=el("div",{class:"surface-inline","data-bind":"inlineSurface"});
+      const inlineInfo = el("div", { class: "surface-inline", "data-bind": "inlineSurface" });
       wrap.appendChild(table);
       wrap.appendChild(inlineInfo);
 
-      // footer buttons
-      const btnWrap=el("div",{class:"footer-buttons"});
-      const addProdBtn=el("button",{class:"btn btn-primary btn-slim"}, t("addProduct"));
-      addProdBtn.addEventListener("click",()=>{
-        const firstAdd = area.products.length===0 && state.lastAddedProductTemplate;
-        const frag = addProduct(area,tbody);
-        if(firstAdd){
-          if(confirm(`Klona senaste produkt "${state.lastAddedProductTemplate.name}" till detta område?`)){
-            applyProductDataToRow(area,frag,state.lastAddedProductTemplate);
+      const btnWrap = el("div", { class: "footer-buttons" });
+      const addProdBtn = el("button", { class: "btn btn-primary btn-slim" }, t("addProduct"));
+      addProdBtn.addEventListener("click", () => {
+        const firstAdd = area.products.length === 0 && state.lastAddedProductTemplate;
+        const frag = addProduct(area, tbody);
+        if (firstAdd) {
+          if (confirm(`Klona senaste produkt "${state.lastAddedProductTemplate.name}" till detta område?`)) {
+            applyProductDataToRow(area, frag, state.lastAddedProductTemplate);
             log(`Cloned last product template to "${area.name}"`);
             updateCalculations(true);
           }
@@ -892,347 +1102,566 @@
       });
       btnWrap.appendChild(addProdBtn);
 
-      const addAreaAfter=el("button",{class:"btn btn-primary btn-slim"}, t("addArea"));
-      addAreaAfter.addEventListener("click",()=>insertAreaAfter(area.id));
+      const addAreaAfter = el("button", { class: "btn btn-primary btn-slim" }, t("addArea"));
+      addAreaAfter.addEventListener("click", () => insertAreaAfter(area.id));
       btnWrap.appendChild(addAreaAfter);
       wrap.appendChild(btnWrap);
 
-      // listeners
-      function updateAreaInfoboxAndCanvas(showInline=false){
-        const meta=surfaceExpl(area);
-        drawAreaIllustration(canvas,area);
-        attachCanvasInteractions(canvas,area,inlineInfo);
-        if(showInline){
+      function updateAreaInfoboxAndCanvas(showInline = false) {
+        const meta = surfaceExpl(area);
+        drawAreaIllustration(canvas, area);
+        attachCanvasInteractions(canvas, area, inlineInfo);
+        if (showInline) {
           inlineInfo.innerHTML = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
           inlineInfo.classList.add("show");
         }
       }
       updateAreaInfoboxAndCanvas();
 
-      surfaceSel.addEventListener("change",()=>{
-        if(surfaceSel.value==="Custom"){ modI.disabled=false; }
-        else{
-          area.modifier=state.project.settings.surfaceTypes[surfaceSel.value];
-          modI.value=area.modifier; modI.disabled=true;
+      surfaceSel.addEventListener("change", () => {
+        if (surfaceSel.value === "Custom") {
+          modI.disabled = false;
+        } else {
+          area.modifier = state.project.settings.surfaceTypes[surfaceSel.value];
+          modI.value = area.modifier;
+          modI.disabled = true;
           log(`Surface "${area.name}" → ${surfaceSel.value} (x${area.modifier})`);
           updateCalculations(true);
         }
         updateAreaInfoboxAndCanvas(true);
       });
-      surfaceSel.addEventListener("mouseenter",()=>updateAreaInfoboxAndCanvas(true));
-      surfaceSel.addEventListener("mouseleave",()=>{inlineInfo.classList.remove("show"); inlineInfo.innerHTML="";});
-
-      modI.addEventListener("change",()=>{
-        const v=toPosFloat(modI.value,1.0); modI.value=v; area.modifier=v;
-        surfaceSel.value = reverseFindTypeByFactor(v) || "Custom";
-        if(surfaceSel.value!=="Custom"){ modI.disabled=true; }
-        log(`Surface factor "${area.name}" → ${v}`);
-        updateCalculations(true); updateAreaInfoboxAndCanvas(true);
+      surfaceSel.addEventListener("mouseenter", () => updateAreaInfoboxAndCanvas(true));
+      surfaceSel.addEventListener("mouseleave", () => {
+        inlineInfo.classList.remove("show");
+        inlineInfo.innerHTML = "";
       });
-      const sizeIChange=()=>{const v=toPosFloat(sizeI.value,0); sizeI.value=v; area.size=v; log(`Area size "${area.name}" → ${v} m²`); updateCalculations();};
-      sizeI.addEventListener("change",sizeIChange);
+
+      modI.addEventListener("change", () => {
+        const v = toPosFloat(modI.value, 1.0);
+        modI.value = v;
+        area.modifier = v;
+        surfaceSel.value = reverseFindTypeByFactor(v) || "Custom";
+        if (surfaceSel.value !== "Custom") {
+          modI.disabled = true;
+        }
+        log(`Surface factor "${area.name}" → ${v}`);
+        updateCalculations(true);
+        updateAreaInfoboxAndCanvas(true);
+      });
+
+      const sizeIChange = () => {
+        const v = toPosFloat(sizeI.value, 0);
+        sizeI.value = v;
+        area.size = v;
+        log(`Area size "${area.name}" → ${v} m²`);
+        updateCalculations();
+      };
+      sizeI.addEventListener("change", sizeIChange);
 
       enableDragSort(tbody, area);
 
       return wrap;
     }
 
-    function buildProductRow(area,product){
-      if(!product.calcMode) product.calcMode="thickness";
-      if(product.usagePerM2==null) product.usagePerM2=0;
-      if(product.coverSqmPerPack==null) product.coverSqmPerPack=0;
-      if(product.coverLayersPerPack==null||product.coverLayersPerPack<=0) product.coverLayersPerPack=1;
-      if(!product.priceMode) product.priceMode="perPack";
+    function buildProductRow(area, product) {
+      if (!product.calcMode) product.calcMode = "thickness";
+      if (product.usagePerM2 == null) product.usagePerM2 = 0;
+      if (product.coverSqmPerPack == null) product.coverSqmPerPack = 0;
+      if (product.coverLayersPerPack == null || product.coverLayersPerPack <= 0) product.coverLayersPerPack = 1;
+      if (!product.priceMode) product.priceMode = "perPack";
 
-      const tr=el("tr",{class:"product-row","data-product-id":product.id, draggable:"true"});
-      const td=(child,cls)=>{const c=document.createElement("td"); if(cls) c.className=cls; c.appendChild(child); return c;};
+      const tr = el("tr", { class: "product-row", "data-product-id": product.id, draggable: "true" });
+      const td = (child, cls) => {
+        const c = document.createElement("td");
+        if (cls) c.className = cls;
+        c.appendChild(child);
+        return c;
+      };
 
-      const drag=el("span",{class:"drag-handle",title:"Drag to reorder"},"☰");
-      tr.appendChild(td(drag,"td-prod"));
+      const drag = el("span", { class: "drag-handle", title: "Drag to reorder" }, "☰");
+      tr.appendChild(td(drag, "td-prod"));
 
-      const nameI=el("input",{type:"text",value:product.name,placeholder:t("product")});
-      nameI.addEventListener("change",()=>{product.name=nameI.value; state.lastAddedProductTemplate=cloneProductData(product); log(`Renamed product ${product.id} in "${area.name}" → "${product.name}"`);});
-      tr.appendChild(td(nameI,"td-prod"));
+      // Product Name with Datalist
+      const nameI = el("input", { type: "text", value: product.name, placeholder: t("product"), list: "productSuggestions" });
+      nameI.addEventListener("change", () => {
+        product.name = nameI.value;
+        state.lastAddedProductTemplate = cloneProductData(product);
+        log(`Renamed product ${product.id} in "${area.name}" → "${product.name}"`);
+      });
 
-      const colorI=el("input",{type:"color",value:product.color||"#6cb2ff",title:t("color")});
-      colorI.addEventListener("input",()=>{product.color=colorI.value; const canv=document.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`); if(canv) drawAreaIllustration(canv,area);});
-      tr.appendChild(td(colorI,"td-prod"));
+      // Auto-fill logic
+      nameI.addEventListener("input", (e) => {
+        const val = e.target.value;
+        const match = PRELOADED_PRODUCTS.find(p => p.name === val);
+        if (match) {
+          // Update product data
+          Object.assign(product, cloneProductData(match));
+          product.id = parseInt(tr.getAttribute("data-product-id")); // Restore ID
+          // Update UI fields
+          colorI.value = product.color || "#6cb2ff";
+          mode.value = product.calcMode;
+          usageI.value = product.usagePerM2;
+          densI.value = product.density || "";
+          packI.value = product.packSize;
+          unitSel.value = product.packUnit;
+          priceModeSel.value = product.priceMode;
+          priceI.value = product.price;
+          coverSqmI.value = product.coverSqmPerPack;
+          coverLayersI.value = product.coverLayersPerPack;
+          layersI.value = product.layers;
+          thickI.value = product.thickness;
+          // Trigger updates
+          bindModeUI();
+          updateCalculations(true);
+          const canv = document.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
+          if (canv) drawAreaIllustration(canv, area);
+        }
+      });
+      tr.appendChild(td(nameI, "td-prod"));
 
-      const mode=el("select");
-      [["thickness",t("calcThickness")],["usage",t("calcUsage")],["coverage",t("calcCoverage")]]
-        .forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);});
-      mode.value=product.calcMode;
-      tr.appendChild(td(mode,"td-prod"));
+      const colorI = el("input", { type: "color", value: product.color || "#6cb2ff", title: t("color") });
+      colorI.addEventListener("input", () => {
+        product.color = colorI.value;
+        const canv = document.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
+        if (canv) drawAreaIllustration(canv, area);
+      });
+      tr.appendChild(td(colorI, "td-prod"));
 
-      const usageI=el("input",{type:"number",min:"0",step:"0.001",value:product.usagePerM2||0, title:t("usageHint")});
-      tr.appendChild(td(usageI,"td-prod"));
+      const mode = el("select");
+      [
+        ["thickness", t("calcThickness")],
+        ["usage", t("calcUsage")],
+        ["coverage", t("calcCoverage")]
+      ].forEach(([v, l]) => {
+        const o = el("option", { value: v });
+        o.textContent = l;
+        mode.appendChild(o);
+      });
+      mode.value = product.calcMode;
+      tr.appendChild(td(mode, "td-prod"));
 
-      const densI=el("input",{type:"number",min:"0",step:"0.01",value:(product.density??"")}); densI.placeholder=t("density");
-      tr.appendChild(td(densI,"td-prod"));
+      const usageI = el("input", { type: "number", min: "0", step: "0.001", value: product.usagePerM2 || 0, title: t("usageHint") });
+      tr.appendChild(td(usageI, "td-prod"));
 
-      const packI=el("input",{type:"number",min:"0.0001",step:"0.1",value:product.packSize||1});
-      packI.addEventListener("change",()=>{product.packSize=Math.max(0.0001,parseFloat(packI.value)||1); packI.value=product.packSize; log(`Pack size "${product.name}" → ${product.packSize} ${product.packUnit}`); updateCalculations();});
-      tr.appendChild(td(packI,"td-prod"));
+      const densI = el("input", { type: "number", min: "0", step: "0.01", value: (product.density ?? "") });
+      densI.placeholder = t("density");
+      tr.appendChild(td(densI, "td-prod"));
 
-      const unitSel=el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; unitSel.appendChild(o);}); unitSel.value=product.packUnit||"kg";
-      tr.appendChild(td(unitSel,"td-prod"));
+      const packI = el("input", { type: "number", min: "0.0001", step: "0.1", value: product.packSize || 1 });
+      packI.addEventListener("change", () => {
+        product.packSize = Math.max(0.0001, parseFloat(packI.value) || 1);
+        packI.value = product.packSize;
+        log(`Pack size "${product.name}" → ${product.packSize} ${product.packUnit}`);
+        updateCalculations();
+      });
+      tr.appendChild(td(packI, "td-prod"));
 
-      const priceModeSel=el("select");
-      [["perPack",t("perPack")],["perKg",t("perKg")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;priceModeSel.appendChild(o);});
-      priceModeSel.value=product.priceMode;
-      tr.appendChild(td(priceModeSel,"td-prod"));
+      const unitSel = el("select");
+      ["kg", "L"].forEach(u => {
+        const o = el("option", { value: u });
+        o.textContent = u;
+        unitSel.appendChild(o);
+      });
+      unitSel.value = product.packUnit || "kg";
+      tr.appendChild(td(unitSel, "td-prod"));
 
-      const priceI=el("input",{type:"number",min:"0",step:"0.01",value:product.price||0, placeholder:t("pricePack")});
-      tr.appendChild(td(priceI,"td-prod"));
+      const priceModeSel = el("select");
+      [
+        ["perPack", t("perPack")],
+        ["perKg", t("perKg")]
+      ].forEach(([v, l]) => {
+        const o = el("option", { value: v });
+        o.textContent = l;
+        priceModeSel.appendChild(o);
+      });
+      priceModeSel.value = product.priceMode;
+      tr.appendChild(td(priceModeSel, "td-prod"));
 
-      const coverSqmI=el("input",{type:"number",min:"0",step:"0.1",value:product.coverSqmPerPack||0});
-      tr.appendChild(td(coverSqmI,"td-prod"));
+      const priceI = el("input", { type: "number", min: "0", step: "0.01", value: product.price || 0, placeholder: t("pricePack") });
+      tr.appendChild(td(priceI, "td-prod"));
 
-      const coverLayersI=el("input",{type:"number",min:"1",step:"1",value:product.coverLayersPerPack||1});
-      tr.appendChild(td(coverLayersI,"td-prod"));
+      const coverSqmI = el("input", { type: "number", min: "0", step: "0.1", value: product.coverSqmPerPack || 0 });
+      tr.appendChild(td(coverSqmI, "td-prod"));
 
-      const layersI=el("input",{type:"number",min:"1",step:"1",value:product.layers||1});
-      layersI.addEventListener("change",()=>{product.layers=Math.max(1,parseInt(layersI.value)||1); layersI.value=product.layers; log(`Layers "${product.name}" → ${product.layers}`); updateCalculations();});
-      tr.appendChild(td(layersI,"td-proj"));
+      const coverLayersI = el("input", { type: "number", min: "1", step: "1", value: product.coverLayersPerPack || 1 });
+      tr.appendChild(td(coverLayersI, "td-prod"));
 
-      const thickI=el("input",{type:"number",min:"0",step:"0.1",value:product.thickness||0});
-      thickI.addEventListener("change",()=>{product.thickness=toPosFloat(thickI.value,0); thickI.value=product.thickness; log(`Thickness "${product.name}" → ${product.thickness} mm`); updateCalculations();});
-      tr.appendChild(td(thickI,"td-proj"));
+      const layersI = el("input", { type: "number", min: "1", step: "1", value: product.layers || 1 });
+      layersI.addEventListener("change", () => {
+        product.layers = Math.max(1, parseInt(layersI.value) || 1);
+        layersI.value = product.layers;
+        log(`Layers "${product.name}" → ${product.layers}`);
+        updateCalculations();
+      });
+      tr.appendChild(td(layersI, "td-proj"));
 
-      const needSpan=el("span",{class:"neededQty"},"0"); tr.appendChild(td(needSpan,"td-proj"));
-      const pkgSpan=el("span",{class:"packageCount"},"0"); tr.appendChild(td(pkgSpan,"td-proj"));
-      const costSpan=el("span",{class:"cost"},"0"); tr.appendChild(td(costSpan,"td-proj"));
+      const thickI = el("input", { type: "number", min: "0", step: "0.1", value: product.thickness || 0 });
+      thickI.addEventListener("change", () => {
+        product.thickness = toPosFloat(thickI.value, 0);
+        thickI.value = product.thickness;
+        log(`Thickness "${product.name}" → ${product.thickness} mm`);
+        updateCalculations();
+      });
+      tr.appendChild(td(thickI, "td-proj"));
 
-      // overlay actions
-      const overlay=el("div",{class:"row-actions-overlay"});
-      const cloneAll=el("button",{class:"mini ghost","data-i18n":"cloneAll"},t("cloneAll"));
-      const cloneBelow=el("button",{class:"mini ghost","data-i18n":"cloneBelow"},t("cloneBelow"));
-      const infoBtn=el("button",{class:"mini warn","data-i18n":"breakdown"},t("breakdown"));
-      const delBtn=el("button",{class:"mini danger","data-i18n":"remove"},t("remove"));
-      overlay.appendChild(cloneAll); overlay.appendChild(cloneBelow); overlay.appendChild(infoBtn); overlay.appendChild(delBtn);
+      const needSpan = el("span", { class: "neededQty" }, "0");
+      tr.appendChild(td(needSpan, "td-proj"));
+      const pkgSpan = el("span", { class: "packageCount" }, "0");
+      tr.appendChild(td(pkgSpan, "td-proj"));
+      const costSpan = el("span", { class: "cost" }, "0");
+      tr.appendChild(td(costSpan, "td-proj"));
+
+      const overlay = el("div", { class: "row-actions-overlay" });
+      const cloneAll = el("button", { class: "mini ghost", "data-i18n": "cloneAll" }, t("cloneAll"));
+      const cloneBelow = el("button", { class: "mini ghost", "data-i18n": "cloneBelow" }, t("cloneBelow"));
+      const infoBtn = el("button", { class: "mini warn", "data-i18n": "breakdown" }, t("breakdown"));
+      const delBtn = el("button", { class: "mini danger", "data-i18n": "remove" }, t("remove"));
+      overlay.appendChild(cloneAll);
+      overlay.appendChild(cloneBelow);
+      overlay.appendChild(infoBtn);
+      overlay.appendChild(delBtn);
       tr.appendChild(overlay);
 
-      // breakdown row
-      const br=document.createElement("tr"); br.className="breakdown";
-      const brtd=document.createElement("td"); brtd.colSpan=16; br.appendChild(brtd);
-      const brbox=el("div",{class:"breakdown"}); brtd.appendChild(brbox);
+      const br = document.createElement("tr");
+      br.className = "breakdown";
+      const brtd = document.createElement("td");
+      brtd.colSpan = 16;
+      br.appendChild(brtd);
+      const brbox = el("div", { class: "breakdown" });
+      brtd.appendChild(brbox);
 
-      // mode binding & interactions
-      function bindModeUI(){
-        const M=product.calcMode;
-        const isUsage=(M==="usage"), isThick=(M==="thickness"), isCover=(M==="coverage");
-        usageI.disabled=!isUsage; usageI.title = (!isUsage ? (LANG==="sv"?`Används ej i läge "${t(M==="thickness"?"calcThickness":"calcCoverage")}"`:`Not used in "${t(M==="thickness"?"calcThickness":"calcCoverage")}" mode`) : "");
-        thickI.disabled=!isThick; thickI.title = (!isThick ? (LANG==="sv"?`Används ej i läge "${t(M==="usage"?"calcUsage":"calcCoverage")}"`:`Not used in "${t(M==="usage"?"calcUsage":"calcCoverage")}" mode`) : "");
-        densI.disabled=(M!=="thickness") || (unitSel.value==="L");
-        if(densI.disabled){
-          if(M==="thickness" && unitSel.value==="L"){
-            densI.title = LANG==="sv"?"Ej tillämplig för volymbaserad beräkning":"Not used for volume-based calculation";
+      function bindModeUI() {
+        const M = product.calcMode;
+        const isUsage = (M === "usage");
+        const isThick = (M === "thickness");
+        const isCover = (M === "coverage");
+
+        usageI.disabled = !isUsage;
+        usageI.title = (!isUsage ? (LANG === "sv" ? `Används ej i läge "${t(M==="thickness"?"calcThickness":"calcCoverage")}"` : `Not used in "${t(M==="thickness"?"calcThickness":"calcCoverage")}" mode`) : "");
+
+        thickI.disabled = !isThick;
+        thickI.title = (!isThick ? (LANG === "sv" ? `Används ej i läge "${t(M==="usage"?"calcUsage":"calcCoverage")}"` : `Not used in "${t(M==="usage"?"calcUsage":"calcCoverage")}" mode`) : "");
+
+        densI.disabled = (M !== "thickness") || (unitSel.value === "L");
+        if (densI.disabled) {
+          if (M === "thickness" && unitSel.value === "L") {
+            densI.title = LANG === "sv" ? "Ej tillämplig för volymbaserad beräkning" : "Not used for volume-based calculation";
           } else {
-            densI.title = (LANG==="sv"?`Används ej i läge "${t(M==="usage"?"calcUsage":"calcCoverage")}"`:`Not used in "${t(M==="usage"?"calcUsage":"calcCoverage")}" mode`);
+            densI.title = (LANG === "sv" ? `Används ej i läge "${t(M==="usage"?"calcUsage":"calcCoverage")}"` : `Not used in "${t(M==="usage"?"calcUsage":"calcCoverage")}" mode`);
           }
-        } else densI.title="";
-        coverSqmI.disabled=!isCover; coverSqmI.title = (!isCover ? (LANG==="sv"?`Används ej i läge "${t(M==="thickness"?"calcThickness":"calcUsage")}"`:`Not used in "${t(M==="thickness"?"calcThickness":"calcUsage")}" mode`) : "");
-        coverLayersI.disabled=!isCover; coverLayersI.title = coverSqmI.title;
+        } else {
+          densI.title = "";
+        }
+
+        coverSqmI.disabled = !isCover;
+        coverSqmI.title = (!isCover ? (LANG === "sv" ? `Används ej i läge "${t(M==="thickness"?"calcThickness":"calcUsage")}"` : `Not used in "${t(M==="thickness"?"calcThickness":"calcUsage")}" mode`) : "");
+        coverLayersI.disabled = !isCover;
+        coverLayersI.title = coverSqmI.title;
       }
       bindModeUI();
 
-      const applyCalc=()=>updateCalculations();
-      unitSel.addEventListener("change",()=>{product.packUnit=unitSel.value; bindModeUI(); log(`Unit "${product.name}" → ${product.packUnit}`); applyCalc();});
-      mode.addEventListener("change",()=>{product.calcMode=mode.value; bindModeUI(); log(`Mode "${product.name}" → ${product.calcMode}`); updateCalculations(true);});
-      usageI.addEventListener("change",()=>{product.usagePerM2=toPosFloat(usageI.value,0); usageI.value=product.usagePerM2; state.lastAddedProductTemplate=cloneProductData(product); applyCalc();});
-      densI.addEventListener("change",()=>{const v=toPosFloat(densI.value,0); product.density=(densI.value===""?null:v); applyCalc();});
-      coverSqmI.addEventListener("change",()=>{product.coverSqmPerPack=toPosFloat(coverSqmI.value,0); applyCalc();});
-      coverLayersI.addEventListener("change",()=>{product.coverLayersPerPack=Math.max(1,parseInt(coverLayersI.value)||1); coverLayersI.value=product.coverLayersPerPack; applyCalc();});
-      priceModeSel.addEventListener("change",()=>{product.priceMode=priceModeSel.value; priceI.placeholder = (product.priceMode==='perKg')?t("priceKg"):t("pricePack"); applyCalc();});
-      priceI.addEventListener("change",()=>{product.price=toPosFloat(priceI.value,0); priceI.value=product.price.toFixed(2); log(`Price "${product.name}" → ${product.price} (${product.priceMode})`); applyCalc();});
-
-      delBtn.addEventListener("click",()=>removeProduct(area,product.id));
-      cloneAll.addEventListener("click",()=>{
+      const applyCalc = () => updateCalculations();
+      unitSel.addEventListener("change", () => {
+        product.packUnit = unitSel.value;
+        bindModeUI();
+        log(`Unit "${product.name}" → ${product.packUnit}`);
+        applyCalc();
+      });
+      mode.addEventListener("change", () => {
+        product.calcMode = mode.value;
+        bindModeUI();
+        log(`Mode "${product.name}" → ${product.calcMode}`);
+        updateCalculations(true);
+      });
+      usageI.addEventListener("change", () => {
+        product.usagePerM2 = toPosFloat(usageI.value, 0);
+        usageI.value = product.usagePerM2;
+        state.lastAddedProductTemplate = cloneProductData(product);
+        applyCalc();
+      });
+      densI.addEventListener("change", () => {
+        const v = toPosFloat(densI.value, 0);
+        product.density = (densI.value === "" ? null : v);
+        applyCalc();
+      });
+      coverSqmI.addEventListener("change", () => {
+        product.coverSqmPerPack = toPosFloat(coverSqmI.value, 0);
+        applyCalc();
+      });
+      coverLayersI.addEventListener("change", () => {
+        product.coverLayersPerPack = Math.max(1, parseInt(coverLayersI.value) || 1);
+        coverLayersI.value = product.coverLayersPerPack;
+        applyCalc();
+      });
+      priceModeSel.addEventListener("change", () => {
+        product.priceMode = priceModeSel.value;
+        priceI.placeholder = (product.priceMode === 'perKg') ? t("priceKg") : t("pricePack");
+        applyCalc();
+      });
+      priceI.addEventListener("change", () => {
+        product.price = toPosFloat(priceI.value, 0);
+        priceI.value = product.price.toFixed(2);
+        log(`Price "${product.name}" → ${product.price} (${product.priceMode})`);
+        applyCalc();
+      });
+      delBtn.addEventListener("click", () => removeProduct(area, product.id));
+      cloneAll.addEventListener("click", () => {
         pushStateForUndo(`Clone "${product.name}" to all areas`);
-        state.project.areas.forEach(a=>{ if(a.id!==area.id){const c=cloneProductData(product); c.id=state.nextProductId++; a.products.push(c);} });
-        log(`Cloned "${product.name}" to all areas`); renderAll();
+        state.project.areas.forEach(a => {
+          if (a.id !== area.id) {
+            const c = cloneProductData(product);
+            c.id = state.nextProductId++;
+            a.products.push(c);
+          }
+        });
+        log(`Cloned "${product.name}" to all areas`);
+        renderAll();
       });
-      cloneBelow.addEventListener("click",()=>{
+      cloneBelow.addEventListener("click", () => {
         pushStateForUndo(`Clone "${product.name}" to areas below`);
-        const idxA=state.project.areas.findIndex(a=>a.id===area.id);
-        state.project.areas.slice(idxA+1).forEach(a=>{const c=cloneProductData(product); c.id=state.nextProductId++; a.products.push(c);});
-        log(`Cloned "${product.name}" to areas below`); renderAll();
+        const idxA = state.project.areas.findIndex(a => a.id === area.id);
+        state.project.areas.slice(idxA + 1).forEach(a => {
+          const c = cloneProductData(product);
+          c.id = state.nextProductId++;
+          a.products.push(c);
+        });
+        log(`Cloned "${product.name}" to areas below`);
+        renderAll();
       });
-      infoBtn.addEventListener("click",()=>{
-        state.project.settings.stepMode=!state.project.settings.stepMode;
-        stepModeToggle.checked=state.project.settings.stepMode;
-        document.body.classList.toggle("step-on",state.project.settings.stepMode); updateCalculations(true);
+      infoBtn.addEventListener("click", () => {
+        state.project.settings.stepMode = !state.project.settings.stepMode;
+        stepModeToggle.checked = state.project.settings.stepMode;
+        document.body.classList.toggle("step-on", state.project.settings.stepMode);
+        updateCalculations(true);
       });
 
-      const frag=document.createDocumentFragment();
-      frag.appendChild(tr); frag.appendChild(br);
+      const frag = document.createDocumentFragment();
+      frag.appendChild(tr);
+      frag.appendChild(br);
       return frag;
     }
 
-    function addProduct(area,tbody){
-      const p={id:state.nextProductId++,name:"",color:null,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,priceMode:"perPack",
-        calcMode:"thickness",usagePerM2:0,coverSqmPerPack:0,coverLayersPerPack:1};
+    function addProduct(area, tbody) {
+      const p = {
+        id: state.nextProductId++,
+        name: "",
+        color: null,
+        layers: 1,
+        thickness: 0,
+        density: null,
+        packSize: 1,
+        packUnit: "kg",
+        price: 0,
+        priceMode: "perPack",
+        calcMode: "thickness",
+        usagePerM2: 0,
+        coverSqmPerPack: 0,
+        coverLayersPerPack: 1
+      };
       area.products.push(p);
-      const frag=buildProductRow(area,p);
+      const frag = buildProductRow(area, p);
       tbody.appendChild(frag);
       log(`Added product in "${area.name}" (ID ${p.id})`);
       pushStateForUndo(`Added product in area ${area.name}`);
       updateCalculations();
       return frag;
     }
-    function applyProductDataToRow(area,frag,data){
-      const prod=area.products[area.products.length-1];
+
+    function applyProductDataToRow(area, frag, data) {
+      const prod = area.products[area.products.length - 1];
       Object.assign(prod, cloneProductData(data));
-      const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
-      if(areaEl){ areaEl.replaceWith(createAreaElement(area)); }
+      const areaEl = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+      if (areaEl) {
+        areaEl.replaceWith(createAreaElement(area));
+      }
     }
-    function insertAreaAfter(areaId){
-      const idx=state.project.areas.findIndex(a=>a.id===areaId);
-      const id=state.nextAreaId++;
-      const nm=(LANG==="sv"?"Område ":"Area ")+id;
-      const a={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
+
+    function insertAreaAfter(areaId) {
+      const idx = state.project.areas.findIndex(a => a.id === areaId);
+      const id = state.nextAreaId++;
+      const nm = (LANG === "sv" ? "Område " : "Area ") + id;
+      const a = { id, name: nm, modifier: state.project.settings.surfaceTypes["Smooth"], size: 0, products: [] };
       pushStateForUndo(`Insert area after ${areaId}`);
-      state.project.areas.splice(idx+1,0,a);
-      renderAll(); log(`Added area "${nm}"`);
+      state.project.areas.splice(idx + 1, 0, a);
+      renderAll();
+      log(`Added area "${nm}"`);
     }
-    function removeArea(areaElem){
-      const id=parseInt(areaElem.dataset.areaId);
-      const idx=state.project.areas.findIndex(a=>a.id===id); if(idx===-1) return;
-      const nm=state.project.areas[idx].name||`Area ${id}`;
-      pushStateForUndo(`Removed area ${nm}`); state.project.areas.splice(idx,1);
-      areaElem.remove(); log(`Removed area "${nm}"`); updateCalculations(true);
-      if(state.project.areas.length===0){ topAddDock.style.display="flex"; }
+
+    function removeArea(areaElem) {
+      const id = parseInt(areaElem.dataset.areaId);
+      const idx = state.project.areas.findIndex(a => a.id === id);
+      if (idx === -1) return;
+      const nm = state.project.areas[idx].name || `Area ${id}`;
+      pushStateForUndo(`Removed area ${nm}`);
+      state.project.areas.splice(idx, 1);
+      areaElem.remove();
+      log(`Removed area "${nm}"`);
+      updateCalculations(true);
+      if (state.project.areas.length === 0) {
+        topAddDock.style.display = "flex";
+      }
     }
-    function removeProduct(area,prodId){
-      const i=area.products.findIndex(p=>p.id===prodId); if(i===-1) return;
-      const nm=area.products[i].name||"(unnamed)";
-      area.products.splice(i,1);
-      const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
-      if(areaEl){ areaEl.querySelectorAll(`tr.product-row[data-product-id="${prodId}"], tr.breakdown`).forEach(r=>r.remove()); }
-      log(`Removed product "${nm}" from "${area.name}"`); pushStateForUndo(`Removed product from area ${area.name}`); updateCalculations(true);
+
+    function removeProduct(area, prodId) {
+      const i = area.products.findIndex(p => p.id === prodId);
+      if (i === -1) return;
+      const nm = area.products[i].name || "(unnamed)";
+      area.products.splice(i, 1);
+      const areaEl = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+      if (areaEl) {
+        areaEl.querySelectorAll(`tr.product-row[data-product-id="${prodId}"], tr.breakdown`).forEach(r => r.remove());
+      }
+      log(`Removed product "${nm}" from "${area.name}"`);
+      pushStateForUndo(`Removed product from area ${area.name}`);
+      updateCalculations(true);
     }
 
     /* ================== DRAG SORT ================== */
-    function enableDragSort(tbody, area){
-      let dragId=null;
-      tbody.addEventListener("dragstart",(e)=>{
-        const row=e.target.closest(".product-row"); if(!row) return;
+    function enableDragSort(tbody, area) {
+      let dragId = null;
+      tbody.addEventListener("dragstart", (e) => {
+        const row = e.target.closest(".product-row");
+        if (!row) return;
         dragId = parseInt(row.getAttribute("data-product-id"));
         row.classList.add("dragging");
-        e.dataTransfer.effectAllowed="move";
-        const areaElem=document.querySelector(`.area[data-area-id="${area.id}"]`);
-        const canv= areaElem ? areaElem.querySelector(".mini-illustration canvas") : null;
-        if(canv) drawAreaIllustration(canv, area);
+        e.dataTransfer.effectAllowed = "move";
+        const areaElem = document.querySelector(`.area[data-area-id="${area.id}"]`);
+        const canv = areaElem ? areaElem.querySelector(".mini-illustration canvas") : null;
+        if (canv) drawAreaIllustration(canv, area);
       });
-      tbody.addEventListener("dragend",(e)=>{
-        const row=e.target.closest(".product-row"); if(row) row.classList.remove("dragging");
+      tbody.addEventListener("dragend", (e) => {
+        const row = e.target.closest(".product-row");
+        if (row) row.classList.remove("dragging");
       });
-      tbody.addEventListener("dragover",(e)=>{
+      tbody.addEventListener("dragover", (e) => {
         e.preventDefault();
-        const after = getDragAfterElement(tbody,e.clientY);
-        const dragging=tbody.querySelector(".product-row.dragging");
-        if(!dragging) return;
-        if(after==null) tbody.appendChild(dragging);
-        else tbody.insertBefore(dragging,after);
+        const after = getDragAfterElement(tbody, e.clientY);
+        const dragging = tbody.querySelector(".product-row.dragging");
+        if (!dragging) return;
+        if (after == null) tbody.appendChild(dragging);
+        else tbody.insertBefore(dragging, after);
       });
-      tbody.addEventListener("drop",()=>{
-        if(dragId==null) return;
-        const order=[...tbody.querySelectorAll(".product-row")].map(r=>parseInt(r.getAttribute("data-product-id")));
-        const newProducts = order.map(id=> area.products.find(p=>p.id===id) );
-        if(newProducts.every(Boolean)){
+      tbody.addEventListener("drop", () => {
+        if (dragId == null) return;
+        const order = [...tbody.querySelectorAll(".product-row")].map(r => parseInt(r.getAttribute("data-product-id")));
+        const newProducts = order.map(id => area.products.find(p => p.id === id));
+        if (newProducts.every(Boolean)) {
           pushStateForUndo(`Reorder products in ${area.name}`);
           area.products = newProducts;
           renderAll();
           log(`Reordered products in "${area.name}"`);
         }
-        dragId=null;
+        dragId = null;
       });
     }
-    function getDragAfterElement(container, y){
-      const els=[...container.querySelectorAll(".product-row:not(.dragging)")];
-      return els.reduce((closest,child)=>{
-        const box=child.getBoundingClientRect();
-        const offset=y - box.top - box.height/2;
-        if(offset<0 && offset>closest.offset){ return {offset,element:child}; } else { return closest; }
-      },{offset:Number.NEGATIVE_INFINITY}).element;
+
+    function getDragAfterElement(container, y) {
+      const els = [...container.querySelectorAll(".product-row:not(.dragging)")];
+      return els.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
     /* ================== CALCULATIONS ================== */
-    function refreshSummaryLabels(){
-      const S=state.project.settings;
-      const label = S.vatIncluded
-        ? (LANG==="sv" ? "Projektets totalsumma (inkl. moms):" : "Project total (incl. VAT):")
-        : (LANG==="sv" ? "Projektets totalsumma (exkl. moms):" : "Project total (excl. VAT):");
+    function refreshSummaryLabels() {
+      const S = state.project.settings;
+      const label = S.vatIncluded ?
+        (LANG === "sv" ? "Projektets totalsumma (inkl. moms):" : "Project total (incl. VAT):") :
+        (LANG === "sv" ? "Projektets totalsumma (exkl. moms):" : "Project total (excl. VAT):");
       footerTotalLabel.textContent = label;
     }
 
-    function updateCalculations(fromSurface=false){
-      const S=state.project.settings;
-      let totalCostExVAT=0;
-      const totalsMap=new Map();
+    function updateCalculations(fromSurface = false) {
+      const S = state.project.settings;
+      let totalCostExVAT = 0;
+      const totalsMap = new Map();
 
-      state.project.areas.forEach(area=>{
-        let areaCost=0;
-        const areaEl=areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
+      state.project.areas.forEach(area => {
+        let areaCost = 0;
+        const areaEl = areasContainer.querySelector(`.area[data-area-id="${area.id}"]`);
         const rows = areaEl ? areaEl.querySelectorAll("tbody tr.product-row") : [];
 
-        area.products.forEach((p,idx)=>{
-          const areaSize=Number(area.size)||0;
-          const layers = Math.max(1, Number(p.layers)||1);
-          const unit   = p.packUnit||"kg";
-          const price  = Number(p.price)||0;
-          const pack   = Math.max(0.0001, Number(p.packSize)||0);
+        area.products.forEach((p, idx) => {
+          const areaSize = Number(area.size) || 0;
+          const layers = Math.max(1, Number(p.layers) || 1);
+          const unit = p.packUnit || "kg";
+          const price = Number(p.price) || 0;
+          const pack = Math.max(0.0001, Number(p.packSize) || 0);
           const priceMode = p.priceMode || "perPack";
 
-          let neededUnits=0;
-          let packages=0;
-          let breakdown=[];
+          let neededUnits = 0;
+          let packages = 0;
+          let breakdown = [];
 
-          if(p.calcMode==="usage"){
-            const use=Number(p.usagePerM2)||0;
-            let base= areaSize * layers * use;
+          if (p.calcMode === "usage") {
+            const use = Number(p.usagePerM2) || 0;
+            let base = areaSize * layers * use;
             breakdown.push(`Base = Area(${areaSize}) × Layers(${layers}) × Usage(${use}/${unit}·m²) = ${fmt(base)}`);
-            base *= area.modifier; breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(base)}`);
-            if(S.overageIncluded){base*= (1+S.overagePercent/100); breakdown.push(`+ Overage ${S.overagePercent}% ⇒ ${fmt(base)}`);}
+            base *= area.modifier;
+            breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(base)}`);
+            if (S.overageIncluded) {
+              base *= (1 + S.overagePercent / 100);
+              breakdown.push(`+ Overage ${S.overagePercent}% ⇒ ${fmt(base)}`);
+            }
             neededUnits = base;
-            packages = S.exactMode ? (neededUnits/pack) : Math.ceil(neededUnits/pack);
+            packages = S.exactMode ? (neededUnits / pack) : Math.ceil(neededUnits / pack);
 
-          } else if(p.calcMode==="thickness"){
-            const th=Number(p.thickness)||0; let volL = areaSize * th * layers;
+          } else if (p.calcMode === "thickness") {
+            const th = Number(p.thickness) || 0;
+            let volL = areaSize * th * layers;
             breakdown.push(`Volume L = Area(${areaSize}) × Thickness(${th}) × Layers(${layers}) = ${fmt(volL)} L`);
-            volL *= area.modifier; breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(volL)} L`);
-            if(S.overageIncluded){volL*= (1+S.overagePercent/100); breakdown.push(`+ Overage ${S.overagePercent}% ⇒ ${fmt(volL)} L`);}
-            if(unit==="kg"){
-              const dens = Number(p.density)||0;
-              if(dens>0){ neededUnits = volL * dens; breakdown.push(`Needed kg = ${fmt(volL)} × ${dens} = ${fmt(neededUnits)} kg`); }
-              else { neededUnits=0; breakdown.push(`Density missing ⇒ 0 kg`); }
-            } else { neededUnits = volL; breakdown.push(`Needed L = ${fmt(neededUnits)} L`); }
-            packages = S.exactMode ? (neededUnits/pack) : Math.ceil(neededUnits/pack);
+            volL *= area.modifier;
+            breakdown.push(`× Surface ${area.modifier} ⇒ ${fmt(volL)} L`);
+            if (S.overageIncluded) {
+              volL *= (1 + S.overagePercent / 100);
+              breakdown.push(`+ Overage ${S.overagePercent}% ⇒ ${fmt(volL)} L`);
+            }
+            if (unit === "kg") {
+              const dens = Number(p.density) || 0;
+              if (dens > 0) {
+                neededUnits = volL * dens;
+                breakdown.push(`Needed kg = ${fmt(volL)} × ${dens} = ${fmt(neededUnits)} kg`);
+              } else {
+                neededUnits = 0;
+                breakdown.push(`Density missing ⇒ 0 kg`);
+              }
+            } else {
+              neededUnits = volL;
+              breakdown.push(`Needed L = ${fmt(neededUnits)} L`);
+            }
+            packages = S.exactMode ? (neededUnits / pack) : Math.ceil(neededUnits / pack);
 
           } else { // coverage
-            const cov=Number(p.coverSqmPerPack)||0; const covLayers=Math.max(1,Number(p.coverLayersPerPack)||1);
-            const packsNeeded = cov>0 ? (areaSize * (layers/covLayers) / cov) : 0;
+            const cov = Number(p.coverSqmPerPack) || 0;
+            const covLayers = Math.max(1, Number(p.coverLayersPerPack) || 1);
+            const packsNeeded = cov > 0 ? (areaSize * (layers / covLayers) / cov) : 0;
             packages = S.exactMode ? packsNeeded : Math.ceil(packsNeeded);
             neededUnits = packages * pack;
             breakdown.push(`Packs = Area(${areaSize}) × (Layers ${layers}/${covLayers}) ÷ ${cov} = ${fmt(packsNeeded)} ${S.exactMode?"(exact)":""}`);
             breakdown.push(`Units = Packs × PackSize = ${fmt(packages)} × ${pack} = ${fmt(neededUnits)} ${unit}`);
           }
 
-          const cost = (priceMode==='perKg') ? (neededUnits * price) : (packages * price);
+          const cost = (priceMode === 'perKg') ? (neededUnits * price) : (packages * price);
           areaCost += cost;
 
           const prodRow = rows[idx];
-          if(prodRow){
-            const needSpan=prodRow.querySelector(".neededQty");
-            const pkgSpan =prodRow.querySelector(".packageCount");
-            const costSpan=prodRow.querySelector(".cost");
-            if(needSpan) needSpan.textContent = neededUnits ? `${fmt(neededUnits)} ${unit}` : "0";
-            if(pkgSpan)  pkgSpan.textContent  = S.exactMode ? fmt(packages) : String(packages||0);
-            if(costSpan) costSpan.textContent = state.project.settings.hideDecimals ? cost.toFixed(0) : cost.toFixed(2);
+          if (prodRow) {
+            const needSpan = prodRow.querySelector(".neededQty");
+            const pkgSpan = prodRow.querySelector(".packageCount");
+            const costSpan = prodRow.querySelector(".cost");
+            if (needSpan) needSpan.textContent = neededUnits ? `${fmt(neededUnits)} ${unit}` : "0";
+            if (pkgSpan) pkgSpan.textContent = S.exactMode ? fmt(packages) : String(packages || 0);
+            if (costSpan) costSpan.textContent = state.project.settings.hideDecimals ? cost.toFixed(0) : cost.toFixed(2);
 
-            const brRow=prodRow.nextElementSibling;
-            if(brRow && brRow.querySelector(".breakdown")){
-              const box=brRow.querySelector(".breakdown");
+            const brRow = prodRow.nextElementSibling;
+            if (brRow && brRow.querySelector(".breakdown")) {
+              const box = brRow.querySelector(".breakdown");
               box.innerHTML = `
                 <div><strong>${p.name||"Product"} — ${p.calcMode} — ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}</strong></div>
                 <div>${breakdown.join("<br/>")}</div>
@@ -1242,34 +1671,38 @@
             }
           }
 
-          const key=(p.name||"(unnamed)")+"|"+unit;
-          const rec= totalsMap.get(key) || {name:(p.name||"(unnamed)"),unit,needed:0,pack:pack,price:price,priceMode:priceMode,exactPackages:0};
+          const key = (p.name || "(unnamed)") + "|" + unit;
+          const rec = totalsMap.get(key) || { name: (p.name || "(unnamed)"), unit, needed: 0, pack: pack, price: price, priceMode: priceMode, exactPackages: 0 };
           rec.needed += neededUnits;
-          rec.exactPackages += (neededUnits/pack);
-          totalsMap.set(key,rec);
+          rec.exactPackages += (neededUnits / pack);
+          totalsMap.set(key, rec);
         });
 
         totalCostExVAT += areaCost;
-        const canv=areasContainer.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
-        if(canv) drawAreaIllustration(canv,area);
+        const canv = areasContainer.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
+        if (canv) drawAreaIllustration(canv, area);
       });
 
-      const label = state.project.settings.vatIncluded
-        ? (LANG==="sv"?"Projektets totalsumma (inkl. moms):":"Project total (incl. VAT):")
-        : (LANG==="sv"?"Projektets totalsumma (exkl. moms):":"Project total (excl. VAT):");
-      footerTotalLabel.textContent=label;
-      const totalDisplay = state.project.settings.vatIncluded ? totalCostExVAT*(1+state.project.settings.vatRate/100) : totalCostExVAT;
+      const label = state.project.settings.vatIncluded ?
+        (LANG === "sv" ? "Projektets totalsumma (inkl. moms):" : "Project total (incl. VAT):") :
+        (LANG === "sv" ? "Projektets totalsumma (exkl. moms):" : "Project total (excl. VAT):");
+      footerTotalLabel.textContent = label;
+      const totalDisplay = state.project.settings.vatIncluded ? totalCostExVAT * (1 + state.project.settings.vatRate / 100) : totalCostExVAT;
       footerTotalValue.textContent = state.project.settings.hideDecimals ? totalDisplay.toFixed(0) : totalDisplay.toFixed(2);
 
       renderTotalsInfo(totalsMap, state.project.settings);
 
-      if(fromSurface) { lastInfoTime.textContent = t("updated")+new Date().toLocaleTimeString(); showInfoToast(); }
+      if (fromSurface) {
+        lastInfoTime.textContent = t("updated") + new Date().toLocaleTimeString();
+        showInfoToast();
+      }
     }
 
-    function renderTotalsInfo(totalsMap, S){
-      const arr=[...totalsMap.values()];
+    function renderTotalsInfo(totalsMap, S) {
+      const arr = [...totalsMap.values()];
       const info = document.getElementById("infoBody");
-      if(!arr.length){ info.innerHTML = `
+      if (!arr.length) {
+        info.innerHTML = `
         <div class="info-card" id="moistureCard">
           <strong>Fukt & fuktighet</strong>
           <p style="margin:.4em 0 .2em 0; color:var(--muted)">
@@ -1277,10 +1710,10 @@
             <em>(Informativt — påverkar inte beräkning automatiskt.)</em>
           </p>
         </div>
-        <em>${t("infoEmpty")}</em>`; 
-        return; 
+        <em>${t("infoEmpty")}</em>`;
+        return;
       }
-      const parts=[
+      const parts = [
         `<div class="info-card" id="moistureCard">
           <strong>Fukt & fuktighet</strong>
           <p style="margin:.4em 0 .2em 0; color:var(--muted)">
@@ -1289,346 +1722,13 @@
           </p>
         </div>`
       ];
-      arr.forEach(rec=>{
+      arr.forEach(rec => {
         const exactPk = rec.exactPackages;
         const roundedPk = Math.ceil(exactPk);
         const recommendedPk = roundedPk + 1;
-        const exactCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (exactPk*rec.price);
-        const roundedCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (roundedPk*rec.price);
-        const recommendedCost = (rec.priceMode==='perKg') ? (rec.needed*rec.price) : (recommendedPk*rec.price);
+        const exactCost = (rec.priceMode === 'perKg') ? (rec.needed * rec.price) : (exactPk * rec.price);
+        const roundedCost = (rec.priceMode === 'perKg') ? (rec.needed * rec.price) : (roundedPk * rec.price);
+        const recommendedCost = (rec.priceMode === 'perKg') ? (rec.needed * rec.price) : (recommendedPk * rec.price);
 
         const exactCostDisplay = state.project.settings.hideDecimals ? exactCost.toFixed(0) : exactCost.toFixed(2);
-        const roundedCostDisplay = state.project.settings.hideDecimals ? roundedCost.toFixed(0) : roundedCost.toFixed(2);
-        const recommendedCostDisplay = state.project.settings.hideDecimals ? recommendedCost.toFixed(0) : recommendedCost.toFixed(2);
-
-        parts.push(`
-          <div class="product-total">
-            <h5>${rec.name} <span class="dim">[${rec.unit}]</span></h5>
-            <div>${LANG==="sv"?"Totalt behov":"Total need"}: <strong>${fmt(rec.needed)} ${rec.unit}</strong></div>
-            <div>${LANG==="sv"?"Förpackningar":"Packages"}: ${LANG==="sv"?"exakt":"exact"} ${fmt(exactPk)}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedPk}, <em>${LANG==="sv"?"rekommenderat":"recommended"}</em> ${recommendedPk} (${LANG==="sv"?"ta lite extra för säkerhets skull":"take a little extra for safety"})</div>
-            <div>${LANG==="sv"?"Kostnad":"Cost"} (${rec.priceMode==='perKg'?(LANG==="sv"?"pris/kg":"per kg"):(LANG==="sv"?"pris/förp":"per pack")}):
-               ${LANG==="sv"?"exakt":"exact"} ${exactCostDisplay}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedCostDisplay}, ${LANG==="sv"?"rekommenderat":"recommended"} ${recommendedCostDisplay}</div>
-          </div>
-        `);
-      });
-      info.innerHTML = parts.join("");
-    }
-
-    /* ================== RENDER ALL ================== */
-    function renderAll(){
-      areasContainer.innerHTML="";
-      state.project.areas.forEach(a=>areasContainer.appendChild(createAreaElement(a)));
-
-      vatToggle.checked=state.project.settings.vatIncluded;
-      vatPercentInput.value=state.project.settings.vatRate;
-      overageToggle.checked=state.project.settings.overageIncluded;
-      overagePercentInput.value=state.project.settings.overagePercent;
-      exactToggle.checked=state.project.settings.exactMode||false;
-      stepModeToggle.checked=state.project.settings.stepMode||false;
-      darkModeToggle.checked=state.project.settings.darkMode||false;
-      hideDecimalsToggle.checked=state.project.settings.hideDecimals||false;
-      document.body.classList.toggle("step-on", state.project.settings.stepMode);
-      document.body.classList.toggle("dark-mode", state.project.settings.darkMode);
-
-      renderTemplates();
-      applyI18n();
-      updateCalculations(true);
-
-      topAddDock.style.display = state.project.areas.length ? "none" : "flex";
-
-      const ud=state.undoStack.at(-1)?.desc || (LANG==="sv"?"Inget att ångra":"Nothing to undo");
-      const rd=state.redoStack.at(-1)?.desc || (LANG==="sv"?"Inget att göra om":"Nothing to redo");
-      undoBtn.title = (LANG==="sv"?"Ångra: ":"Undo: ")+ud;
-      redoBtn.title = (LANG==="sv"?"Gör om: ":"Redo: ")+rd;
-      undoBtn.disabled=state.undoStack.length===0;
-      redoBtn.disabled=state.redoStack.length===0;
-    }
-
-    /* ================== TEMPLATES (bottom) ================== */
-    const TKEY="__TEMPLATES__";
-    function newTemplate(){ return {id:state.nextTemplateId++,name:"",color:"#6cb2ff",calcMode:"thickness",usagePerM2:0,layers:1,thickness:0,density:null,packSize:1,packUnit:"kg",price:0,priceMode:"perPack",coverSqmPerPack:0,coverLayersPerPack:1}; }
-    function getTemplates(){ if(!state._templates) state._templates=[]; return state._templates; }
-    function saveTemplates(){ localStorage.setItem(TKEY, JSON.stringify(getTemplates())); }
-    function loadTemplates(){ try{ const raw=localStorage.getItem(TKEY); if(raw){const arr=JSON.parse(raw)||[]; state._templates=arr; state.nextTemplateId=(Math.max(0,...arr.map(x=>x.id||0))+1)||1;}}catch{state._templates=[];} }
-
-    function renderTemplates(){
-      const templatesBody=document.getElementById("templatesBody");
-      templatesBody.innerHTML="";
-      const list=getTemplates();
-      if(!list.length){ templatesBody.innerHTML=`<div style="color:var(--muted)">${LANG==="sv"?"Inga mallar ännu.":"No templates yet."}</div>`; return; }
-      list.forEach(t=>{
-        const row=el("div",{style:"display:grid;grid-template-columns: 200px 80px 140px 120px 120px 110px 110px 90px 130px 120px 120px 120px auto;gap:8px;align-items:center;margin:6px 0"});
-        const n=el("input",{value:t.name,placeholder:t("product")}); row.appendChild(n);
-        const color=el("input",{type:"color",value:t.color||"#6cb2ff"}); row.appendChild(color);
-        const mode=el("select"); [["thickness",t("calcThickness")],["usage",t("calcUsage")],["coverage",t("calcCoverage")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;mode.appendChild(o);}); mode.value=t.calcMode; row.appendChild(mode);
-        const use=el("input",{type:"number",min:"0",step:"0.001",value:t.usagePerM2||0}); row.appendChild(use);
-        const lay=el("input",{type:"number",min:"1",step:"1",value:t.layers||1}); row.appendChild(lay);
-        const th =el("input",{type:"number",min:"0",step:"0.1",value:t.thickness||0}); row.appendChild(th);
-        const de =el("input",{type:"number",min:"0",step:"0.01",value:(t.density??"")}); row.appendChild(de);
-        const ps =el("input",{type:"number",min:"0.0001",step:"0.1",value:t.packSize||1}); row.appendChild(ps);
-        const pu =el("select"); ["kg","L"].forEach(u=>{const o=el("option",{value:u});o.textContent=u; pu.appendChild(o);}); pu.value=t.packUnit||"kg"; row.appendChild(pu);
-        const pm =el("select"); [["perPack",t("perPack")],["perKg",t("perKg")]].forEach(([v,l])=>{const o=el("option",{value:v});o.textContent=l;pm.appendChild(o);}); pm.value=t.priceMode||"perPack"; row.appendChild(pm);
-        const pr =el("input",{type:"number",min:"0",step:"0.01",value:t.price||0}); row.appendChild(pr);
-        const coverS =el("input",{type:"number",min:"0",step:"0.1",value:t.coverSqmPerPack||0,placeholder:t("coverSqm")}); row.appendChild(coverS);
-        const coverL =el("input",{type:"number",min:"1",step:"1",value:t.coverLayersPerPack||1,placeholder:t("coverLayers")}); row.appendChild(coverL);
-
-        const actions=el("div",{style:"display:flex;gap:8px;justify-content:flex-end"});
-        const applyAll=el("button",{class:"btn"} , t("applyAllTemplates"));
-        const applyCurrent=el("button",{class:"btn"}, LANG==="sv"?"Använd på aktuellt område":"Apply to current area");
-        const del=el("button",{class:"btn",style:"border:1px solid var(--line)"},"Delete");
-        actions.appendChild(applyAll); actions.appendChild(applyCurrent); actions.appendChild(del);
-        row.appendChild(actions);
-
-        const bind=()=>{ t.name=n.value; t.color=color.value; t.calcMode=mode.value; t.usagePerM2=toPosFloat(use.value,0); t.layers=Math.max(1,parseInt(lay.value)||1); t.thickness=toPosFloat(th.value,0);
-          t.density=(de.value===""?null:toPosFloat(de.value,0)); t.packSize=Math.max(0.0001,parseFloat(ps.value)||1); t.packUnit=pu.value; t.price=toPosFloat(pr.value,0); t.priceMode=pm.value;
-          t.coverSqmPerPack=toPosFloat(coverS.value,0); t.coverLayersPerPack=Math.max(1,parseInt(coverL.value)||1);
-        };
-        [n,color,mode,use,lay,th,de,ps,pu,pm,pr,coverS,coverL].forEach(inp=>inp.addEventListener("change",()=>{bind();saveTemplates();}));
-
-        applyAll.addEventListener("click",()=>{
-          bind(); saveTemplates();
-          pushStateForUndo(`Apply template "${t.name}" to all areas`);
-          state.project.areas.forEach(a=>{const np=cloneProductData(t); np.id=state.nextProductId++; a.products.push(np);});
-          log(t("tmplApplyAll")); renderAll();
-        });
-        applyCurrent.addEventListener("click",()=>{
-          bind(); saveTemplates();
-          const a = state.project.areas[0]; if(!a){alert(LANG==="sv"?"Skapa ett område först.":"Create an area first."); return;}
-          pushStateForUndo(`Apply template "${t.name}" to first area`);
-          const np=cloneProductData(t); np.id=state.nextProductId++; a.products.push(np); renderAll();
-        });
-        del.addEventListener("click",()=>{
-          if(!confirm(LANG==="sv"?"Ta bort mallen?":"Delete this template?")) return;
-          const L=getTemplates(); const idx=L.findIndex(x=>x.id===t.id); if(idx>-1){L.splice(idx,1); saveTemplates(); renderTemplates();}
-        });
-
-        templatesBody.appendChild(row);
-      });
-    }
-
-    /* ================== IMPORT / EXPORT ================== */
-    function importData(file,content){
-      const name=file.name;
-      if(name.endsWith(".json")){
-        try{
-          const parsed=JSON.parse(content);
-          if(!parsed.areas||!parsed.settings) throw new Error("Invalid JSON format");
-          pushStateForUndo(`Imported JSON (${name})`);
-          state.project.areas=parsed.areas; state.project.settings={...state.project.settings,...parsed.settings};
-          state.nextAreaId=1; state.nextProductId=1; state.project.areas.forEach(a=>{if(a.id>=state.nextAreaId)state.nextAreaId=a.id+1;a.products.forEach(p=>{if(p.id>=state.nextProductId)state.nextProductId=p.id+1;});});
-          renderAll(); log(`Imported JSON "${name}"`);
-        }catch(err){ alert("Failed to import JSON: "+err.message); log("Error importing JSON: "+err.message); }
-      }else if(name.endsWith(".csv")){
-        try{
-          const lines=content.split(/\r?\n/).filter(l=>l.trim().length>0); if(!lines.length) throw new Error("Empty CSV");
-          let start=0, headers=[]; if(/area\s*name|areaname/i.test(lines[0])){headers=parseCSVLine(lines[0]);start=1;} else headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","PriceMode","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
-          const idx={}; headers.forEach((c,i)=>idx[c]=i);
-          const importedAreas=[]; const map={}; let importedSettings={};
-          for(let i=start;i<lines.length;i++){
-            const v=parseCSVLine(lines[i]); if(!v.length) continue;
-            const aName=v[idx["AreaName"]??0]||""; if(!aName) continue;
-            const sType=v[idx["SurfaceType"]]||"Custom";
-            const sMod =parseFloat(v[idx["SurfaceMod"]])||1.0;
-            const aSize=parseFloat(v[idx["AreaSize"]])||0;
-            const pName=v[idx["ProductName"]]||"";
-            const color=v[idx["Color"]]||null;
-            const layers=parseInt(v[idx["Layers"]])||1;
-            const thick =parseFloat(v[idx["Thickness"]])||0;
-            const dens =(v[idx["Density"]]!=="" && v[idx["Density"]]!=null)? parseFloat(v[idx["Density"]]): null;
-            const pSize =parseFloat(v[idx["PackSize"]])||1;
-            const pUnit =v[idx["PackUnit"]]||"kg";
-            const price =parseFloat(v[idx["Price"]])||0;
-            const pMode =v[idx["PriceMode"]]||"perPack";
-            const mode  =v[idx["CalcMode"]]||"thickness";
-            const usage =parseFloat(v[idx["UsagePerM2"]])||0;
-            const covS  =parseFloat(v[idx["CoverSqmPerPack"]])||0;
-            const covL  =parseInt(v[idx["CoverLayersPerPack"]])||1;
-            if(i===start){
-              importedSettings.vatIncluded = /^(true|1)$/i.test(v[idx["VATIncluded"]]||"");
-              importedSettings.vatRate     = parseFloat(v[idx["VATRate"]]) || state.project.settings.vatRate;
-              importedSettings.overageIncluded = /^(true|1)$/i.test(v[idx["OverageIncluded"]]||"");
-              importedSettings.overagePercent  = parseFloat(v[idx["OveragePercent"]]) || state.project.settings.overagePercent;
-            }
-            let area = map[aName];
-            if(!area){ area={id:state.nextAreaId++,name:aName,modifier:sMod,size:aSize,products:[]}; map[aName]=area; importedAreas.push(area); }
-            if(pName || price>0 || thick>0){
-              area.products.push({
-                id:state.nextProductId++, name:pName, color, layers, thickness:thick, density:dens, packSize:pSize, packUnit:pUnit, price, priceMode:pMode,
-                calcMode:mode, usagePerM2:usage, coverSqmPerPack:covS, coverLayersPerPack:covL
-              });
-            }
-          }
-          pushStateForUndo(`Imported CSV (${name})`);
-          state.project.areas=importedAreas; state.project.settings={...state.project.settings,...importedSettings}; renderAll(); log(`Imported CSV "${name}"`);
-        }catch(err){ alert("Failed to import CSV: "+err.message); log("Error importing CSV: "+err.message); }
-      }else{ alert(t("errUnsupported")); log("Import failed: unsupported file"); }
-    }
-    function parseCSVLine(line){
-      const out=[]; let cur=""; let q=false;
-      for(let i=0;i<line.length;i++){
-        const ch=line[i];
-        if(!q){ if(ch===','){out.push(cur.trim());cur="";} else if(ch==='"'){q=true;} else cur+=ch; }
-        else{ if(ch==='"'){ if(i+1<line.length && line[i+1]==='"'){cur+='"'; i++;} else q=false; } else cur+=ch; }
-      }
-      out.push(cur.trim()); return out;
-    }
-
-    function exportJSON(){ const blob=new Blob([JSON.stringify(state.project,null,2)],{type:"application/json"}); downloadBlob(blob,"project_export.json"); log("Exported JSON"); }
-    function exportCSV(){
-      const headers=["AreaName","SurfaceType","SurfaceMod","AreaSize","ProductName","Color","Layers","Thickness","Density","PackSize","PackUnit","Price","PriceMode","VATIncluded","VATRate","OverageIncluded","OveragePercent","CalcMode","UsagePerM2","CoverSqmPerPack","CoverLayersPerPack"];
-      const lines=[headers.join(",")]; const S=state.project.settings;
-      state.project.areas.forEach(a=>{
-        if(!a.products.length){
-          lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size,"","", "", "", "", "", "", "", "", S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent,"","","",""].map(formatCSVValue).join(","));
-        }else{
-          a.products.forEach(p=>{
-            lines.push([a.name, reverseFindTypeByFactor(a.modifier)||"Custom", a.modifier, a.size, p.name||"", p.color||"", p.layers, p.thickness, (p.density!=null?p.density:""), p.packSize, p.packUnit, p.price, p.priceMode||"perPack", S.vatIncluded,S.vatRate,S.overageIncluded,S.overagePercent, p.calcMode, p.usagePerM2, p.coverSqmPerPack, p.coverLayersPerPack].map(formatCSVValue).join(","));
-          });
-        }
-      });
-      downloadBlob(new Blob([lines.join("\n")],{type:"text/csv"}),"project_export.csv"); log("Exported CSV");
-    }
-
-    function generateExcelXML(){
-      const nl="\r\n";
-      let xml='<?xml version="1.0"?>'+nl;
-      xml+='<?mso-application progid="Excel.Sheet"?>'+nl;
-      xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+nl;
-      xml+='<Styles>'+nl+'<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>'+nl+'<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>'+nl+'<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>'+nl+'</Styles>'+nl;
-      xml+='<Worksheet ss:Name="Estimate">'+nl;
-      const COLS=20; let rows=1; state.project.areas.forEach(a=>{rows+=a.products.length; rows+=1;}); rows+=1;
-      xml+=`<Table ss:ExpandedColumnCount="${COLS}" ss:ExpandedRowCount="${rows}">`+nl;
-      for(let j=0;j<COLS;j++){xml+='<Column ss:AutoFitWidth="1"/>'+nl;}
-      const headers=["Area","Surface Mod","Area Size (m²)","Product","Color","# Mode","Usage kg/m²","Density kg/L","Pack size","Unit","Price Mode","Price","Cover m²/pack","Cover layers/pack","Layers","Thickness (mm)","Needed","Packages","Cost"];
-      xml+='<Row ss:StyleID="Bold">'+nl; headers.forEach(h=>xml+=`<Cell><Data ss:Type="String">${h}</Data></Cell>`+nl); xml+='</Row>'+nl;
-
-      let rowIndex=1, areaTotalRows=[];
-      state.project.areas.forEach(a=>{
-        a.products.forEach(p=>{
-          rowIndex++;
-          const S=state.project.settings;
-          const areaSize=Number(a.size)||0, layers=Math.max(1,Number(p.layers)||1);
-          const unit=p.packUnit||"kg", price=Number(p.price)||0, packSize=Math.max(0.0001,Number(p.packSize)||0), priceMode=p.priceMode||"perPack";
-          let needed=0, packages=0;
-          if((p.calcMode||"thickness")==="usage"){
-            let base= areaSize*layers*(Number(p.usagePerM2)||0); base*=a.modifier; if(S.overageIncluded) base*=(1+S.overagePercent/100);
-            needed=base; packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
-          }else if(p.calcMode==="thickness"){
-            let volL= areaSize*(Number(p.thickness)||0)*layers; volL*=a.modifier; if(S.overageIncluded) volL*=(1+S.overagePercent/100);
-            needed = (unit==="kg") ? ((Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0) : volL;
-            packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
-          }else{
-            const cov=Number(p.coverSqmPerPack)||0; const covL=Math.max(1,Number(p.coverLayersPerPack)||1);
-            const packNeed = cov>0 ? (areaSize * (layers/covL) / cov) : 0;
-            packages = S.exactMode ? packNeed : Math.ceil(packNeed);
-            needed = packages * packSize;
-          }
-          const cost=(priceMode==='perKg')?(needed*price):(packages*price);
-
-          xml+='<Row>'+nl;
-          xml+=`<Cell><Data ss:Type="String">${escapeXML(a.name)}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${a.modifier}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${a.size}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="String">${escapeXML(p.name||"")}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="String">${escapeXML(p.color||"")}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="String">${p.calcMode}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${p.usagePerM2||0}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${(p.density!=null?p.density:"")}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${p.packSize||0}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="String">${unit}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="String">${priceMode}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${price}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${p.coverSqmPerPack||0}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${p.coverLayersPerPack||1}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${layers}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${p.thickness||0}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${needed.toFixed(1)}</Data></Cell>`+nl;
-          xml+=`<Cell><Data ss:Type="Number">${S.exactMode?fmt(packages):packages}</Data></Cell>`+nl;
-          xml+=`<Cell ss:StyleID="TwoDec"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>`+nl;
-          xml+='</Row>'+nl;
-        });
-        rowIndex++; areaTotalRows.push(rowIndex);
-        let areaTotal=0;
-        a.products.forEach(p=>{
-          const S=state.project.settings; const areaSize=Number(a.size)||0; const layers=Math.max(1,Number(p.layers)||1);
-          const unit=p.packUnit||"kg"; const price=Number(p.price)||0; const packSize=Math.max(0.0001,Number(p.packSize)||0); const priceMode=p.priceMode||"perPack";
-          let needed=0, packages=0;
-          if((p.calcMode||"thickness")==="usage"){
-            let base= areaSize*layers*(Number(p.usagePerM2)||0); base*=a.modifier; if(S.overageIncluded) base*=(1+S.overagePercent/100);
-            needed=base; packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
-          }else if(p.calcMode==="thickness"){
-            let volL= areaSize*(Number(p.thickness)||0)*layers; volL*=a.modifier; if(S.overageIncluded) volL*=(1+S.overagePercent/100);
-            needed = (unit==="kg") ? ((Number(p.density)||0)>0 ? volL*(Number(p.density)||0) : 0) : volL;
-            packages= S.exactMode ? needed/packSize : Math.ceil(needed/packSize);
-          }else{
-            const cov=Number(p.coverSqmPerPack)||0; const covL=Math.max(1,Number(p.coverLayersPerPack)||1);
-            const packNeed = cov>0 ? (areaSize * (layers/covL) / cov) : 0;
-            packages = S.exactMode ? packNeed : Math.ceil(packNeed);
-            needed = packages * packSize;
-          }
-          areaTotal += (priceMode==='perKg')?(needed*price):(packages*price);
-        });
-        xml+='<Row ss:StyleID="Bold">'+nl;
-        xml+=`<Cell ss:MergeAcross="17"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>`+nl;
-        xml+=`<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotal.toFixed(2)}</Data></Cell>`+nl;
-        xml+='</Row>'+nl;
-      });
-      rowIndex++;
-      xml+='<Row ss:StyleID="Bold">'+nl;
-      xml+='<Cell ss:MergeAcross="17"><Data ss:Type="String">Project Total</Data></Cell>'+nl;
-      if(areaTotalRows.length){ const refs=areaTotalRows.map(r=>`R${r}C`); xml+=`<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${refs.join(",")})"><Data ss:Type="Number"></Data></Cell>`+nl; }
-      else xml+='<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>'+nl;
-      xml+='</Row>'+nl + '</Table>'+nl + '</Worksheet>'+nl + '</Workbook>';
-      return xml;
-    }
-    function exportExcel(){ downloadBlob(new Blob([generateExcelXML()],{type:"application/vnd.ms-excel"}),"project_estimate.xls"); log("Exported Excel"); }
-
-    /* ================== EVENTS ================== */
-    btnAddAreaDock.addEventListener("click",()=>{
-      const id=state.nextAreaId++; const nm=(LANG==="sv"?"Område ":"Area ")+id;
-      const a={id,name:nm,modifier:state.project.settings.surfaceTypes["Smooth"],size:0,products:[]};
-      state.project.areas.push(a); const el=createAreaElement(a); areasContainer.appendChild(el);
-      log(`Added area "${nm}"`); pushStateForUndo(`Added area ${nm}`); updateCalculations();
-      el.scrollIntoView({behavior:"smooth",block:"center"});
-      topAddDock.style.display="none";
-    });
-    undoBtn.addEventListener("click",undo); redoBtn.addEventListener("click",redo);
-
-    vatToggle.addEventListener("change",()=>{state.project.settings.vatIncluded=vatToggle.checked; log(`VAT ${vatToggle.checked?"included":"excluded"}`); updateCalculations();});
-    vatPercentInput.addEventListener("change",()=>{state.project.settings.vatRate=toPosFloat(vatPercentInput.value,0); log(`VAT ${state.project.settings.vatRate}%`); updateCalculations();});
-    overageToggle.addEventListener("change",()=>{state.project.settings.overageIncluded=overageToggle.checked; log(`${overageToggle.checked?"Apply":"Remove"} overage`); updateCalculations();});
-    overagePercentInput.addEventListener("change",()=>{state.project.settings.overagePercent=toPosFloat(overagePercentInput.value,0); if(state.project.settings.overageIncluded) updateCalculations();});
-    exactToggle.addEventListener("change",()=>{state.project.settings.exactMode=exactToggle.checked; log(`Exact mode ${state.project.settings.exactMode?"ON":"OFF"}`); updateCalculations();});
-    darkModeToggle.addEventListener("change",()=>{state.project.settings.darkMode=darkModeToggle.checked; document.body.classList.toggle("dark-mode", state.project.settings.darkMode);});
-    stepModeToggle.addEventListener("change",()=>{state.project.settings.stepMode=stepModeToggle.checked; document.body.classList.toggle("step-on", state.project.settings.stepMode); updateCalculations();});
-    hideDecimalsToggle.addEventListener("change",()=>{state.project.settings.hideDecimals=hideDecimalsToggle.checked; log(`Hide decimals ${hideDecimalsToggle.checked?"ON":"OFF"}`); updateCalculations();});
-
-    importBtn.addEventListener("click",()=>fileInput.click());
-    fileInput.addEventListener("change",(e)=>{
-      const file=e.target.files[0]; if(!file) return; const r=new FileReader();
-      r.onload=()=>importData(file,r.result); r.onerror=()=>{alert("Failed to read file"); log("Error reading file");}; r.readAsText(file); fileInput.value="";
-    });
-    exportJSONBtn.addEventListener("click",exportJSON);
-    exportCSVBtn.addEventListener("click",exportCSV);
-    exportExcelBtn.addEventListener("click",exportExcel);
-    printBtn.addEventListener("click",()=>{window.print(); log("Print/PDF");});
-
-    minimizeLogBtn.addEventListener("click",()=>{if(!logPanel.classList.contains("minimized")) logPanel.classList.add("minimized"); else {logPanel.classList.remove("minimized"); logPanel.classList.remove("maximized");}});
-    maximizeLogBtn.addEventListener("click",()=>{if(logPanel.classList.contains("maximized")) logPanel.classList.remove("maximized"); else {logPanel.classList.remove("minimized"); logPanel.classList.add("maximized");}});
-
-    btnScrollSummary.addEventListener("click",()=>{document.getElementById("infoSummary").scrollIntoView({behavior:"smooth"});});
-
-    // Language toggles
-    langSV.addEventListener("click",()=>{LANG="sv"; state.project.settings.surfaceInfo = SURFACE_INFO.sv; langSV.classList.add("active"); langEN.classList.remove("active"); applyI18n(); renderAll();});
-    langEN.addEventListener("click",()=>{LANG="en"; state.project.settings.surfaceInfo = SURFACE_INFO.en; langEN.classList.add("active"); langSV.classList.remove("active"); applyI18n(); renderAll();});
-
-    /* ================== INIT ================== */
-    loadTemplates();
-    applyI18n();
-    log("App started");
-    renderAll();
-
-  })();
-  </script>
-</body>
-</html>
+        const roundedCostDisplay = state.project.settings.hideDecimals ? roundedCost.to
