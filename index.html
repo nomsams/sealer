@@ -168,6 +168,27 @@
       cursor:crosshair;
     }
 
+    /* Stationary Info Box (Right of Isometric) */
+    .iso-info-box {
+      width: 220px;
+      height: 120px;
+      background: var(--rowAlt);
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 0.85em;
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0; /* Hidden by default */
+      transition: opacity 0.2s ease-in-out;
+      pointer-events: none;
+    }
+    .iso-info-box.visible {
+      opacity: 1;
+    }
+
     /* ================== TABLE ================== */
     table.area-table{width:100%;border-collapse:separate;border-spacing:0 5px;margin-bottom:4px}
     thead tr th{font-size:.72em;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:3px 6px}
@@ -250,7 +271,7 @@
       background:var(--tooltipBg); color:var(--tooltipFg); padding:8px 10px; border-radius:10px; font-size:.9em; box-shadow:var(--shadow)
     }
 
-    /* ================== LOGS (MODAL) ================== */
+    /* ================== LOGS MODAL ================== */
     #logOverlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.5); z-index: 100;
@@ -662,16 +683,18 @@
     // Helper to darken/lighten color for shading
     function shadeColor(color, percent) {
         // Simple HSL parsing and adjustment
-        if(color.startsWith("hsl")) {
+        if(color && color.startsWith("hsl")) {
             let parts = color.match(/hsl\((\d+)\s*(\d+)%\s*(\d+)%\)/);
             if(parts) {
                 let h = parts[1], s = parts[2], l = parseInt(parts[3]);
                 l = Math.max(0, Math.min(100, l + percent));
                 return `hsl(${h} ${s}% ${l}%)`;
             }
+        } else if (color && color.startsWith("#")) {
+             // Very basic hex shader fallback
+             return color; 
         }
-        // Fallback for hex (not fully implemented for brevity, assuming HSL usage in app)
-        return color; 
+        return color || "#888"; 
     }
 
     function drawHabboStyle(canvas, area, highlightId = -1) {
@@ -682,8 +705,6 @@
 
       // Habbo Isometric Projection: 2:1 pixel ratio.
       // We draw a "stack" of slabs.
-      // Base slab: 2x thickness (e.g. 20px).
-      // Product slabs: 1x thickness (e.g. 10px).
       
       const TILE_W = 120; // Width of the top diamond
       const TILE_H = TILE_W / 2; // Height of the top diamond (2:1 ratio)
@@ -692,26 +713,25 @@
       
       // Center of the canvas
       const CX = W / 2;
-      const CY = H / 2 + 40; // Push down slightly to fit stack
+      // Start drawing from the bottom-ish
+      const CY = H - 30; 
 
       // Helper to draw a slab
-      // x, y: Center of the bottom-most point of the top face
+      // yOffset: How high up from CY the *bottom* of the slab starts
       function drawSlab(id, yOffset, thickness, color, isHighlight) {
-          const topY = CY - yOffset;
+          const bottomY = CY - yOffset;
+          const topY = bottomY - thickness;
           
-          // Vertices of the top face (Diamond)
-          //      0
-          //    3   1
-          //      2
-          const p0 = {x: CX, y: topY - TILE_H};
-          const p1 = {x: CX + TILE_W/2, y: topY - TILE_H/2};
-          const p2 = {x: CX, y: topY};
-          const p3 = {x: CX - TILE_W/2, y: topY - TILE_H/2};
+          // Top Face Vertices (Diamond at topY)
+          const t0 = {x: CX, y: topY - TILE_H};       // Top
+          const t1 = {x: CX + TILE_W/2, y: topY - TILE_H/2}; // Right
+          const t2 = {x: CX, y: topY};                // Bottom
+          const t3 = {x: CX - TILE_W/2, y: topY - TILE_H/2}; // Left
 
-          // Vertices for the bottom of the slab (for sides)
-          const b1 = {x: p1.x, y: p1.y + thickness};
-          const b2 = {x: p2.x, y: p2.y + thickness};
-          const b3 = {x: p3.x, y: p3.y + thickness};
+          // Bottom Face Vertices (Diamond at bottomY) - we only need the bottom 3 points for sides
+          const b1 = {x: CX + TILE_W/2, y: bottomY - TILE_H/2};
+          const b2 = {x: CX, y: bottomY};
+          const b3 = {x: CX - TILE_W/2, y: bottomY - TILE_H/2};
 
           // Colors
           let cTop = color;
@@ -724,44 +744,43 @@
               cLeft = shadeColor(cLeft, 15);
           }
 
-          // Draw Order: Bottom-up painter's algo is handled by the loop calling this.
-          // Within a slab: Left Face, Right Face, Top Face.
+          // Draw Order: Left Face, Right Face, Top Face.
 
-          // Left Face (p3 -> p2 -> b2 -> b3)
+          // Left Face (t3 -> t2 -> b2 -> b3)
           ctx.fillStyle = cLeft;
           ctx.beginPath();
-          ctx.moveTo(p3.x, p3.y);
-          ctx.lineTo(p2.x, p2.y);
+          ctx.moveTo(t3.x, t3.y);
+          ctx.lineTo(t2.x, t2.y);
           ctx.lineTo(b2.x, b2.y);
           ctx.lineTo(b3.x, b3.y);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
 
-          // Right Face (p2 -> p1 -> b1 -> b2)
+          // Right Face (t2 -> t1 -> b1 -> b2)
           ctx.fillStyle = cRight;
           ctx.beginPath();
-          ctx.moveTo(p2.x, p2.y);
-          ctx.lineTo(p1.x, p1.y);
+          ctx.moveTo(t2.x, t2.y);
+          ctx.lineTo(t1.x, t1.y);
           ctx.lineTo(b1.x, b1.y);
           ctx.lineTo(b2.x, b2.y);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
 
-          // Top Face (p0 -> p1 -> p2 -> p3)
+          // Top Face (t0 -> t1 -> t2 -> t3)
           ctx.fillStyle = cTop;
           ctx.beginPath();
-          ctx.moveTo(p0.x, p0.y);
-          ctx.lineTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.lineTo(p3.x, p3.y);
+          ctx.moveTo(t0.x, t0.y);
+          ctx.lineTo(t1.x, t1.y);
+          ctx.lineTo(t2.x, t2.y);
+          ctx.lineTo(t3.x, t3.y);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
           
-          // Store polygon for hit detection (Top face is usually enough for interaction)
-          return {id: id, poly: [p0, p1, p2, p3]};
+          // Store polygon for hit detection (Top face)
+          return {id: id, poly: [t0, t1, t2, t3]};
       }
 
       ctx.lineWidth = 1;
@@ -770,65 +789,30 @@
       const hitPolys = [];
 
       // 1. Draw Base Slab
-      // It sits at the bottom.
-      let currentYOffset = 0;
+      let currentHeight = 0;
       const baseIsHighlight = (highlightId === 0);
-      const basePoly = drawSlab(0, currentYOffset, BASE_THICKNESS, baseConcreteColor(area), baseIsHighlight);
+      const basePoly = drawSlab(0, currentHeight, BASE_THICKNESS, baseConcreteColor(area), baseIsHighlight);
       hitPolys.push(basePoly);
+      currentHeight += BASE_THICKNESS;
 
       // 2. Draw Products
-      // Stack them up.
-      // The "yOffset" for the next layer is the thickness of the previous layers? 
-      // No, in isometric, we move UP the screen (negative Y) to stack.
-      // But `drawSlab` takes `yOffset` as "how high above the origin".
-      // The base slab top is at CY.
-      // The next slab sits ON TOP of the base slab.
-      
-      // Actually, let's adjust logic. 
-      // Base slab top is at Z=0.
-      // Product 1 bottom is at Z=0, Top is at Z=10.
-      
-      // Draw Base Slab (Thickness goes DOWN from Z=0)
-      // My drawSlab draws from topY down by thickness.
-      // So Base Slab Top is at CY.
-      
-      // Product 1: Top is at CY - LAYER_THICKNESS. Thickness is LAYER_THICKNESS.
-      
-      currentYOffset = 0; // Base slab top is at 0 offset (CY)
-      
-      // We need to draw products in reverse order? No, bottom up.
-      // Base is drawn.
-      // Next layer is on top.
-      
-      area.products.forEach((p, index) => {
-          currentYOffset += LAYER_THICKNESS; // Move up
+      area.products.forEach((p) => {
           const isHighlight = (highlightId === p.id);
-          const poly = drawSlab(p.id, currentYOffset, LAYER_THICKNESS, layerColor(p), isHighlight);
+          const poly = drawSlab(p.id, currentHeight, LAYER_THICKNESS, layerColor(p), isHighlight);
           hitPolys.push(poly);
+          currentHeight += LAYER_THICKNESS;
       });
 
       canvas._hitPolys = hitPolys;
     }
 
-    function attachCanvasInteractions(canvas, area, inlineRow) {
-      const tip = hoverTip;
-      const show = (html, x, y) => {
-        tip.innerHTML = html;
-        tip.style.display = "block";
-        const pad = 10;
-        tip.style.left = (x + pad) + "px";
-        tip.style.top = (y + pad) + "px";
+    function attachCanvasInteractions(canvas, area, infoBox) {
+      const showInfo = (html) => {
+        infoBox.innerHTML = html;
+        infoBox.classList.add("visible");
       };
-      const hide = () => {
-        tip.style.display = "none";
-      };
-      const showInline = (html) => {
-        inlineRow.innerHTML = html;
-        inlineRow.classList.add("show");
-      };
-      const hideInline = () => {
-        inlineRow.classList.remove("show");
-        inlineRow.innerHTML = "";
+      const hideInfo = () => {
+        infoBox.classList.remove("visible");
       };
 
       canvas.addEventListener("mousemove", (e) => {
@@ -870,23 +854,19 @@
         if (hoverProduct) {
           const p = hoverProduct;
           const html = `<div><strong>${t("hoverProduct")}:</strong> ${p.name||"-"}</div><div>• ${t("layers")}: ${p.layers||1} • ${t("thickness")}: ${p.thickness||0} mm</div><div>• ${t("unit")}: ${p.packUnit||"kg"} • ${t("packSize")}: ${p.packSize||0}</div><div>• ${(p.priceMode==='perKg')?t("priceKg"):t("pricePack")}: ${p.price||0}</div>`;
-          show(html, e.clientX, e.clientY);
-          hideInline();
+          showInfo(html);
         } else if (onSlab) {
           const meta = surfaceExpl(area);
           const html = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
-          show(html, e.clientX, e.clientY);
-          showInline(html);
+          showInfo(html);
         } else {
-          hide();
-          hideInline();
+          hideInfo();
         }
       });
 
       canvas.addEventListener("mouseleave", () => {
         drawHabboStyle(canvas, area, -1);
-        hoverTip.style.display = "none";
-        hideInline();
+        hideInfo();
       });
     }
 
@@ -965,6 +945,10 @@
       mini.appendChild(canvas);
       header.appendChild(mini);
 
+      // Stationary Info Box
+      const infoBox = el("div", { class: "iso-info-box" });
+      header.appendChild(infoBox);
+
       // 1. Remove area button top right (Absolute position)
       const del = el("button", { class: "del-area", title: t("deleteArea") }, t("deleteArea"));
       del.addEventListener("click", () => removeArea(wrap));
@@ -1019,11 +1003,7 @@
       function updateAreaInfoboxAndCanvas(showInline = false) {
         const meta = surfaceExpl(area);
         drawHabboStyle(canvas, area);
-        attachCanvasInteractions(canvas, area, inlineInfo);
-        if (showInline) {
-          inlineInfo.innerHTML = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
-          inlineInfo.classList.add("show");
-        }
+        attachCanvasInteractions(canvas, area, infoBox);
       }
       updateAreaInfoboxAndCanvas();
 
@@ -1040,11 +1020,7 @@
         updateAreaInfoboxAndCanvas(true);
       });
       surfaceSel.addEventListener("mouseenter", () => updateAreaInfoboxAndCanvas(true));
-      surfaceSel.addEventListener("mouseleave", () => {
-        inlineInfo.classList.remove("show");
-        inlineInfo.innerHTML = "";
-      });
-
+      
       modI.addEventListener("change", () => {
         const v = toPosFloat(modI.value, 1.0);
         modI.value = v;
@@ -1718,7 +1694,11 @@
 
       renderTemplates();
       applyI18n();
-      updateCalculations(true);
+      
+      // Force redraw after a tick to ensure DOM elements have size
+      requestAnimationFrame(() => {
+          updateCalculations(true);
+      });
 
       topAddDock.style.display = state.project.areas.length ? "none" : "flex";
 
