@@ -157,7 +157,7 @@
     .mini-illustration{
       border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:0;
       width: 320px; /* Wider */
-      height: 120px; 
+      height: 150px; /* Taller to prevent top crop */
       display:flex; align-items:center; justify-content:center;
       overflow:hidden;
       margin-left: 50px; /* ~2cm gap from the size input */
@@ -170,13 +170,13 @@
 
     /* Stationary Info Box (Right of Isometric) */
     .iso-info-box {
-      width: 220px;
-      height: 120px;
+      width: 180px; /* Smaller width */
+      height: 100px; /* Smaller height */
       background: var(--rowAlt);
       border: 1px dashed var(--line);
       border-radius: 12px;
-      padding: 10px;
-      font-size: 0.85em;
+      padding: 8px;
+      font-size: 0.8em;
       color: var(--fg);
       display: flex;
       flex-direction: column;
@@ -714,7 +714,8 @@
       // Center of the canvas
       const CX = W / 2;
       // Start drawing from the bottom-ish
-      const CY = H - 30; 
+      // Adjusted CY to be lower to prevent top cropping
+      const CY = H - 25; 
 
       // Helper to draw a slab
       // yOffset: How high up from CY the *bottom* of the slab starts
@@ -816,9 +817,10 @@
       };
 
       canvas.addEventListener("mousemove", (e) => {
-        const r = canvas.getBoundingClientRect();
-        const x = e.clientX - r.left;
-        const y = e.clientY - r.top;
+        // Use offsetX/offsetY for accurate coordinates relative to the element,
+        // bypassing issues with CSS zoom/scale on the body.
+        const x = e.offsetX;
+        const y = e.offsetY;
         
         let highlightId = -1;
         let hoverProduct = null;
