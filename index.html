@@ -109,7 +109,8 @@
     }
     .area-header{
       display:grid;
-      grid-template-columns: 260px 180px 120px 200px 1fr 180px auto;
+      /* Modified grid to place illustration (200px) after size */
+      grid-template-columns: 260px 180px 120px 200px 220px 1fr auto;
       gap:10px; align-items:center; margin-bottom:6px
     }
     .mini-caption{grid-column:1/-1; font-size:.75em; color:var(--muted); margin-top:-2px;}
@@ -119,9 +120,17 @@
     .del-area{background:var(--panel);color:#991b1b;border:1px solid #fecaca55;border-radius:10px;padding:8px 10px;cursor:pointer; align-self:start}
     .del-area:hover{background:#ffeff157}
 
-    /* Small illustration top-right (50% smaller) */
-    .mini-illustration{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:6px;width:170px;justify-self:end}
-    .mini-illustration canvas{width:100%;height:80px;border-radius:8px;background:var(--panel)}
+    /* Illustration - Zoomed in */
+    .mini-illustration{
+      border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:4px;
+      width:210px; height:100px; display:flex; align-items:center; justify-content:center;
+      overflow:hidden; /* Clip content if zoomed too much */
+    }
+    .mini-illustration canvas{
+      width:100%; height:100%;
+      border-radius:8px; background:var(--panel);
+      cursor:crosshair;
+    }
 
     /* ================== TABLE ================== */
     table.area-table{width:100%;border-collapse:separate;border-spacing:0 5px;margin-bottom:4px}
@@ -143,7 +152,16 @@
     .td-proj{background:var(--rowProj)}
     .drag-handle{cursor:grab;font-size:16px;user-select:none}
     .product-row{position:relative;background:var(--rowBg)}
-    .product-row.dragging{opacity:.6}
+    
+    /* Dragging Styles */
+    .product-row.dragging {
+      opacity: 0.4;
+      background: var(--rowAlt);
+      border: 2px dashed var(--accent);
+    }
+    .product-row.drag-over {
+      border-top: 2px solid var(--accent);
+    }
 
     /* overlay actions ONLY on hover */
     .row-actions-overlay{position:absolute; top:-9px; right:6px; display:none; gap:6px; z-index:3}
@@ -196,20 +214,36 @@
       background:var(--tooltipBg); color:var(--tooltipFg); padding:8px 10px; border-radius:10px; font-size:.9em; box-shadow:var(--shadow)
     }
 
-    /* ================== LOGS ================== */
-    #logPanel{position:fixed;bottom:50px;left:0;right:0;background:#0b1220;color:#e5e7eb;font-family:ui-monospace,Consolas,monospace;font-size:.9em;max-height:230px;display:flex;flex-direction:column;border-top:2px solid #1f2937;z-index:35}
-    body:not(.dark-mode) #logPanel{background:#0b1220}
-    #logHeader{background:#0f172a;padding:6px 8px;font-weight:800;display:flex;align-items:center;gap:8px}
-    #logHeader .sp{flex:1}
-    #logHeader button{background:#1f2937;color:#fff;border:none;padding:4px 8px;margin-left:5px;cursor:pointer;font-weight:bold;border-radius:8px}
-    #logContent{overflow-y:auto;padding:6px}
-    #logPanel.minimized{max-height:none;height:auto}
-    #logPanel.minimized #logContent{display:none}
-    #logPanel.maximized{max-height:65vh}
+    /* ================== LOGS (MODAL) ================== */
+    #logOverlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); z-index: 100;
+      display: none; align-items: center; justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+    #logOverlay.open { display: flex; }
+    #logPanel {
+      width: 600px; max-width: 90vw; height: 400px;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 16px; box-shadow: var(--shadow);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #logHeader {
+      background: var(--rowAlt); padding: 10px 15px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 700; display: flex; justify-content: space-between; align-items: center;
+    }
+    #logContent {
+      flex: 1; overflow-y: auto; padding: 10px 15px;
+      font-family: ui-monospace, Consolas, monospace; font-size: 0.85em;
+      color: var(--fg);
+    }
+    #logContent p { margin: 4px 0; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
 
     /* ================== PRINT ================== */
     @media print{
-      .toolbar,.subbar,#topAddDock,#footerBar,#logPanel,#infoToast,#hoverTip{display:none!important}
+      .toolbar,.subbar,#topAddDock,#footerBar,#logOverlay,#infoToast,#hoverTip{display:none!important}
       .area{border:none;margin:0;page-break-inside:avoid}
       .del-area,.row-actions-overlay,.drag-handle{display:none!important}
     }
@@ -249,6 +283,9 @@
     </div>
 
     <div class="grow"></div>
+
+    <!-- Logs Button -->
+    <button id="toggleLogs" class="btn" style="margin-right:10px;">📜 Logs</button>
 
     <!-- Language FAR RIGHT -->
     <div class="group">
@@ -324,12 +361,15 @@
   <div id="infoToast" title="Visa info"><span class="dot"></span><span data-i18n="toast">Info uppdaterad — Visa</span></div>
   <div id="hoverTip"></div>
 
-  <!-- ================== LOGS ================== -->
-  <div id="logPanel" class="minimized">
-    <div id="logHeader">LOGGAR<span class="sp"></span>
-      <button id="minimizeLog">_</button><button id="maximizeLog">&#9723;</button>
+  <!-- ================== LOGS MODAL ================== -->
+  <div id="logOverlay">
+    <div id="logPanel">
+      <div id="logHeader">
+        <span>System Logs</span>
+        <button id="closeLogs" class="btn" style="padding:4px 8px;">✕</button>
+      </div>
+      <div id="logContent"></div>
     </div>
-    <div id="logContent"></div>
   </div>
 
   <!-- ================== DATALIST FOR SUGGESTIONS ================== -->
@@ -341,184 +381,18 @@
 
     /* ================== PRELOADED PRODUCTS ================== */
     const PRELOADED_PRODUCTS = [
-      {
-        name: "Testproduct 1",
-        color: "#ff5733",
-        calcMode: "usage",
-        usagePerM2: 1.5,
-        packSize: 20,
-        packUnit: "kg",
-        price: 450,
-        priceMode: "perPack",
-        layers: 1
-      },
-      {
-        name: "Testproduct 2",
-        color: "#33ff57",
-        calcMode: "thickness",
-        thickness: 5,
-        density: 1.8,
-        packSize: 25,
-        packUnit: "kg",
-        price: 12,
-        priceMode: "perKg",
-        layers: 1
-      },
-      {
-        name: "Testproduct 3",
-        color: "#3357ff",
-        calcMode: "coverage",
-        coverSqmPerPack: 12,
-        coverLayersPerPack: 1,
-        packSize: 5,
-        packUnit: "L",
-        price: 800,
-        priceMode: "perPack",
-        layers: 2
-      }
+      { name: "Testproduct 1", color: "#ff5733", calcMode: "usage", usagePerM2: 1.5, packSize: 20, packUnit: "kg", price: 450, priceMode: "perPack", layers: 1 },
+      { name: "Testproduct 2", color: "#33ff57", calcMode: "thickness", thickness: 5, density: 1.8, packSize: 25, packUnit: "kg", price: 12, priceMode: "perKg", layers: 1 },
+      { name: "Testproduct 3", color: "#3357ff", calcMode: "coverage", coverSqmPerPack: 12, coverLayersPerPack: 1, packSize: 5, packUnit: "L", price: 800, priceMode: "perPack", layers: 2 }
     ];
 
     /* ================== I18N ================== */
     const i18n = {
       sv: {
-        addArea: "+ Lägg till område",
-        addAreaBelow: "+ Lägg till område under",
-        undoText: "Ångra",
-        redoText: "Gör om",
-        language: "Språk",
-        vat: "Moms",
-        include: "inkludera",
-        overage: "Spill",
-        apply: "använd",
-        exact: "Exakt beräkning (ingen avrundning)",
-        dark: "Mörkt läge",
-        step: "Steg-för-steg",
-        import: "Importera",
-        exportJSON: "Export JSON",
-        exportCSV: "Export CSV",
-        exportExcel: "Export Excel",
-        print: "Skriv ut / PDF",
-        shareLink: "🔗 Dela Länk",
-        templatesTitle: "Globala Produktmallar",
-        addTemplate: "+ Lägg till mall",
-        applyAllTemplates: "Använd ALLA på ALLA områden",
-        infoTitle: "Info & summeringar",
-        infoEmpty: "Ingen info ännu. Lägg till produkter och ytor.",
-        toast: "Info uppdaterad — Visa",
-        areaName: "Områdesnamn",
-        surface: "Yttyp",
-        factor: "Faktor",
-        size: "Storlek",
-        sq: "m²",
-        product: "Produkt",
-        calc: "Läge",
-        usage: "Åtgång (kg per m²)",
-        usageHint: "Vanligen kg/m² per lager enligt datablad.",
-        layers: "Lager",
-        thickness: "Tjocklek (mm)",
-        density: "Densitet (kg/L)",
-        packSize: "Förp. storlek",
-        unit: "Enhet",
-        priceMode: "Pris-läge",
-        perPack: "Pris/förp",
-        perKg: "Pris/kg",
-        pricePack: "Pris/förp",
-        priceKg: "Pris/kg",
-        needed: "Behov",
-        packages: "Förp",
-        cost: "Kostnad",
-        addProduct: "+ Lägg till produktlager",
-        calcThickness: "Tjocklek",
-        calcUsage: "Åtgång/m²",
-        calcCoverage: "Täckning/förp",
-        coverSqm: "Täckning (m²/förp)",
-        coverLayers: "Lager per förp",
-        prodInfo: "Produktdata",
-        projectInfo: "Projekt/Områdesdata",
-        deleteArea: "Ta bort område",
-        cloneAll: "Klona → Alla",
-        cloneBelow: "Klona ↓ Nedan",
-        breakdown: "ℹ Breakdown",
-        remove: "Ta bort",
-        hoverSurface: "Yta",
-        hoverProduct: "Produkt",
-        tmplAdded: "Mall tillagd",
-        tmplApplyAll: "Mall applicerad på alla områden",
-        errUnsupported: "Filformatet stöds inte.",
-        updated: "Uppdaterad ",
-        color: "Färg",
-        hideDecimals: "Dölj decimaler",
-        linkCopied: "Länk kopierad till urklipp!"
+        addArea: "+ Lägg till område", addAreaBelow: "+ Lägg till område under", undoText: "Ångra", redoText: "Gör om", language: "Språk", vat: "Moms", include: "inkludera", overage: "Spill", apply: "använd", exact: "Exakt beräkning (ingen avrundning)", dark: "Mörkt läge", step: "Steg-för-steg", import: "Importera", exportJSON: "Export JSON", exportCSV: "Export CSV", exportExcel: "Export Excel", print: "Skriv ut / PDF", shareLink: "🔗 Dela Länk", templatesTitle: "Globala Produktmallar", addTemplate: "+ Lägg till mall", applyAllTemplates: "Använd ALLA på ALLA områden", infoTitle: "Info & summeringar", infoEmpty: "Ingen info ännu. Lägg till produkter och ytor.", toast: "Info uppdaterad — Visa", areaName: "Områdesnamn", surface: "Yttyp", factor: "Faktor", size: "Storlek", sq: "m²", product: "Produkt", calc: "Läge", usage: "Åtgång (kg per m²)", usageHint: "Vanligen kg/m² per lager enligt datablad.", layers: "Lager", thickness: "Tjocklek (mm)", density: "Densitet (kg/L)", packSize: "Förp. storlek", unit: "Enhet", priceMode: "Pris-läge", perPack: "Pris/förp", perKg: "Pris/kg", pricePack: "Pris/förp", priceKg: "Pris/kg", needed: "Behov", packages: "Förp", cost: "Kostnad", addProduct: "+ Lägg till produktlager", calcThickness: "Tjocklek", calcUsage: "Åtgång/m²", calcCoverage: "Täckning/förp", coverSqm: "Täckning (m²/förp)", coverLayers: "Lager per förp", prodInfo: "Produktdata", projectInfo: "Projekt/Områdesdata", deleteArea: "Ta bort område", cloneAll: "Klona → Alla", cloneBelow: "Klona ↓ Nedan", breakdown: "ℹ Breakdown", remove: "Ta bort", hoverSurface: "Yta", hoverProduct: "Produkt", tmplAdded: "Mall tillagd", tmplApplyAll: "Mall applicerad på alla områden", errUnsupported: "Filformatet stöds inte.", updated: "Uppdaterad ", color: "Färg", hideDecimals: "Dölj decimaler", linkCopied: "Länk kopierad till urklipp!"
       },
       en: {
-        addArea: "+ Add Area",
-        addAreaBelow: "+ Add Area Below",
-        undoText: "Undo",
-        redoText: "Redo",
-        language: "Language",
-        vat: "VAT",
-        include: "include",
-        overage: "Overage",
-        apply: "apply",
-        exact: "Exact calc (no rounding)",
-        dark: "Dark mode",
-        step: "Step-by-step",
-        import: "Import",
-        exportJSON: "Export JSON",
-        exportCSV: "Export CSV",
-        exportExcel: "Export Excel",
-        print: "Print / PDF",
-        shareLink: "🔗 Share Link",
-        templatesTitle: "Global Product Templates",
-        addTemplate: "+ Add Template",
-        applyAllTemplates: "Apply ALL to ALL Areas",
-        infoTitle: "Info & summaries",
-        infoEmpty: "No info yet. Add products and areas.",
-        toast: "Info updated — View",
-        areaName: "Area name",
-        surface: "Surface",
-        factor: "Factor",
-        size: "Size",
-        sq: "m²",
-        product: "Product",
-        calc: "Mode",
-        usage: "Usage (kg per m²)",
-        usageHint: "Usually kg/m² per layer per data sheet.",
-        layers: "Layers",
-        thickness: "Thickness (mm)",
-        density: "Density (kg/L)",
-        packSize: "Pack size",
-        unit: "Unit",
-        priceMode: "Price Mode",
-        perPack: "Price/pack",
-        perKg: "Price/kg",
-        pricePack: "Price/pack",
-        priceKg: "Price/kg",
-        needed: "Needed",
-        packages: "Packages",
-        cost: "Cost",
-        addProduct: "+ Add Product Layer",
-        calcThickness: "Thickness",
-        calcUsage: "Usage/m²",
-        calcCoverage: "Coverage/pack",
-        coverSqm: "Coverage (m²/pack)",
-        coverLayers: "Layers per pack",
-        prodInfo: "Product info",
-        projectInfo: "Project/Area info",
-        deleteArea: "Delete Area",
-        cloneAll: "Clone → All",
-        cloneBelow: "Clone ↓ Below",
-        breakdown: "ℹ Breakdown",
-        remove: "Remove",
-        hoverSurface: "Surface",
-        hoverProduct: "Product",
-        tmplAdded: "Template added",
-        tmplApplyAll: "Template applied to all areas",
-        errUnsupported: "Unsupported file format.",
-        updated: "Updated ",
-        color: "Color",
-        hideDecimals: "Hide decimals",
-        linkCopied: "Link copied to clipboard!"
+        addArea: "+ Add Area", addAreaBelow: "+ Add Area Below", undoText: "Undo", redoText: "Redo", language: "Language", vat: "VAT", include: "include", overage: "Overage", apply: "apply", exact: "Exact calc (no rounding)", dark: "Dark mode", step: "Step-by-step", import: "Import", exportJSON: "Export JSON", exportCSV: "Export CSV", exportExcel: "Export Excel", print: "Print / PDF", shareLink: "🔗 Share Link", templatesTitle: "Global Product Templates", addTemplate: "+ Add Template", applyAllTemplates: "Apply ALL to ALL Areas", infoTitle: "Info & summaries", infoEmpty: "No info yet. Add products and areas.", toast: "Info updated — View", areaName: "Area name", surface: "Surface", factor: "Factor", size: "Size", sq: "m²", product: "Product", calc: "Mode", usage: "Usage (kg per m²)", usageHint: "Usually kg/m² per layer per data sheet.", layers: "Layers", thickness: "Thickness (mm)", density: "Density (kg/L)", packSize: "Pack size", unit: "Unit", priceMode: "Price Mode", perPack: "Price/pack", perKg: "Price/kg", pricePack: "Price/pack", priceKg: "Price/kg", needed: "Needed", packages: "Packages", cost: "Cost", addProduct: "+ Add Product Layer", calcThickness: "Thickness", calcUsage: "Usage/m²", calcCoverage: "Coverage/pack", coverSqm: "Coverage (m²/pack)", coverLayers: "Layers per pack", prodInfo: "Product info", projectInfo: "Project/Area info", deleteArea: "Delete Area", cloneAll: "Clone → All", cloneBelow: "Clone ↓ Below", breakdown: "ℹ Breakdown", remove: "Remove", hoverSurface: "Surface", hoverProduct: "Product", tmplAdded: "Template added", tmplApplyAll: "Template applied to all areas", errUnsupported: "Unsupported file format.", updated: "Updated ", color: "Color", hideDecimals: "Hide decimals", linkCopied: "Link copied to clipboard!"
       }
     };
 
@@ -612,10 +486,10 @@
     const lastInfoTime = document.getElementById("lastInfoTime");
     const hoverTip = document.getElementById("hoverTip");
     const btnScrollSummary = document.getElementById("btnScrollSummary");
-    const logPanel = document.getElementById("logPanel");
+    const logOverlay = document.getElementById("logOverlay");
     const logContent = document.getElementById("logContent");
-    const minimizeLogBtn = document.getElementById("minimizeLog");
-    const maximizeLogBtn = document.getElementById("maximizeLog");
+    const toggleLogsBtn = document.getElementById("toggleLogs");
+    const closeLogsBtn = document.getElementById("closeLogs");
     const langSV = document.getElementById("langSV");
     const langEN = document.getElementById("langEN");
     const topAddDock = document.getElementById("topAddDock");
@@ -733,7 +607,62 @@
       };
     }
 
-    /* ================== CANVAS ILLUSTRATION ================== */
+    /* ================== CANVAS ILLUSTRATION (ZOOMED & DETAILED) ================== */
+    function PRNG(seed) {
+      let t = seed >>> 0 || 88675123;
+      return function() {
+        t += 0x6D2B79F5;
+        let r = t ^ (t >>> 15);
+        r = Math.imul(r, 1 | r);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function drawCracks(ctx, rect, prng, density = 6, color = "rgba(0,0,0,.25)") {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < density; i++) {
+        let x = rect.x + prng() * rect.w;
+        let y = rect.y + prng() * rect.h;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for (let j = 0; j < 6; j++) {
+          x += (prng() * 10 - 5);
+          y += (prng() * 5 - 2.5);
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawRugged(ctx, rect, prng) {
+      ctx.save();
+      for (let i = 0; i < 160; i++) {
+        const x = rect.x + prng() * rect.w;
+        const y = rect.y + prng() * rect.h;
+        const r = prng() * 1.2 + 0.3;
+        ctx.fillStyle = `rgba(0,0,0,${prng()*0.06+0.04})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawSpeckles(ctx, rect, prng, amount = 120) {
+      ctx.save();
+      for (let i = 0; i < amount; i++) {
+        const x = rect.x + prng() * rect.w;
+        const y = rect.y + prng() * rect.h;
+        ctx.fillStyle = `rgba(0,0,0,${prng()*0.06})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+      ctx.restore();
+    }
+
     function baseConcreteColor(area) {
       const f = area.modifier;
       const l = 90 - Math.min(28, (f - 1) * 65);
@@ -755,14 +684,24 @@
       const H = canvas.height = canvas.clientHeight;
       ctx.clearRect(0, 0, W, H);
 
-      const baseX = W * 0.6;
-      const depthX = W * 0.3;
-      const depthY = W * 0.15;
-      const slabHeightPx = 10;
-      const layerHeightPx = 4;
+      // Zoomed in parameters (Millimeter level feel)
+      // We scale the context to simulate zoom
+      const ZOOM = 2.5; 
+      ctx.save();
+      ctx.scale(ZOOM, ZOOM);
+      ctx.translate(-W * 0.25, -H * 0.2); // Center the zoomed content
+
+      const scaledW = W / ZOOM;
+      const scaledH = H / ZOOM;
+
+      const baseX = scaledW * 0.6;
+      const depthX = scaledW * 0.3;
+      const depthY = scaledW * 0.15;
+      const slabHeightPx = 15; // Thicker slab for detail
+      const layerHeightPx = 6; // Thicker layers
       const marginLeft = 10;
-      const marginBottom = 3;
-      const slabBottomY = H - marginBottom;
+      const marginBottom = 10;
+      const slabBottomY = scaledH - marginBottom;
       const originX = depthX + marginLeft;
       const originY = slabBottomY - slabHeightPx;
 
@@ -776,6 +715,7 @@
       const sidePolys = [];
       let topPoly = null;
 
+      // Slab Side
       sidePolys.push({
         id: 0,
         points: [{ ...slabBackRight }, { ...slabFrontRight }, { ...slabBottomFrontRight }, { ...slabBottomBackRight }],
@@ -823,16 +763,20 @@
         };
       }
 
+      // Save for interaction (unscaled coordinates needed for hit testing, so we store scaled points)
+      // Note: Hit testing needs to account for zoom, handled in event listener
       canvas._sidePolys = sidePolys;
       canvas._topPoly = topPoly;
+      canvas._zoom = ZOOM;
+      canvas._transX = -W * 0.25;
+      canvas._transY = -H * 0.2;
 
+      // Draw Sides
       sidePolys.forEach(poly => {
         ctx.beginPath();
         const pts = poly.points;
         ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) {
-          ctx.lineTo(pts[i].x, pts[i].y);
-        }
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
         ctx.closePath();
         if (highlightId !== -1 && ((poly.id === 0 && highlightId === 0) || (poly.id > 0 && poly.id === highlightId))) {
           ctx.save();
@@ -846,12 +790,11 @@
         }
       });
 
+      // Draw Top
       ctx.beginPath();
       const tp = topPoly.points;
       ctx.moveTo(tp[0].x, tp[0].y);
-      for (let i = 1; i < tp.length; i++) {
-        ctx.lineTo(tp[i].x, tp[i].y);
-      }
+      for (let i = 1; i < tp.length; i++) ctx.lineTo(tp[i].x, tp[i].y);
       ctx.closePath();
       if (highlightId !== -1 && ((topPoly.id === 0 && highlightId === 0) || (topPoly.id > 0 && topPoly.id === highlightId))) {
         ctx.save();
@@ -864,8 +807,35 @@
         ctx.fill();
       }
 
+      // Draw Surface Details (Texture) on Top Face if it's the slab
+      if (topPoly.id === 0) {
+        // Create a bounding box for the top face to apply texture
+        const minX = Math.min(tp[0].x, tp[3].x);
+        const minY = Math.min(tp[2].y, tp[3].y);
+        const w = Math.max(tp[1].x, tp[2].x) - minX;
+        const h = Math.max(tp[0].y, tp[1].y) - minY;
+        
+        // Clip to top poly
+        ctx.save();
+        ctx.clip();
+        
+        const prng = PRNG(area.id * 1337); // Deterministic seed based on area ID
+        const type = reverseFindTypeByFactor(area.modifier) || "Custom";
+        
+        if (type === "Rough") drawRugged(ctx, {x:minX, y:minY, w, h}, prng);
+        else if (type === "Porous/Cracked") {
+           drawSpeckles(ctx, {x:minX, y:minY, w, h}, prng, 200);
+           drawCracks(ctx, {x:minX, y:minY, w, h}, prng, 8);
+        }
+        else if (type === "Medium Grind") drawSpeckles(ctx, {x:minX, y:minY, w, h}, prng, 150);
+        else if (type === "Light Grind") drawSpeckles(ctx, {x:minX, y:minY, w, h}, prng, 50);
+        
+        ctx.restore();
+      }
+
+      // Outlines
       ctx.strokeStyle = "rgba(0,0,0,0.3)";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.5;
       for (let i = 0; i < sidePolys.length - 1; i++) {
         const pts = sidePolys[i].points;
         ctx.beginPath();
@@ -876,9 +846,7 @@
 
       ctx.beginPath();
       ctx.moveTo(tp[0].x, tp[0].y);
-      for (let i = 1; i < tp.length; i++) {
-        ctx.lineTo(tp[i].x, tp[i].y);
-      }
+      for (let i = 1; i < tp.length; i++) ctx.lineTo(tp[i].x, tp[i].y);
       ctx.closePath();
       ctx.stroke();
 
@@ -895,6 +863,8 @@
       ctx.moveTo(backRightBase.x, backRightBase.y);
       ctx.lineTo(backRightTop.x, backRightTop.y);
       ctx.stroke();
+
+      ctx.restore(); // Restore zoom
     }
 
     function attachCanvasInteractions(canvas, area, inlineRow) {
@@ -920,8 +890,17 @@
 
       canvas.addEventListener("mousemove", (e) => {
         const r = canvas.getBoundingClientRect();
-        const x = e.clientX - r.left;
-        const y = e.clientY - r.top;
+        // Adjust mouse coordinates for zoom and translation
+        const zoom = canvas._zoom || 1;
+        const tx = canvas._transX || 0;
+        const ty = canvas._transY || 0;
+        
+        const rawX = e.clientX - r.left;
+        const rawY = e.clientY - r.top;
+        
+        const x = (rawX / zoom) - (tx / zoom);
+        const y = (rawY / zoom) - (ty / zoom);
+
         let highlightId = -1;
         let hoverProduct = null;
         let onSlab = false;
@@ -1050,13 +1029,14 @@
       sizeWrap.appendChild(unit);
       header.appendChild(sizeWrap);
 
-      const miniCap = el("div", { class: "mini-caption" }, `${t("prodInfo")} / ${t("projectInfo")}`);
-      header.appendChild(miniCap);
-
+      // Moved Illustration here (Right of Size)
       const mini = el("div", { class: "mini-illustration" });
       const canvas = document.createElement("canvas");
       mini.appendChild(canvas);
       header.appendChild(mini);
+
+      const miniCap = el("div", { class: "mini-caption" }, `${t("prodInfo")} / ${t("projectInfo")}`);
+      header.appendChild(miniCap);
 
       const del = el("button", { class: "del-area", title: t("deleteArea") }, t("deleteArea"));
       del.addEventListener("click", () => removeArea(wrap));
@@ -1516,41 +1496,85 @@
       updateCalculations(true);
     }
 
-    /* ================== DRAG SORT ================== */
+    /* ================== DRAG SORT (FIXED) ================== */
     function enableDragSort(tbody, area) {
       let dragId = null;
+      
       tbody.addEventListener("dragstart", (e) => {
         const row = e.target.closest(".product-row");
         if (!row) return;
         dragId = parseInt(row.getAttribute("data-product-id"));
         row.classList.add("dragging");
+        
+        // Hide the breakdown row during drag to prevent layout glitches
+        const breakdownRow = row.nextElementSibling;
+        if(breakdownRow && breakdownRow.classList.contains("breakdown")) {
+          breakdownRow.style.display = "none";
+        }
+
         e.dataTransfer.effectAllowed = "move";
-        const areaElem = document.querySelector(`.area[data-area-id="${area.id}"]`);
-        const canv = areaElem ? areaElem.querySelector(".mini-illustration canvas") : null;
-        if (canv) drawAreaIllustration(canv, area);
+        e.dataTransfer.setData("text/plain", dragId);
       });
+
       tbody.addEventListener("dragend", (e) => {
         const row = e.target.closest(".product-row");
-        if (row) row.classList.remove("dragging");
+        if (row) {
+          row.classList.remove("dragging");
+          // Restore breakdown row visibility if step mode is on
+          const breakdownRow = row.nextElementSibling;
+          if(breakdownRow && breakdownRow.classList.contains("breakdown")) {
+             breakdownRow.style.display = state.project.settings.stepMode ? "" : "none";
+          }
+        }
+        // Clean up drag-over classes
+        tbody.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
       });
+
       tbody.addEventListener("dragover", (e) => {
         e.preventDefault();
         const after = getDragAfterElement(tbody, e.clientY);
         const dragging = tbody.querySelector(".product-row.dragging");
         if (!dragging) return;
-        if (after == null) tbody.appendChild(dragging);
-        else tbody.insertBefore(dragging, after);
+        
+        // Visual feedback only
+        tbody.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
+        if (after) after.classList.add("drag-over");
+        
+        // We do NOT move the DOM here to avoid "lines appearing" glitches with the hidden rows.
+        // We wait for drop.
       });
-      tbody.addEventListener("drop", () => {
+
+      tbody.addEventListener("drop", (e) => {
+        e.preventDefault();
         if (dragId == null) return;
-        const order = [...tbody.querySelectorAll(".product-row")].map(r => parseInt(r.getAttribute("data-product-id")));
-        const newProducts = order.map(id => area.products.find(p => p.id === id));
-        if (newProducts.every(Boolean)) {
-          pushStateForUndo(`Reorder products in ${area.name}`);
-          area.products = newProducts;
-          renderAll();
-          log(`Reordered products in "${area.name}"`);
+        
+        const after = getDragAfterElement(tbody, e.clientY);
+        const draggingRow = tbody.querySelector(`.product-row[data-product-id="${dragId}"]`);
+        
+        if(!draggingRow) return;
+
+        // Calculate new order based on DOM position relative to 'after'
+        const currentRows = [...tbody.querySelectorAll(".product-row")];
+        const fromIndex = currentRows.findIndex(r => parseInt(r.getAttribute("data-product-id")) === dragId);
+        let toIndex;
+        
+        if (after) {
+          toIndex = currentRows.indexOf(after);
+          if (toIndex > fromIndex) toIndex--; // Adjust if moving down
+        } else {
+          toIndex = currentRows.length - 1;
         }
+
+        if (fromIndex !== toIndex) {
+           // Reorder array
+           const item = area.products.splice(fromIndex, 1)[0];
+           area.products.splice(toIndex, 0, item);
+           
+           pushStateForUndo(`Reorder products in ${area.name}`);
+           renderAll(); // Re-render to ensure DOM is clean (products + breakdown rows)
+           log(`Reordered products in "${area.name}"`);
+        }
+        
         dragId = null;
       });
     }
@@ -2384,20 +2408,18 @@
       window.print();
       log("Print/PDF");
     });
-    minimizeLogBtn.addEventListener("click", () => {
-      if (!logPanel.classList.contains("minimized")) logPanel.classList.add("minimized");
-      else {
-        logPanel.classList.remove("minimized");
-        logPanel.classList.remove("maximized");
-      }
+    
+    // Logs Modal Logic
+    toggleLogsBtn.addEventListener("click", () => {
+      logOverlay.classList.add("open");
     });
-    maximizeLogBtn.addEventListener("click", () => {
-      if (logPanel.classList.contains("maximized")) logPanel.classList.remove("maximized");
-      else {
-        logPanel.classList.remove("minimized");
-        logPanel.classList.add("maximized");
-      }
+    closeLogsBtn.addEventListener("click", () => {
+      logOverlay.classList.remove("open");
     });
+    logOverlay.addEventListener("click", (e) => {
+      if(e.target === logOverlay) logOverlay.classList.remove("open");
+    });
+
     btnScrollSummary.addEventListener("click", () => {
       document.getElementById("infoSummary").scrollIntoView({ behavior: "smooth" });
     });
