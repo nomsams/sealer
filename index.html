@@ -1731,4 +1731,708 @@
         const recommendedCost = (rec.priceMode === 'perKg') ? (rec.needed * rec.price) : (recommendedPk * rec.price);
 
         const exactCostDisplay = state.project.settings.hideDecimals ? exactCost.toFixed(0) : exactCost.toFixed(2);
-        const roundedCostDisplay = state.project.settings.hideDecimals ? roundedCost.to
+        const roundedCostDisplay = state.project.settings.hideDecimals ? roundedCost.toFixed(0) : roundedCost.toFixed(2);
+        const recommendedCostDisplay = state.project.settings.hideDecimals ? recommendedCost.toFixed(0) : recommendedCost.toFixed(2);
+
+        parts.push(`
+          <div class="product-total">
+            <h5>${rec.name} <span class="dim">[${rec.unit}]</span></h5>
+            <div>${LANG==="sv"?"Totalt behov":"Total need"}: <strong>${fmt(rec.needed)} ${rec.unit}</strong></div>
+            <div>${LANG==="sv"?"Förpackningar":"Packages"}: ${LANG==="sv"?"exakt":"exact"} ${fmt(exactPk)}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedPk}, <em>${LANG==="sv"?"rekommenderat":"recommended"}</em> ${recommendedPk} (${LANG==="sv"?"ta lite extra för säkerhets skull":"take a little extra for safety"})</div>
+            <div>${LANG==="sv"?"Kostnad":"Cost"} (${rec.priceMode==='perKg'?(LANG==="sv"?"pris/kg":"per kg"):(LANG==="sv"?"pris/förp":"per pack")}):
+               ${LANG==="sv"?"exakt":"exact"} ${exactCostDisplay}, ${LANG==="sv"?"avrundat":"rounded"} ${roundedCostDisplay}, ${LANG==="sv"?"rekommenderat":"recommended"} ${recommendedCostDisplay}</div>
+          </div>
+        `);
+      });
+      info.innerHTML = parts.join("");
+    }
+
+    /* ================== RENDER ALL ================== */
+    function renderAll() {
+      areasContainer.innerHTML = "";
+      state.project.areas.forEach(a => areasContainer.appendChild(createAreaElement(a)));
+
+      vatToggle.checked = state.project.settings.vatIncluded;
+      vatPercentInput.value = state.project.settings.vatRate;
+      overageToggle.checked = state.project.settings.overageIncluded;
+      overagePercentInput.value = state.project.settings.overagePercent;
+      exactToggle.checked = state.project.settings.exactMode || false;
+      stepModeToggle.checked = state.project.settings.stepMode || false;
+      darkModeToggle.checked = state.project.settings.darkMode || false;
+      hideDecimalsToggle.checked = state.project.settings.hideDecimals || false;
+      document.body.classList.toggle("step-on", state.project.settings.stepMode);
+      document.body.classList.toggle("dark-mode", state.project.settings.darkMode);
+
+      renderTemplates();
+      applyI18n();
+      updateCalculations(true);
+
+      topAddDock.style.display = state.project.areas.length ? "none" : "flex";
+
+      const ud = state.undoStack.at(-1)?.desc || (LANG === "sv" ? "Inget att ångra" : "Nothing to undo");
+      const rd = state.redoStack.at(-1)?.desc || (LANG === "sv" ? "Inget att göra om" : "Nothing to redo");
+      undoBtn.title = (LANG === "sv" ? "Ångra: " : "Undo: ") + ud;
+      redoBtn.title = (LANG === "sv" ? "Gör om: " : "Redo: ") + rd;
+      undoBtn.disabled = state.undoStack.length === 0;
+      redoBtn.disabled = state.redoStack.length === 0;
+    }
+
+    /* ================== TEMPLATES ================== */
+    const TKEY = "__TEMPLATES__";
+
+    function getTemplates() {
+      if (!state._templates) state._templates = [];
+      return state._templates;
+    }
+
+    function saveTemplates() {
+      localStorage.setItem(TKEY, JSON.stringify(getTemplates()));
+    }
+
+    function loadTemplates() {
+      try {
+        const raw = localStorage.getItem(TKEY);
+        if (raw) {
+          const arr = JSON.parse(raw) || [];
+          state._templates = arr;
+          state.nextTemplateId = (Math.max(0, ...arr.map(x => x.id || 0)) + 1) || 1;
+        }
+      } catch {
+        state._templates = [];
+      }
+    }
+
+    function renderTemplates() {
+      const templatesBody = document.getElementById("templatesBody");
+      templatesBody.innerHTML = "";
+      const list = getTemplates();
+      if (!list.length) {
+        templatesBody.innerHTML = `<div style="color:var(--muted)">${LANG==="sv"?"Inga mallar ännu.":"No templates yet."}</div>`;
+        return;
+      }
+      list.forEach(t => {
+        const row = el("div", { style: "display:grid;grid-template-columns: 200px 80px 140px 120px 120px 110px 110px 90px 130px 120px 120px 120px auto;gap:8px;align-items:center;margin:6px 0" });
+        const n = el("input", { value: t.name, placeholder: t("product") });
+        row.appendChild(n);
+        const color = el("input", { type: "color", value: t.color || "#6cb2ff" });
+        row.appendChild(color);
+        const mode = el("select");
+        [
+          ["thickness", t("calcThickness")],
+          ["usage", t("calcUsage")],
+          ["coverage", t("calcCoverage")]
+        ].forEach(([v, l]) => {
+          const o = el("option", { value: v });
+          o.textContent = l;
+          mode.appendChild(o);
+        });
+        mode.value = t.calcMode;
+        row.appendChild(mode);
+        const use = el("input", { type: "number", min: "0", step: "0.001", value: t.usagePerM2 || 0 });
+        row.appendChild(use);
+        const lay = el("input", { type: "number", min: "1", step: "1", value: t.layers || 1 });
+        row.appendChild(lay);
+        const th = el("input", { type: "number", min: "0", step: "0.1", value: t.thickness || 0 });
+        row.appendChild(th);
+        const de = el("input", { type: "number", min: "0", step: "0.01", value: (t.density ?? "") });
+        row.appendChild(de);
+        const ps = el("input", { type: "number", min: "0.0001", step: "0.1", value: t.packSize || 1 });
+        row.appendChild(ps);
+        const pu = el("select");
+        ["kg", "L"].forEach(u => {
+          const o = el("option", { value: u });
+          o.textContent = u;
+          pu.appendChild(o);
+        });
+        pu.value = t.packUnit || "kg";
+        row.appendChild(pu);
+        const pm = el("select");
+        [
+          ["perPack", t("perPack")],
+          ["perKg", t("perKg")]
+        ].forEach(([v, l]) => {
+          const o = el("option", { value: v });
+          o.textContent = l;
+          pm.appendChild(o);
+        });
+        pm.value = t.priceMode || "perPack";
+        row.appendChild(pm);
+        const pr = el("input", { type: "number", min: "0", step: "0.01", value: t.price || 0 });
+        row.appendChild(pr);
+        const coverS = el("input", { type: "number", min: "0", step: "0.1", value: t.coverSqmPerPack || 0, placeholder: t("coverSqm") });
+        row.appendChild(coverS);
+        const coverL = el("input", { type: "number", min: "1", step: "1", value: t.coverLayersPerPack || 1, placeholder: t("coverLayers") });
+        row.appendChild(coverL);
+
+        const actions = el("div", { style: "display:flex;gap:8px;justify-content:flex-end" });
+        const applyAll = el("button", { class: "btn" }, t("applyAllTemplates"));
+        const applyCurrent = el("button", { class: "btn" }, LANG === "sv" ? "Använd på aktuellt område" : "Apply to current area");
+        const del = el("button", { class: "btn", style: "border:1px solid var(--line)" }, "Delete");
+        actions.appendChild(applyAll);
+        actions.appendChild(applyCurrent);
+        actions.appendChild(del);
+        row.appendChild(actions);
+
+        const bind = () => {
+          t.name = n.value;
+          t.color = color.value;
+          t.calcMode = mode.value;
+          t.usagePerM2 = toPosFloat(use.value, 0);
+          t.layers = Math.max(1, parseInt(lay.value) || 1);
+          t.thickness = toPosFloat(th.value, 0);
+          t.density = (de.value === "" ? null : toPosFloat(de.value, 0));
+          t.packSize = Math.max(0.0001, parseFloat(ps.value) || 1);
+          t.packUnit = pu.value;
+          t.price = toPosFloat(pr.value, 0);
+          t.priceMode = pm.value;
+          t.coverSqmPerPack = toPosFloat(coverS.value, 0);
+          t.coverLayersPerPack = Math.max(1, parseInt(coverL.value) || 1);
+        };
+        [n, color, mode, use, lay, th, de, ps, pu, pm, pr, coverS, coverL].forEach(inp => inp.addEventListener("change", () => {
+          bind();
+          saveTemplates();
+        }));
+
+        applyAll.addEventListener("click", () => {
+          bind();
+          saveTemplates();
+          pushStateForUndo(`Apply template "${t.name}" to all areas`);
+          state.project.areas.forEach(a => {
+            const np = cloneProductData(t);
+            np.id = state.nextProductId++;
+            a.products.push(np);
+          });
+          log(t("tmplApplyAll"));
+          renderAll();
+        });
+        applyCurrent.addEventListener("click", () => {
+          bind();
+          saveTemplates();
+          const a = state.project.areas[0];
+          if (!a) {
+            alert(LANG === "sv" ? "Skapa ett område först." : "Create an area first.");
+            return;
+          }
+          pushStateForUndo(`Apply template "${t.name}" to first area`);
+          const np = cloneProductData(t);
+          np.id = state.nextProductId++;
+          a.products.push(np);
+          renderAll();
+        });
+        del.addEventListener("click", () => {
+          if (!confirm(LANG === "sv" ? "Ta bort mallen?" : "Delete this template?")) return;
+          const L = getTemplates();
+          const idx = L.findIndex(x => x.id === t.id);
+          if (idx > -1) {
+            L.splice(idx, 1);
+            saveTemplates();
+            renderTemplates();
+          }
+        });
+
+        templatesBody.appendChild(row);
+      });
+    }
+
+    /* ================== IMPORT / EXPORT / URL ================== */
+    function importData(file, content) {
+      const name = file.name;
+      if (name.endsWith(".json")) {
+        try {
+          const parsed = JSON.parse(content);
+          if (!parsed.areas || !parsed.settings) throw new Error("Invalid JSON format");
+          pushStateForUndo(`Imported JSON (${name})`);
+          state.project.areas = parsed.areas;
+          state.project.settings = { ...state.project.settings,
+            ...parsed.settings
+          };
+          state.nextAreaId = 1;
+          state.nextProductId = 1;
+          state.project.areas.forEach(a => {
+            if (a.id >= state.nextAreaId) state.nextAreaId = a.id + 1;
+            a.products.forEach(p => {
+              if (p.id >= state.nextProductId) state.nextProductId = p.id + 1;
+            });
+          });
+          renderAll();
+          log(`Imported JSON "${name}"`);
+        } catch (err) {
+          alert("Failed to import JSON: " + err.message);
+          log("Error importing JSON: " + err.message);
+        }
+      } else if (name.endsWith(".csv")) {
+        try {
+          const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+          if (!lines.length) throw new Error("Empty CSV");
+          let start = 0,
+            headers = [];
+          if (/area\s*name|areaname/i.test(lines[0])) {
+            headers = parseCSVLine(lines[0]);
+            start = 1;
+          } else {
+            headers = ["AreaName", "SurfaceType", "SurfaceMod", "AreaSize", "ProductName", "Color", "Layers", "Thickness", "Density", "PackSize", "PackUnit", "Price", "PriceMode", "VATIncluded", "VATRate", "OverageIncluded", "OveragePercent", "CalcMode", "UsagePerM2", "CoverSqmPerPack", "CoverLayersPerPack"];
+          }
+          const idx = {};
+          headers.forEach((c, i) => idx[c] = i);
+          const importedAreas = [];
+          const map = {};
+          let importedSettings = {};
+          for (let i = start; i < lines.length; i++) {
+            const v = parseCSVLine(lines[i]);
+            if (!v.length) continue;
+            const aName = v[idx["AreaName"] ?? 0] || "";
+            if (!aName) continue;
+            const sType = v[idx["SurfaceType"]] || "Custom";
+            const sMod = parseFloat(v[idx["SurfaceMod"]]) || 1.0;
+            const aSize = parseFloat(v[idx["AreaSize"]]) || 0;
+            const pName = v[idx["ProductName"]] || "";
+            const color = v[idx["Color"]] || null;
+            const layers = parseInt(v[idx["Layers"]]) || 1;
+            const thick = parseFloat(v[idx["Thickness"]]) || 0;
+            const dens = (v[idx["Density"]] !== "" && v[idx["Density"]] != null) ? parseFloat(v[idx["Density"]]) : null;
+            const pSize = parseFloat(v[idx["PackSize"]]) || 1;
+            const pUnit = v[idx["PackUnit"]] || "kg";
+            const price = parseFloat(v[idx["Price"]]) || 0;
+            const pMode = v[idx["PriceMode"]] || "perPack";
+            const mode = v[idx["CalcMode"]] || "thickness";
+            const usage = parseFloat(v[idx["UsagePerM2"]]) || 0;
+            const covS = parseFloat(v[idx["CoverSqmPerPack"]]) || 0;
+            const covL = parseInt(v[idx["CoverLayersPerPack"]]) || 1;
+            if (i === start) {
+              importedSettings.vatIncluded = /^(true|1)$/i.test(v[idx["VATIncluded"]] || "");
+              importedSettings.vatRate = parseFloat(v[idx["VATRate"]]) || state.project.settings.vatRate;
+              importedSettings.overageIncluded = /^(true|1)$/i.test(v[idx["OverageIncluded"]] || "");
+              importedSettings.overagePercent = parseFloat(v[idx["OveragePercent"]]) || state.project.settings.overagePercent;
+            }
+            let area = map[aName];
+            if (!area) {
+              area = { id: state.nextAreaId++, name: aName, modifier: sMod, size: aSize, products: [] };
+              map[aName] = area;
+              importedAreas.push(area);
+            }
+            if (pName || price > 0 || thick > 0) {
+              area.products.push({
+                id: state.nextProductId++,
+                name: pName,
+                color,
+                layers,
+                thickness: thick,
+                density: dens,
+                packSize: pSize,
+                packUnit: pUnit,
+                price,
+                priceMode: pMode,
+                calcMode: mode,
+                usagePerM2: usage,
+                coverSqmPerPack: covS,
+                coverLayersPerPack: covL
+              });
+            }
+          }
+          pushStateForUndo(`Imported CSV (${name})`);
+          state.project.areas = importedAreas;
+          state.project.settings = { ...state.project.settings,
+            ...importedSettings
+          };
+          renderAll();
+          log(`Imported CSV "${name}"`);
+        } catch (err) {
+          alert("Failed to import CSV: " + err.message);
+          log("Error importing CSV: " + err.message);
+        }
+      } else {
+        alert(t("errUnsupported"));
+        log("Import failed: unsupported file");
+      }
+    }
+
+    function parseCSVLine(line) {
+      const out = [];
+      let cur = "";
+      let q = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (!q) {
+          if (ch === ',') {
+            out.push(cur.trim());
+            cur = "";
+          } else if (ch === '"') {
+            q = true;
+          } else cur += ch;
+        } else {
+          if (ch === '"') {
+            if (i + 1 < line.length && line[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else q = false;
+          } else cur += ch;
+        }
+      }
+      out.push(cur.trim());
+      return out;
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state.project, null, 2)], { type: "application/json" });
+      downloadBlob(blob, "project_export.json");
+      log("Exported JSON");
+    }
+
+    function exportCSV() {
+      const headers = ["AreaName", "SurfaceType", "SurfaceMod", "AreaSize", "ProductName", "Color", "Layers", "Thickness", "Density", "PackSize", "PackUnit", "Price", "PriceMode", "VATIncluded", "VATRate", "OverageIncluded", "OveragePercent", "CalcMode", "UsagePerM2", "CoverSqmPerPack", "CoverLayersPerPack"];
+      const lines = [headers.join(",")];
+      const S = state.project.settings;
+      state.project.areas.forEach(a => {
+        if (!a.products.length) {
+          lines.push([a.name, reverseFindTypeByFactor(a.modifier) || "Custom", a.modifier, a.size, "", "", "", "", "", "", "", "", "", S.vatIncluded, S.vatRate, S.overageIncluded, S.overagePercent, "", "", "", ""].map(formatCSVValue).join(","));
+        } else {
+          a.products.forEach(p => {
+            lines.push([a.name, reverseFindTypeByFactor(a.modifier) || "Custom", a.modifier, a.size, p.name || "", p.color || "", p.layers, p.thickness, (p.density != null ? p.density : ""), p.packSize, p.packUnit, p.price, p.priceMode || "perPack", S.vatIncluded, S.vatRate, S.overageIncluded, S.overagePercent, p.calcMode, p.usagePerM2, p.coverSqmPerPack, p.coverLayersPerPack].map(formatCSVValue).join(","));
+          });
+        }
+      });
+      downloadBlob(new Blob([lines.join("\n")], { type: "text/csv" }), "project_export.csv");
+      log("Exported CSV");
+    }
+
+    function generateExcelXML() {
+      const nl = "\r\n";
+      let xml = '<?xml version="1.0"?>' + nl + '<?mso-application progid="Excel.Sheet"?>' + nl + '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">' + nl + '<Styles>' + nl + '<Style ss:ID="Bold"><Font ss:Bold="1"/></Style>' + nl + '<Style ss:ID="TwoDec"><NumberFormat ss:Format="0.00"/></Style>' + nl + '<Style ss:ID="BoldTwoDec"><Font ss:Bold="1"/><NumberFormat ss:Format="0.00"/></Style>' + nl + '</Styles>' + nl + '<Worksheet ss:Name="Estimate">' + nl;
+      const COLS = 20;
+      let rows = 1;
+      state.project.areas.forEach(a => {
+        rows += a.products.length;
+        rows += 1;
+      });
+      rows += 1;
+      xml += `<Table ss:ExpandedColumnCount="${COLS}" ss:ExpandedRowCount="${rows}">` + nl;
+      for (let j = 0; j < COLS; j++) {
+        xml += '<Column ss:AutoFitWidth="1"/>' + nl;
+      }
+      const headers = ["Area", "Surface Mod", "Area Size (m²)", "Product", "Color", "# Mode", "Usage kg/m²", "Density kg/L", "Pack size", "Unit", "Price Mode", "Price", "Cover m²/pack", "Cover layers/pack", "Layers", "Thickness (mm)", "Needed", "Packages", "Cost"];
+      xml += '<Row ss:StyleID="Bold">' + nl;
+      headers.forEach(h => xml += `<Cell><Data ss:Type="String">${h}</Data></Cell>` + nl);
+      xml += '</Row>' + nl;
+      let rowIndex = 1,
+        areaTotalRows = [];
+      state.project.areas.forEach(a => {
+        a.products.forEach(p => {
+          rowIndex++;
+          const S = state.project.settings;
+          const areaSize = Number(a.size) || 0,
+            layers = Math.max(1, Number(p.layers) || 1),
+            unit = p.packUnit || "kg",
+            price = Number(p.price) || 0,
+            packSize = Math.max(0.0001, Number(p.packSize) || 0),
+            priceMode = p.priceMode || "perPack";
+          let needed = 0,
+            packages = 0;
+          if ((p.calcMode || "thickness") === "usage") {
+            let base = areaSize * layers * (Number(p.usagePerM2) || 0);
+            base *= a.modifier;
+            if (S.overageIncluded) base *= (1 + S.overagePercent / 100);
+            needed = base;
+            packages = S.exactMode ? needed / packSize : Math.ceil(needed / packSize);
+          } else if (p.calcMode === "thickness") {
+            let volL = areaSize * (Number(p.thickness) || 0) * layers;
+            volL *= a.modifier;
+            if (S.overageIncluded) volL *= (1 + S.overagePercent / 100);
+            needed = (unit === "kg") ? ((Number(p.density) || 0) > 0 ? volL * (Number(p.density) || 0) : 0) : volL;
+            packages = S.exactMode ? needed / packSize : Math.ceil(needed / packSize);
+          } else {
+            const cov = Number(p.coverSqmPerPack) || 0;
+            const covL = Math.max(1, Number(p.coverLayersPerPack) || 1);
+            const packNeed = cov > 0 ? (areaSize * (layers / covL) / cov) : 0;
+            packages = S.exactMode ? packNeed : Math.ceil(packNeed);
+            needed = packages * packSize;
+          }
+          const cost = (priceMode === 'perKg') ? (needed * price) : (packages * price);
+          xml += '<Row>' + nl;
+          xml += `<Cell><Data ss:Type="String">${escapeXML(a.name)}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${a.modifier}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${a.size}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="String">${escapeXML(p.name||"")}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="String">${escapeXML(p.color||"")}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="String">${p.calcMode}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${p.usagePerM2||0}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${(p.density!=null?p.density:"")}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${p.packSize||0}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="String">${unit}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="String">${priceMode}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${price}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${p.coverSqmPerPack||0}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${p.coverLayersPerPack||1}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${layers}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${p.thickness||0}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${needed.toFixed(1)}</Data></Cell>` + nl;
+          xml += `<Cell><Data ss:Type="Number">${S.exactMode?fmt(packages):packages}</Data></Cell>` + nl;
+          xml += `<Cell ss:StyleID="TwoDec"><Data ss:Type="Number">${cost.toFixed(2)}</Data></Cell>` + nl;
+          xml += '</Row>' + nl;
+        });
+        rowIndex++;
+        areaTotalRows.push(rowIndex);
+        let areaTotal = 0;
+        a.products.forEach(p => {
+          const S = state.project.settings;
+          const areaSize = Number(a.size) || 0;
+          const layers = Math.max(1, Number(p.layers) || 1);
+          const unit = p.packUnit || "kg";
+          const price = Number(p.price) || 0;
+          const packSize = Math.max(0.0001, Number(p.packSize) || 0);
+          const priceMode = p.priceMode || "perPack";
+          let needed = 0,
+            packages = 0;
+          if ((p.calcMode || "thickness") === "usage") {
+            let base = areaSize * layers * (Number(p.usagePerM2) || 0);
+            base *= a.modifier;
+            if (S.overageIncluded) base *= (1 + S.overagePercent / 100);
+            needed = base;
+            packages = S.exactMode ? needed / packSize : Math.ceil(needed / packSize);
+          } else if (p.calcMode === "thickness") {
+            let volL = areaSize * (Number(p.thickness) || 0) * layers;
+            volL *= a.modifier;
+            if (S.overageIncluded) volL *= (1 + S.overagePercent / 100);
+            needed = (unit === "kg") ? ((Number(p.density) || 0) > 0 ? volL * (Number(p.density) || 0) : 0) : volL;
+            packages = S.exactMode ? needed / packSize : Math.ceil(needed / packSize);
+          } else {
+            const cov = Number(p.coverSqmPerPack) || 0;
+            const covL = Math.max(1, Number(p.coverLayersPerPack) || 1);
+            const packNeed = cov > 0 ? (areaSize * (layers / covL) / cov) : 0;
+            packages = S.exactMode ? packNeed : Math.ceil(packNeed);
+            needed = packages * packSize;
+          }
+          areaTotal += (priceMode === 'perKg') ? (needed * price) : (packages * price);
+        });
+        xml += '<Row ss:StyleID="Bold">' + nl;
+        xml += `<Cell ss:MergeAcross="17"><Data ss:Type="String">${escapeXML(a.name)} Total</Data></Cell>` + nl;
+        xml += `<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">${areaTotal.toFixed(2)}</Data></Cell>` + nl;
+        xml += '</Row>' + nl;
+      });
+      rowIndex++;
+      xml += '<Row ss:StyleID="Bold">' + nl;
+      xml += '<Cell ss:MergeAcross="17"><Data ss:Type="String">Project Total</Data></Cell>' + nl;
+      if (areaTotalRows.length) {
+        const refs = areaTotalRows.map(r => `R${r}C`);
+        xml += `<Cell ss:StyleID="BoldTwoDec" ss:Formula="=SUM(${refs.join(",")})"><Data ss:Type="Number"></Data></Cell>` + nl;
+      } else xml += '<Cell ss:StyleID="BoldTwoDec"><Data ss:Type="Number">0</Data></Cell>' + nl;
+      xml += '</Row>' + nl + '</Table>' + nl + '</Worksheet>' + nl + '</Workbook>';
+      return xml;
+    }
+
+    function exportExcel() {
+      downloadBlob(new Blob([generateExcelXML()], { type: "application/vnd.ms-excel" }), "project_estimate.xls");
+      log("Exported Excel");
+    }
+
+    /* ================== URL STATE LOGIC ================== */
+    function generateShortURL() {
+      // Map long keys to short keys for URL compression
+      const s = state.project.settings;
+      const shortData = {
+        a: state.project.areas.map(a => ({
+          n: a.name,
+          m: a.modifier,
+          s: a.size,
+          p: a.products.map(p => ({
+            n: p.name,
+            c: p.color,
+            l: p.layers,
+            t: p.thickness,
+            d: p.density,
+            ps: p.packSize,
+            pu: p.packUnit,
+            pr: p.price,
+            pm: p.priceMode,
+            cm: p.calcMode,
+            u: p.usagePerM2,
+            cs: p.coverSqmPerPack,
+            cl: p.coverLayersPerPack
+          }))
+        })),
+        s: {
+          v: s.vatIncluded ? 1 : 0,
+          vr: s.vatRate,
+          o: s.overageIncluded ? 1 : 0,
+          op: s.overagePercent
+        }
+      };
+      const json = JSON.stringify(shortData);
+      const b64 = btoa(json);
+      const url = window.location.protocol + "//" + window.location.host + window.location.pathname + "?d=" + b64;
+      navigator.clipboard.writeText(url).then(() => alert(t("linkCopied"))).catch(e => prompt("Copy Link:", url));
+    }
+
+    function loadStateFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has("d")) return;
+      try {
+        const json = atob(params.get("d"));
+        const short = JSON.parse(json);
+        if (short.a) {
+          state.project.areas = short.a.map((a, i) => ({
+            id: i + 1,
+            name: a.n,
+            modifier: a.m,
+            size: a.s,
+            products: (a.p || []).map((p, j) => ({
+              id: j + 1,
+              name: p.n,
+              color: p.c,
+              layers: p.l,
+              thickness: p.t,
+              density: p.d,
+              packSize: p.ps,
+              packUnit: p.pu,
+              price: p.pr,
+              priceMode: p.pm,
+              calcMode: p.cm,
+              usagePerM2: p.u,
+              coverSqmPerPack: p.cs,
+              coverLayersPerPack: p.cl
+            }))
+          }));
+          state.nextAreaId = state.project.areas.length + 1;
+          state.nextProductId = 1000; // safe margin
+        }
+        if (short.s) {
+          state.project.settings.vatIncluded = !!short.s.v;
+          state.project.settings.vatRate = short.s.vr;
+          state.project.settings.overageIncluded = !!short.s.o;
+          state.project.settings.overagePercent = short.s.op;
+        }
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        log("Loaded state from URL");
+      } catch (e) {
+        console.error(e);
+        log("Error loading URL state");
+      }
+    }
+
+    /* ================== EVENTS ================== */
+    btnAddAreaDock.addEventListener("click", () => {
+      const id = state.nextAreaId++;
+      const nm = (LANG === "sv" ? "Område " : "Area ") + id;
+      const a = { id, name: nm, modifier: state.project.settings.surfaceTypes["Smooth"], size: 0, products: [] };
+      state.project.areas.push(a);
+      const el = createAreaElement(a);
+      areasContainer.appendChild(el);
+      log(`Added area "${nm}"`);
+      pushStateForUndo(`Added area ${nm}`);
+      updateCalculations();
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      topAddDock.style.display = "none";
+    });
+    undoBtn.addEventListener("click", undo);
+    redoBtn.addEventListener("click", redo);
+    vatToggle.addEventListener("change", () => {
+      state.project.settings.vatIncluded = vatToggle.checked;
+      log(`VAT ${vatToggle.checked?"included":"excluded"}`);
+      updateCalculations();
+    });
+    vatPercentInput.addEventListener("change", () => {
+      state.project.settings.vatRate = toPosFloat(vatPercentInput.value, 0);
+      log(`VAT ${state.project.settings.vatRate}%`);
+      updateCalculations();
+    });
+    overageToggle.addEventListener("change", () => {
+      state.project.settings.overageIncluded = overageToggle.checked;
+      log(`${overageToggle.checked?"Apply":"Remove"} overage`);
+      updateCalculations();
+    });
+    overagePercentInput.addEventListener("change", () => {
+      state.project.settings.overagePercent = toPosFloat(overagePercentInput.value, 0);
+      if (state.project.settings.overageIncluded) updateCalculations();
+    });
+    exactToggle.addEventListener("change", () => {
+      state.project.settings.exactMode = exactToggle.checked;
+      log(`Exact mode ${state.project.settings.exactMode?"ON":"OFF"}`);
+      updateCalculations();
+    });
+    darkModeToggle.addEventListener("change", () => {
+      state.project.settings.darkMode = darkModeToggle.checked;
+      document.body.classList.toggle("dark-mode", state.project.settings.darkMode);
+    });
+    stepModeToggle.addEventListener("change", () => {
+      state.project.settings.stepMode = stepModeToggle.checked;
+      document.body.classList.toggle("step-on", state.project.settings.stepMode);
+      updateCalculations();
+    });
+    hideDecimalsToggle.addEventListener("change", () => {
+      state.project.settings.hideDecimals = hideDecimalsToggle.checked;
+      log(`Hide decimals ${hideDecimalsToggle.checked?"ON":"OFF"}`);
+      updateCalculations();
+    });
+    importBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = () => importData(file, r.result);
+      r.onerror = () => {
+        alert("Failed to read file");
+        log("Error reading file");
+      };
+      r.readAsText(file);
+      fileInput.value = "";
+    });
+    exportJSONBtn.addEventListener("click", exportJSON);
+    exportCSVBtn.addEventListener("click", exportCSV);
+    exportExcelBtn.addEventListener("click", exportExcel);
+    shareLinkBtn.addEventListener("click", generateShortURL);
+    printBtn.addEventListener("click", () => {
+      window.print();
+      log("Print/PDF");
+    });
+    minimizeLogBtn.addEventListener("click", () => {
+      if (!logPanel.classList.contains("minimized")) logPanel.classList.add("minimized");
+      else {
+        logPanel.classList.remove("minimized");
+        logPanel.classList.remove("maximized");
+      }
+    });
+    maximizeLogBtn.addEventListener("click", () => {
+      if (logPanel.classList.contains("maximized")) logPanel.classList.remove("maximized");
+      else {
+        logPanel.classList.remove("minimized");
+        logPanel.classList.add("maximized");
+      }
+    });
+    btnScrollSummary.addEventListener("click", () => {
+      document.getElementById("infoSummary").scrollIntoView({ behavior: "smooth" });
+    });
+    langSV.addEventListener("click", () => {
+      LANG = "sv";
+      state.project.settings.surfaceInfo = SURFACE_INFO.sv;
+      langSV.classList.add("active");
+      langEN.classList.remove("active");
+      applyI18n();
+      renderAll();
+    });
+    langEN.addEventListener("click", () => {
+      LANG = "en";
+      state.project.settings.surfaceInfo = SURFACE_INFO.en;
+      langEN.classList.add("active");
+      langSV.classList.remove("active");
+      applyI18n();
+      renderAll();
+    });
+
+    /* ================== INIT ================== */
+    // Populate Datalist
+    PRELOADED_PRODUCTS.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.name;
+      productSuggestions.appendChild(opt);
+    });
+
+    loadTemplates();
+    loadStateFromURL(); // Check for URL params
+    applyI18n();
+    log("App started");
+    renderAll();
+
+  })();
+  </script>
+</body>
+</html>
