@@ -111,27 +111,32 @@
     }
     .area-header{
       display:grid;
-      /* 2. Layout: Caption on top row. Inputs on second row. */
-      grid-template-columns: 260px 180px 120px 200px auto;
+      /* 
+         Grid Layout:
+         Row 1: Caption (Full width)
+         Row 2: Name(260) | Surface(180) | Factor(120) | Size(200) | Spacer(80) | Illustration(300) | Auto
+      */
+      grid-template-columns: 260px 180px 120px 200px 80px 300px auto;
       grid-template-rows: auto auto;
       gap: 10px; 
       align-items:center; 
       margin-bottom:6px;
       padding-right: 50px; /* Space for delete button */
     }
-    /* 2. Caption top left */
+    
+    /* 2. Caption top left, spanning all */
     .mini-caption{
       grid-column: 1 / -1; 
       grid-row: 1;
-      font-size:.85em; color:var(--muted); margin-top:-2px; margin-bottom: 4px;
-      font-weight: 600;
+      font-size:.9em; color:var(--muted); margin-top:-2px; margin-bottom: 4px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
     }
     
     .unit-wrap{display:flex;align-items:center;gap:6px}
     .unit-wrap input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg)}
     .unit-wrap .unit{font-weight:700;color:var(--muted)}
     
-    /* 1. Remove area button top right */
+    /* 1. Remove area button top right (Absolute) */
     .del-area{
       position: absolute;
       top: 12px;
@@ -144,16 +149,16 @@
     /* 4. Isometric view wider and moved right */
     .mini-illustration{
       grid-row: 2;
-      border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:4px;
-      width:360px; /* Wider 1.5-2x */
-      height:100px; 
+      grid-column: 6; /* Placed after spacer */
+      border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:0;
+      width:300px; /* Wider */
+      height:140px; /* Taller to fit stack */
       display:flex; align-items:center; justify-content:center;
       overflow:hidden;
-      margin-left: 40px; /* ~2cm right */
     }
     .mini-illustration canvas{
       width:100%; height:100%;
-      border-radius:8px; background:var(--panel);
+      background:var(--panel);
       cursor:crosshair;
     }
 
@@ -632,62 +637,7 @@
       };
     }
 
-    /* ================== CANVAS ILLUSTRATION (ZOOMED & DETAILED) ================== */
-    function PRNG(seed) {
-      let t = seed >>> 0 || 88675123;
-      return function() {
-        t += 0x6D2B79F5;
-        let r = t ^ (t >>> 15);
-        r = Math.imul(r, 1 | r);
-        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
-        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-
-    function drawCracks(ctx, rect, prng, density = 6, color = "rgba(0,0,0,.25)") {
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < density; i++) {
-        let x = rect.x + prng() * rect.w;
-        let y = rect.y + prng() * rect.h;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        for (let j = 0; j < 6; j++) {
-          x += (prng() * 10 - 5);
-          y += (prng() * 5 - 2.5);
-          ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    function drawRugged(ctx, rect, prng) {
-      ctx.save();
-      for (let i = 0; i < 160; i++) {
-        const x = rect.x + prng() * rect.w;
-        const y = rect.y + prng() * rect.h;
-        const r = prng() * 1.2 + 0.3;
-        ctx.fillStyle = `rgba(0,0,0,${prng()*0.06+0.04})`;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    function drawSpeckles(ctx, rect, prng, amount = 120) {
-      ctx.save();
-      for (let i = 0; i < amount; i++) {
-        const x = rect.x + prng() * rect.w;
-        const y = rect.y + prng() * rect.h;
-        ctx.fillStyle = `rgba(0,0,0,${prng()*0.06})`;
-        ctx.fillRect(x, y, 1, 1);
-      }
-      ctx.restore();
-    }
-
+    /* ================== HABBO STYLE ISOMETRIC DRAWING ================== */
     function baseConcreteColor(area) {
       const f = area.modifier;
       const l = 90 - Math.min(28, (f - 1) * 65);
@@ -703,195 +653,155 @@
       })();
     }
 
-    function drawAreaIllustration(canvas, area, highlightId = -1) {
+    // Helper to darken/lighten color for shading
+    function shadeColor(color, percent) {
+        // Simple HSL parsing and adjustment
+        if(color.startsWith("hsl")) {
+            let parts = color.match(/hsl\((\d+)\s*(\d+)%\s*(\d+)%\)/);
+            if(parts) {
+                let h = parts[1], s = parts[2], l = parseInt(parts[3]);
+                l = Math.max(0, Math.min(100, l + percent));
+                return `hsl(${h} ${s}% ${l}%)`;
+            }
+        }
+        // Fallback for hex (not fully implemented for brevity, assuming HSL usage in app)
+        return color; 
+    }
+
+    function drawHabboStyle(canvas, area, highlightId = -1) {
       const ctx = canvas.getContext("2d");
       const W = canvas.width = canvas.clientWidth;
       const H = canvas.height = canvas.clientHeight;
       ctx.clearRect(0, 0, W, H);
 
-      // Zoomed in parameters (Millimeter level feel)
-      // We scale the context to simulate zoom
-      const ZOOM = 2.2; 
-      ctx.save();
-      ctx.scale(ZOOM, ZOOM);
-      // Center the zoomed content. 
-      // Since we zoomed in, we need to shift the origin back to keep the slab centered.
-      ctx.translate(-W * 0.28, -H * 0.25); 
+      // Habbo Isometric Projection: 2:1 pixel ratio.
+      // We draw a "stack" of slabs.
+      // Base slab: 2x thickness (e.g. 20px).
+      // Product slabs: 1x thickness (e.g. 10px).
+      
+      const TILE_W = 120; // Width of the top diamond
+      const TILE_H = TILE_W / 2; // Height of the top diamond (2:1 ratio)
+      const BASE_THICKNESS = 20;
+      const LAYER_THICKNESS = 10;
+      
+      // Center of the canvas
+      const CX = W / 2;
+      const CY = H / 2 + 40; // Push down slightly to fit stack
 
-      const scaledW = W / ZOOM;
-      const scaledH = H / ZOOM;
+      // Helper to draw a slab
+      // x, y: Center of the bottom-most point of the top face
+      function drawSlab(id, yOffset, thickness, color, isHighlight) {
+          const topY = CY - yOffset;
+          
+          // Vertices of the top face (Diamond)
+          //      0
+          //    3   1
+          //      2
+          const p0 = {x: CX, y: topY - TILE_H};
+          const p1 = {x: CX + TILE_W/2, y: topY - TILE_H/2};
+          const p2 = {x: CX, y: topY};
+          const p3 = {x: CX - TILE_W/2, y: topY - TILE_H/2};
 
-      const baseX = scaledW * 0.6;
-      const depthX = scaledW * 0.3;
-      const depthY = scaledW * 0.15;
-      const slabHeightPx = 15; // Thicker slab for detail
-      const layerHeightPx = 6; // Thicker layers
-      const marginLeft = 10;
-      const marginBottom = 10;
-      const slabBottomY = scaledH - marginBottom;
-      const originX = depthX + marginLeft;
-      const originY = slabBottomY - slabHeightPx;
+          // Vertices for the bottom of the slab (for sides)
+          const b1 = {x: p1.x, y: p1.y + thickness};
+          const b2 = {x: p2.x, y: p2.y + thickness};
+          const b3 = {x: p3.x, y: p3.y + thickness};
 
-      const slabFrontLeft = { x: originX, y: originY };
-      const slabFrontRight = { x: originX + baseX, y: originY };
-      const slabBackLeft = { x: originX - depthX, y: originY - depthY };
-      const slabBackRight = { x: originX + baseX - depthX, y: originY - depthY };
-      const slabBottomFrontRight = { x: slabFrontRight.x, y: slabFrontRight.y + slabHeightPx };
-      const slabBottomBackRight = { x: slabBackRight.x, y: slabBackRight.y + slabHeightPx };
+          // Colors
+          let cTop = color;
+          let cRight = shadeColor(color, -15); // Darker
+          let cLeft = shadeColor(color, -5);   // Slightly darker
 
-      const sidePolys = [];
-      let topPoly = null;
+          if(isHighlight) {
+              cTop = shadeColor(color, 15);
+              cRight = shadeColor(cRight, 15);
+              cLeft = shadeColor(cLeft, 15);
+          }
 
-      // Slab Side
-      sidePolys.push({
-        id: 0,
-        points: [{ ...slabBackRight }, { ...slabFrontRight }, { ...slabBottomFrontRight }, { ...slabBottomBackRight }],
-        color: baseConcreteColor(area)
-      });
+          // Draw Order: Bottom-up painter's algo is handled by the loop calling this.
+          // Within a slab: Left Face, Right Face, Top Face.
 
-      let curFrontLeft = slabFrontLeft;
-      let curFrontRight = slabFrontRight;
-      let curBackLeft = slabBackLeft;
-      let curBackRight = slabBackRight;
-
-      area.products.forEach(p => {
-        const heightPx = (p.layers ? parseInt(p.layers) : 1) * layerHeightPx;
-        const bottomFR = curFrontRight;
-        const bottomBR = curBackRight;
-        const newFrontLeft = { x: curFrontLeft.x, y: curFrontLeft.y - heightPx };
-        const newFrontRight = { x: curFrontRight.x, y: curFrontRight.y - heightPx };
-        const newBackLeft = { x: curBackLeft.x, y: curBackLeft.y - heightPx };
-        const newBackRight = { x: curBackRight.x, y: curBackRight.y - heightPx };
-
-        sidePolys.push({
-          id: p.id,
-          points: [{ ...newBackRight }, { ...newFrontRight }, { ...bottomFR }, { ...bottomBR }],
-          color: layerColor(p)
-        });
-
-        curFrontLeft = newFrontLeft;
-        curFrontRight = newFrontRight;
-        curBackLeft = newBackLeft;
-        curBackRight = newBackRight;
-      });
-
-      if (area.products.length > 0) {
-        const topProduct = area.products[area.products.length - 1];
-        topPoly = {
-          id: topProduct.id,
-          points: [{ ...curFrontLeft }, { ...curFrontRight }, { ...curBackRight }, { ...curBackLeft }],
-          color: layerColor(topProduct)
-        };
-      } else {
-        topPoly = {
-          id: 0,
-          points: [{ ...curFrontLeft }, { ...curFrontRight }, { ...curBackRight }, { ...curBackLeft }],
-          color: baseConcreteColor(area)
-        };
-      }
-
-      // Save for interaction (unscaled coordinates needed for hit testing, so we store scaled points)
-      // Note: Hit testing needs to account for zoom, handled in event listener
-      canvas._sidePolys = sidePolys;
-      canvas._topPoly = topPoly;
-      canvas._zoom = ZOOM;
-      canvas._transX = -W * 0.28;
-      canvas._transY = -H * 0.25;
-
-      // Draw Sides
-      sidePolys.forEach(poly => {
-        ctx.beginPath();
-        const pts = poly.points;
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-        ctx.closePath();
-        if (highlightId !== -1 && ((poly.id === 0 && highlightId === 0) || (poly.id > 0 && poly.id === highlightId))) {
-          ctx.save();
-          ctx.fillStyle = poly.color;
-          ctx.filter = "brightness(1.25)";
+          // Left Face (p3 -> p2 -> b2 -> b3)
+          ctx.fillStyle = cLeft;
+          ctx.beginPath();
+          ctx.moveTo(p3.x, p3.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(b2.x, b2.y);
+          ctx.lineTo(b3.x, b3.y);
+          ctx.closePath();
           ctx.fill();
-          ctx.restore();
-        } else {
-          ctx.fillStyle = poly.color;
+          ctx.stroke();
+
+          // Right Face (p2 -> p1 -> b1 -> b2)
+          ctx.fillStyle = cRight;
+          ctx.beginPath();
+          ctx.moveTo(p2.x, p2.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.lineTo(b1.x, b1.y);
+          ctx.lineTo(b2.x, b2.y);
+          ctx.closePath();
           ctx.fill();
-        }
+          ctx.stroke();
+
+          // Top Face (p0 -> p1 -> p2 -> p3)
+          ctx.fillStyle = cTop;
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          
+          // Store polygon for hit detection (Top face is usually enough for interaction)
+          return {id: id, poly: [p0, p1, p2, p3]};
+      }
+
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(0,0,0,0.4)";
+      
+      const hitPolys = [];
+
+      // 1. Draw Base Slab
+      // It sits at the bottom.
+      let currentYOffset = 0;
+      const baseIsHighlight = (highlightId === 0);
+      const basePoly = drawSlab(0, currentYOffset, BASE_THICKNESS, baseConcreteColor(area), baseIsHighlight);
+      hitPolys.push(basePoly);
+
+      // 2. Draw Products
+      // Stack them up.
+      // The "yOffset" for the next layer is the thickness of the previous layers? 
+      // No, in isometric, we move UP the screen (negative Y) to stack.
+      // But `drawSlab` takes `yOffset` as "how high above the origin".
+      // The base slab top is at CY.
+      // The next slab sits ON TOP of the base slab.
+      
+      // Actually, let's adjust logic. 
+      // Base slab top is at Z=0.
+      // Product 1 bottom is at Z=0, Top is at Z=10.
+      
+      // Draw Base Slab (Thickness goes DOWN from Z=0)
+      // My drawSlab draws from topY down by thickness.
+      // So Base Slab Top is at CY.
+      
+      // Product 1: Top is at CY - LAYER_THICKNESS. Thickness is LAYER_THICKNESS.
+      
+      currentYOffset = 0; // Base slab top is at 0 offset (CY)
+      
+      // We need to draw products in reverse order? No, bottom up.
+      // Base is drawn.
+      // Next layer is on top.
+      
+      area.products.forEach((p, index) => {
+          currentYOffset += LAYER_THICKNESS; // Move up
+          const isHighlight = (highlightId === p.id);
+          const poly = drawSlab(p.id, currentYOffset, LAYER_THICKNESS, layerColor(p), isHighlight);
+          hitPolys.push(poly);
       });
 
-      // Draw Top
-      ctx.beginPath();
-      const tp = topPoly.points;
-      ctx.moveTo(tp[0].x, tp[0].y);
-      for (let i = 1; i < tp.length; i++) ctx.lineTo(tp[i].x, tp[i].y);
-      ctx.closePath();
-      if (highlightId !== -1 && ((topPoly.id === 0 && highlightId === 0) || (topPoly.id > 0 && topPoly.id === highlightId))) {
-        ctx.save();
-        ctx.fillStyle = topPoly.color;
-        ctx.filter = "brightness(1.25)";
-        ctx.fill();
-        ctx.restore();
-      } else {
-        ctx.fillStyle = topPoly.color;
-        ctx.fill();
-      }
-
-      // Draw Surface Details (Texture) on Top Face if it's the slab
-      if (topPoly.id === 0) {
-        // Create a bounding box for the top face to apply texture
-        const minX = Math.min(tp[0].x, tp[3].x);
-        const minY = Math.min(tp[2].y, tp[3].y);
-        const w = Math.max(tp[1].x, tp[2].x) - minX;
-        const h = Math.max(tp[0].y, tp[1].y) - minY;
-        
-        // Clip to top poly
-        ctx.save();
-        ctx.clip();
-        
-        const prng = PRNG(area.id * 1337); // Deterministic seed based on area ID
-        const type = reverseFindTypeByFactor(area.modifier) || "Custom";
-        
-        if (type === "Rough") drawRugged(ctx, {x:minX, y:minY, w, h}, prng);
-        else if (type === "Porous/Cracked") {
-           drawSpeckles(ctx, {x:minX, y:minY, w, h}, prng, 200);
-           drawCracks(ctx, {x:minX, y:minY, w, h}, prng, 8);
-        }
-        else if (type === "Medium Grind") drawSpeckles(ctx, {x:minX, y:minY, w, h}, prng, 150);
-        else if (type === "Light Grind") drawSpeckles(ctx, {x:minX, y:minY, w, h}, prng, 50);
-        
-        ctx.restore();
-      }
-
-      // Outlines
-      ctx.strokeStyle = "rgba(0,0,0,0.3)";
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < sidePolys.length - 1; i++) {
-        const pts = sidePolys[i].points;
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        ctx.lineTo(pts[1].x, pts[1].y);
-        ctx.stroke();
-      }
-
-      ctx.beginPath();
-      ctx.moveTo(tp[0].x, tp[0].y);
-      for (let i = 1; i < tp.length; i++) ctx.lineTo(tp[i].x, tp[i].y);
-      ctx.closePath();
-      ctx.stroke();
-
-      const frontRightBase = { x: slabBottomFrontRight.x, y: slabBottomFrontRight.y };
-      const frontRightTop = { x: curFrontRight.x, y: curFrontRight.y };
-      ctx.beginPath();
-      ctx.moveTo(frontRightBase.x, frontRightBase.y);
-      ctx.lineTo(frontRightTop.x, frontRightTop.y);
-      ctx.stroke();
-
-      const backRightBase = { x: slabBottomBackRight.x, y: slabBottomBackRight.y };
-      const backRightTop = { x: curBackRight.x, y: curBackRight.y };
-      ctx.beginPath();
-      ctx.moveTo(backRightBase.x, backRightBase.y);
-      ctx.lineTo(backRightTop.x, backRightTop.y);
-      ctx.stroke();
-
-      ctx.restore(); // Restore zoom
+      canvas._hitPolys = hitPolys;
     }
 
     function attachCanvasInteractions(canvas, area, inlineRow) {
@@ -917,56 +827,39 @@
 
       canvas.addEventListener("mousemove", (e) => {
         const r = canvas.getBoundingClientRect();
-        // Adjust mouse coordinates for zoom and translation
-        const zoom = canvas._zoom || 1;
-        const tx = canvas._transX || 0;
-        const ty = canvas._transY || 0;
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
         
-        const rawX = e.clientX - r.left;
-        const rawY = e.clientY - r.top;
-        
-        const x = (rawX / zoom) - (tx / zoom);
-        const y = (rawY / zoom) - (ty / zoom);
-
         let highlightId = -1;
         let hoverProduct = null;
         let onSlab = false;
 
-        const topPoly = canvas._topPoly;
-        const pointInPoly = (px, py, polyPts) => {
-          let inside = false;
-          for (let i = 0, j = polyPts.length - 1; i < polyPts.length; j = i++) {
-            const xi = polyPts[i].x, yi = polyPts[i].y;
-            const xj = polyPts[j].x, yj = polyPts[j].y;
-            const intersect = ((yi > py) != (yj > py)) && (px <= (xj - xi) * (py - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-          }
-          return inside;
+        // Simple point in polygon test
+        const pointInPoly = (px, py, poly) => {
+            let inside = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const xi = poly[i].x, yi = poly[i].y;
+                const xj = poly[j].x, yj = poly[j].y;
+                const intersect = ((yi > py) != (yj > py)) && (px <= (xj - xi) * (py - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
         };
 
-        if (topPoly && pointInPoly(x, y, topPoly.points)) {
-          highlightId = topPoly.id;
-          if (highlightId === 0) {
-            onSlab = true;
-          } else {
-            hoverProduct = area.products.find(p => p.id === highlightId) || null;
-          }
-        } else {
-          const sidePolys = canvas._sidePolys || [];
-          for (let poly of sidePolys) {
-            if (pointInPoly(x, y, poly.points)) {
-              highlightId = poly.id;
-              if (highlightId === 0) {
-                onSlab = true;
-              } else {
-                hoverProduct = area.products.find(p => p.id === highlightId) || null;
-              }
-              break;
+        // Check in reverse order (top layers first)
+        if(canvas._hitPolys) {
+            for(let i = canvas._hitPolys.length - 1; i >= 0; i--) {
+                const item = canvas._hitPolys[i];
+                if(pointInPoly(x, y, item.poly)) {
+                    highlightId = item.id;
+                    if(highlightId === 0) onSlab = true;
+                    else hoverProduct = area.products.find(p => p.id === highlightId);
+                    break;
+                }
             }
-          }
         }
 
-        drawAreaIllustration(canvas, area, highlightId);
+        drawHabboStyle(canvas, area, highlightId);
 
         if (hoverProduct) {
           const p = hoverProduct;
@@ -985,7 +878,7 @@
       });
 
       canvas.addEventListener("mouseleave", () => {
-        drawAreaIllustration(canvas, area, -1);
+        drawHabboStyle(canvas, area, -1);
         hoverTip.style.display = "none";
         hideInline();
       });
@@ -1060,6 +953,10 @@
       sizeWrap.appendChild(unit);
       header.appendChild(sizeWrap);
 
+      // Spacer div for the gap
+      const spacer = el("div", {});
+      header.appendChild(spacer);
+
       // 4. Moved Illustration here (Right of Size)
       const mini = el("div", { class: "mini-illustration" });
       const canvas = document.createElement("canvas");
@@ -1119,7 +1016,7 @@
 
       function updateAreaInfoboxAndCanvas(showInline = false) {
         const meta = surfaceExpl(area);
-        drawAreaIllustration(canvas, area);
+        drawHabboStyle(canvas, area);
         attachCanvasInteractions(canvas, area, inlineInfo);
         if (showInline) {
           inlineInfo.innerHTML = `<strong>${t("hoverSurface")}:</strong> ${meta.title} (×${meta.factor}) — ${meta.hint}. ${meta.desc}`;
@@ -1224,7 +1121,7 @@
           bindModeUI();
           updateCalculations(true);
           const canv = document.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
-          if (canv) drawAreaIllustration(canv, area);
+          if (canv) drawHabboStyle(canv, area);
         }
       });
       tr.appendChild(td(nameI, "td-prod"));
@@ -1233,7 +1130,7 @@
       colorI.addEventListener("input", () => {
         product.color = colorI.value;
         const canv = document.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
-        if (canv) drawAreaIllustration(canv, area);
+        if (canv) drawHabboStyle(canv, area);
       });
       tr.appendChild(td(colorI, "td-prod"));
 
@@ -1734,7 +1631,7 @@
 
         totalCostExVAT += areaCost;
         const canv = areasContainer.querySelector(`.area[data-area-id="${area.id}"] .mini-illustration canvas`);
-        if (canv) drawAreaIllustration(canv, area);
+        if (canv) drawHabboStyle(canv, area);
       });
 
       const label = state.project.settings.vatIncluded ?
